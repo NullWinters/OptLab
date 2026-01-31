@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>单纯形法交互式演示</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            padding-left: 20px; /* 增加左侧空白页边距 */
+            box-sizing: border-box;
+        }
+        #left-panel {
+            width: 30%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+        #problem-display {
+            height: 40%;
+            padding: 20px;
+            border-bottom: 1px solid #ccc;
+            overflow-y: auto;
+            text-align: center;
+        }
+        #algorithm-steps {
+            height: 60%;
+            padding: 20px;
+            overflow-y: auto;
+            text-align: center;
+        }
+        #right-panel {
+            width: 70%;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        #tableau-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        .step {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .step.active {
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            font-weight: bold;
+        }
+        table {
+            border-collapse: collapse;
+            width: max-content;
+            min-width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .pivot-row { background-color: #fff9c4; }
+        .pivot-col { background-color: #e1f5fe; }
+        .pivot-cell { background-color: #c8e6c9; font-weight: bold; }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 60%;
+            max-height: 80%;
+            overflow-y: auto;
+            text-align: center;
+        }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="number"], input[type="text"] {
+            width: 60px;
+            padding: 5px;
+        }
+        .constraint-row { margin-bottom: 10px; }
+
+        #next-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        #next-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .solution-modal-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .btn-copy { background-color: #2196f3; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-reset { background-color: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="left-panel">
+    <div id="problem-display">
+        <h3>当前待求解问题</h3>
+        <div id="math-content"></div>
+    </div>
+    <div id="algorithm-steps">
+        <h3>算法步骤</h3>
+        <div id="step-0" class="step">1. 初始化：建立初始单纯形表。</div>
+        <div id="step-1" class="step">2. 最优性检验：检查判别数（检验数）。</div>
+        <div id="step-2" class="step">3. 确定入基变量：选择最大正检验数对应的变量。</div>
+        <div id="step-3" class="step">4. 确定出基变量：按最小比值原则选择。</div>
+        <div id="step-4" class="step">5. 迭代：进行基变换（行变换）。</div>
+    </div>
+</div>
+
+<div id="right-panel">
+    <h3>单纯形表</h3>
+    <div id="tableau-container"></div>
+    <button id="next-btn" onclick="nextStep()">Next</button>
+</div>
+
+<!-- Initial Input Modal -->
+<div id="input-modal" class="modal" style="display: block;">
+    <div class="modal-content">
+        <h2>输入线性规划问题</h2>
+        <div class="input-group">
+            <label>决策变量数目 (n): <input type="number" id="num-vars" value="2" min="1"></label>
+            <label>约束条件数目 (m): <input type="number" id="num-constraints" value="2" min="1"></label>
+            <button onclick="generateInputFields()">生成输入框</button>
+        </div>
+        <div id="fields-container"></div>
+        <div id="submit-container" style="display:none; margin-top:20px;">
+            <button onclick="startSimplex()">开始求解</button>
+        </div>
+    </div>
+</div>
+
+<!-- Solution Modal -->
+<div id="solution-modal" class="modal">
+    <div class="modal-content">
+        <h2>求解结果</h2>
+        <div id="solution-text"></div>
+        <div class="solution-modal-footer">
+            <button class="btn-copy" onclick="copyResult()">复制</button>
+            <button class="btn-reset" onclick="resetAll()">重置</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let nVars, mConstraints;
+    let objCoeffs = [];
+    let constraints = []; // { coeffs: [], op: '<=', b: 0 }
+    let state = {
+        tableau: [],
+        basis: [],
+        step: -1,
+        phase: 'init', // 'init', 'optimal_check', 'pivot_col', 'pivot_row', 'iterate'
+        finished: false,
+        pivotRow: -1,
+        pivotCol: -1
+    };
+
+    function generateInputFields() {
+        const nRaw = document.getElementById('num-vars').value;
+        const mRaw = document.getElementById('num-constraints').value;
+
+        if (!/^[1-9]\d*$/.test(nRaw)) {
+            alert('请输入合法的决策变量数目（正整数）！');
+            return;
+        }
+        if (!/^[1-9]\d*$/.test(mRaw)) {
+            alert('请输入合法的约束条件数目（正整数）！');
+            return;
+        }
+
+        nVars = parseInt(nRaw);
+        mConstraints = parseInt(mRaw);
+        const container = document.getElementById('fields-container');
+        container.innerHTML = '<h3>目标函数 (Max Z)</h3><div>';
+        for (let i = 0; i < nVars; i++) {
+            container.innerHTML += ` <input type="number" id="obj-${i}" step="any" value="0"> x${i+1} ${i < nVars-1 ? '+' : ''}`;
+        }
+        container.innerHTML += '</div><h3>约束条件</h3>';
+        for (let j = 0; j < mConstraints; j++) {
+            let rowHtml = `<div class="constraint-row">`;
+            for (let i = 0; i < nVars; i++) {
+                rowHtml += ` <input type="number" id="cons-${j}-${i}" step="any" value="0"> x${i+1} ${i < nVars-1 ? '+' : ''}`;
+            }
+            rowHtml += ` &le; <input type="number" id="b-${j}" step="any" value="0"></div>`;
+            container.innerHTML += rowHtml;
+        }
+        document.getElementById('submit-container').style.display = 'block';
+    }
+
+    function startSimplex() {
+        objCoeffs = [];
+        for (let i = 0; i < nVars; i++) {
+            objCoeffs.push(parseFloat(document.getElementById(`obj-${i}`).value) || 0);
+        }
+        constraints = [];
+        for (let j = 0; j < mConstraints; j++) {
+            let coeffs = [];
+            for (let i = 0; i < nVars; i++) {
+                coeffs.push(parseFloat(document.getElementById(`cons-${j}-${i}`).value) || 0);
+            }
+            constraints.push({ coeffs, b: parseFloat(document.getElementById(`b-${j}`).value) || 0 });
+        }
+
+        document.getElementById('input-modal').style.display = 'none';
+        displayProblem();
+        initTableau();
+        renderTableau();
+        highlightStep(0);
+        state.step = 0;
+        state.phase = 'optimal_check';
+    }
+
+    function displayProblem() {
+        let html = 'Max Z = ';
+        html += objCoeffs.map((c, i) => `${c}x<sub>${i+1}</sub>`).join(' + ');
+        html += '<br><br>s.t.<br>';
+        constraints.forEach((c, j) => {
+            html += c.coeffs.map((val, i) => `${val}x<sub>${i+1}</sub>`).join(' + ');
+            html += ` &le; ${c.b}<br>`;
+        });
+
+        html += '<br>增加松弛变量后：<br>';
+        constraints.forEach((c, j) => {
+            let row = c.coeffs.map((val, i) => `${val}x<sub>${i+1}</sub>`).join(' + ');
+            row += ` + x<sub>${nVars + j + 1}</sub>`;
+            row += ` = ${c.b}<br>`;
+            html += row;
+        });
+
+        document.getElementById('math-content').innerHTML = html;
+    }
+
+    function initTableau() {
+        // Initial tableau: add slack variables
+        // Rows: mConstraints (for constraints) + 1 (for objective function)
+        // Cols: nVars + mConstraints (slacks) + 1 (b)
+        const rows = mConstraints + 1;
+        const cols = nVars + mConstraints + 1;
+        state.tableau = Array.from({ length: rows }, () => new Array(cols).fill(0));
+        state.basis = [];
+
+        for (let j = 0; j < mConstraints; j++) {
+            for (let i = 0; i < nVars; i++) {
+                state.tableau[j][i] = constraints[j].coeffs[i];
+            }
+            state.tableau[j][nVars + j] = 1; // Slack
+            state.tableau[j][cols - 1] = constraints[j].b;
+            state.basis.push(nVars + j);
+        }
+
+        for (let i = 0; i < nVars; i++) {
+            state.tableau[rows - 1][i] = -objCoeffs[i]; // Z - row
+        }
+    }
+
+    function renderTableau() {
+        const container = document.getElementById('tableau-container');
+        let html = '<table><thead><tr><th>基变量</th>';
+        for (let i = 0; i < nVars + mConstraints; i++) {
+            html += `<th>x<sub>${i+1}</sub></th>`;
+        }
+        html += '<th>b</th><th>比值 &theta;</th></tr></thead><tbody>';
+
+        for (let j = 0; j < mConstraints; j++) {
+            let rowClass = (j === state.pivotRow) ? 'pivot-row' : '';
+            html += `<tr class="${rowClass}"><td>x<sub>${state.basis[j] + 1}</sub></td>`;
+            for (let i = 0; i < nVars + mConstraints + 1; i++) {
+                let cellClass = '';
+                if (i === state.pivotCol) cellClass = 'pivot-col';
+                if (j === state.pivotRow && i === state.pivotCol) cellClass = 'pivot-cell';
+                html += `<td class="${cellClass}">${state.tableau[j][i].toFixed(2)}</td>`;
+            }
+            // Theta column
+            let theta = '';
+            if (state.pivotCol !== -1 && state.tableau[j][state.pivotCol] > 0) {
+                theta = (state.tableau[j][nVars + mConstraints] / state.tableau[j][state.pivotCol]).toFixed(2);
+            }
+            html += `<td>${theta}</td></tr>`;
+        }
+
+        // Z row
+        html += '<tr><td>Z</td>';
+        for (let i = 0; i < nVars + mConstraints + 1; i++) {
+            let cellClass = (i === state.pivotCol) ? 'pivot-col' : '';
+            html += `<td class="${cellClass}">${state.tableau[mConstraints][i].toFixed(2)}</td>`;
+        }
+        html += '<td></td></tr></tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function highlightStep(stepIdx) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById(`step-${stepIdx}`).classList.add('active');
+    }
+
+    function nextStep() {
+        if (state.finished) return;
+
+        if (state.phase === 'optimal_check') {
+            highlightStep(1);
+            // Find max negative in Z-row (since we used Z - \sum c_i x_i = 0, so negative means positive c_j in standard tableau)
+            // Or if we say Z row is reduced costs.
+            let minVal = 0;
+            let col = -1;
+            for (let i = 0; i < nVars + mConstraints; i++) {
+                if (state.tableau[mConstraints][i] < minVal) {
+                    minVal = state.tableau[mConstraints][i];
+                    col = i;
+                }
+            }
+
+            if (col === -1) {
+                state.finished = true;
+                showSolution();
+            } else {
+                state.pivotCol = col;
+                state.phase = 'pivot_col';
+            }
+        } else if (state.phase === 'pivot_col') {
+            highlightStep(2);
+            state.phase = 'pivot_row';
+        } else if (state.phase === 'pivot_row') {
+            highlightStep(3);
+            let minRatio = Infinity;
+            let row = -1;
+            for (let j = 0; j < mConstraints; j++) {
+                if (state.tableau[j][state.pivotCol] > 0) {
+                    let ratio = state.tableau[j][nVars + mConstraints] / state.tableau[j][state.pivotCol];
+                    if (ratio < minRatio) {
+                        minRatio = ratio;
+                        row = j;
+                    }
+                }
+            }
+            if (row === -1) {
+                alert("无界解！");
+                state.finished = true;
+                return;
+            }
+            state.pivotRow = row;
+            state.phase = 'iterate';
+        } else if (state.phase === 'iterate') {
+            highlightStep(4);
+            const pivot = state.tableau[state.pivotRow][state.pivotCol];
+            // Normalize pivot row
+            for (let i = 0; i < nVars + mConstraints + 1; i++) {
+                state.tableau[state.pivotRow][i] /= pivot;
+            }
+            // Row operations
+            for (let j = 0; j <= mConstraints; j++) {
+                if (j !== state.pivotRow) {
+                    const factor = state.tableau[j][state.pivotCol];
+                    for (let i = 0; i < nVars + mConstraints + 1; i++) {
+                        state.tableau[j][i] -= factor * state.tableau[state.pivotRow][i];
+                    }
+                }
+            }
+            state.basis[state.pivotRow] = state.pivotCol;
+            state.pivotCol = -1;
+            state.pivotRow = -1;
+            state.phase = 'optimal_check';
+        }
+        renderTableau();
+    }
+
+    function showSolution() {
+        const modal = document.getElementById('solution-modal');
+        const textDiv = document.getElementById('solution-text');
+        let x = new Array(nVars).fill(0);
+        for (let j = 0; j < mConstraints; j++) {
+            if (state.basis[j] < nVars) {
+                x[state.basis[j]] = state.tableau[j][nVars + mConstraints];
+            }
+        }
+        let z = state.tableau[mConstraints][nVars + mConstraints];
+
+        let resultStr = `最优解：\n`;
+        x.forEach((val, i) => {
+            resultStr += `x${i+1} = ${val.toFixed(2)}\n`;
+        });
+        resultStr += `Z = ${z.toFixed(2)}`;
+
+        textDiv.innerText = resultStr;
+        modal.style.display = 'block';
+    }
+
+    function copyResult() {
+        let problemStr = `目标函数: Max Z = ` + objCoeffs.map((c, i) => `${c}x${i+1}`).join(' + ') + `\n`;
+        problemStr += `约束条件:\n` + constraints.map(c => c.coeffs.map((v, i) => `${v}x${i+1}`).join(' + ') + ` <= ${c.b}`).join('\n') + `\n\n`;
+        let solutionStr = document.getElementById('solution-text').innerText;
+        navigator.clipboard.writeText(problemStr + solutionStr).then(() => {
+            alert('复制成功！');
+        });
+    }
+
+    function resetAll() {
+        location.reload();
+    }
+</script>
+
+</body>
+</html>
