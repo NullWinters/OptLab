@@ -9,12 +9,12 @@
             font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #fffaf0; /* 暖白色背景 */
+            background-color: #fffaf0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            color: #5d4037; /* 深棕色文字 */
+            color: #5d4037;
         }
 
         .container {
@@ -27,7 +27,7 @@
         }
 
         h1 {
-            color: #d84315; /* 深橘红色 */
+            color: #d84315;
             margin-bottom: 15px;
             font-size: 2.8em;
         }
@@ -44,7 +44,7 @@
 
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(3, 1fr); /* 改为3列 */
             gap: 30px;
         }
 
@@ -68,10 +68,9 @@
             box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
         }
 
-        /* 暖色系按钮配色 */
-        .observe { background: linear-gradient(135deg, #ffb300, #ff8f00); }    /* 橙黄 */
-        .compare { background: linear-gradient(135deg, #e53935, #b71c1c); }    /* 红色/深红 */
-        .application { background: linear-gradient(135deg, #fdd835, #f9a825); }/* 明黄/金黄 */
+        .introduction { background: linear-gradient(135deg, #ffb300, #ff8f00); }    /* 橙黄 */
+        .observe { background: linear-gradient(135deg, #fdd835, #f9a825); }        /* 明黄/金黄 */
+        .compare { background: linear-gradient(135deg, #e53935, #b71c1c); }       /* 红色/深红 */
 
         .module-card span {
             margin-top: 12px;
@@ -82,7 +81,7 @@
             opacity: 0.85;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 800px) {
             .grid-container {
                 grid-template-columns: 1fr;
             }
@@ -98,8 +97,12 @@
     <div class="container">
         <h1>一维搜索算法 ～ 区间搜索</h1>
         <p class="description">学习并对比黄金分割法与斐波那契数列法如何求解单谷函数的极小点区间</p>
-        
+
         <div class="grid-container">
+            <a href="introduction.html" class="module-card introduction">
+                算法介绍
+                <span>Introduction</span>
+            </a>
             <a href="observe_and_explore.html" class="module-card observe">
                 观察与探索
                 <span>Observe & Explore</span>
@@ -107,10 +110,6 @@
             <a href="compare_and_insight.html" class="module-card compare">
                 对比与洞察
                 <span>Compare & Insight</span>
-            </a>
-            <a href="application_and_extension.html" class="module-card application">
-                应用与延伸
-                <span>Application & Extension</span>
             </a>
         </div>
     </div>

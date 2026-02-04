@@ -1,10 +1,604 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>一维优化算法 ~ 区间搜索</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>区间搜索：对比与洞察</title>
+
+    <!-- D3.js 可视化库 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
+<div class="container">
+    <a href="index.html" class="back-btn">← 返回首页</a>
+    <!-- 页面头部 -->
+    <header class="header">
+        <h1>一维优化算法 - 区间搜索教学实验</h1>
+        <p class="subtitle">对比与洞察：黄金分割法 vs 斐波那契搜索法</p>
+    </header>
 
+    <!-- 导航栏 -->
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='observe_and_explore.html'">
+            观察与探索
+        </button>
+        <button class="nav-btn active" onclick="window.location.href='compare_and_insight.html'">
+            对比与洞察
+        </button>
+    </nav>
+
+    <!-- 双算法控制面板 -->
+    <div class="dual-control-panel">
+        <!-- 黄金分割法控制 -->
+        <div class="algorithm-panel golden-panel">
+            <h3>黄金分割法 (Golden Section)</h3>
+            <div class="control-group">
+                <label for="golden-epsilon">精度 epsilon (ε):</label>
+                <input type="range" id="golden-epsilon" min="0.001" max="1" step="0.001" value="0.5">
+                <span id="golden-epsilon-value">0.500</span>
+            </div>
+            <div class="parameter-display">
+                <table class="param-table">
+                    <tbody id="golden-param-body">
+                    <!-- 动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 斐波那契搜索法控制 -->
+        <div class="algorithm-panel fibonacci-panel">
+            <h3>斐波那契搜索法 (Fibonacci)</h3>
+            <div class="slider-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div class="control-group" style="flex: 1; min-width: 150px;">
+                    <label for="fib-n">迭代次数 n:</label>
+                    <input type="range" id="fib-n" min="2" max="20" step="1" value="10" style="width: 100%;">
+                    <span id="fib-n-value">10</span>
+                </div>
+                <div class="control-group" style="flex: 1; min-width: 150px;">
+                    <label for="fib-epsilon">修正系数 epsilon (ε):</label>
+                    <input type="range" id="fib-epsilon" min="0.001" max="0.1" step="0.001" value="0.01" style="width: 100%;">
+                    <span id="fib-epsilon-value">0.010</span>
+                </div>
+            </div>
+            <div class="parameter-display">
+                <table class="param-table">
+                    <tbody id="fib-param-body">
+                    <!-- 动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- 全局控制面板 -->
+        <div class="global-controls">
+            <h3>全局控制</h3>
+            <div class="control-group">
+                <label for="function-select">测试函数:</label>
+                <select id="function-select" style="width: 100%;">
+                    <!-- 动态填充 -->
+                </select>
+            </div>
+
+            <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div class="control-group" style="flex: 1; min-width: 120px;">
+                    <label for="initial-a">初始区间左端点 a:</label>
+                    <input type="range" id="initial-a" min="-10" max="10" step="0.1" value="0" style="width: 100%;">
+                    <span id="a-value">0.0</span>
+                </div>
+
+                <div class="control-group" style="flex: 1; min-width: 120px;">
+                    <label for="initial-b">初始区间右端点 b:</label>
+                    <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10" style="width: 100%;">
+                    <span id="b-value">10.0</span>
+                </div>
+            </div>
+
+            <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
+                <button id="play-btn" class="control-btn btn-primary">▶ 播放</button>
+                <button id="pause-btn" class="control-btn btn-secondary">⏸ 暂停</button>
+                <button id="step-btn" class="control-btn btn-primary">⏭ 单步</button>
+                <button id="reset-btn" class="control-btn btn-accent">↻ 重置</button>
+            </div>
+
+            <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
+                <button id="pan-left-btn" class="control-btn btn-primary"
+                        style="background-color: #6d4c41;">向左
+                </button>
+                <button id="pan-right-btn" class="control-btn btn-primary"
+                        style="background-color: #6d4c41;">向右
+                </button>
+                <button id="zoom-in-btn" class="control-btn btn-primary"
+                        style="background-color: #795548;">放大
+                </button>
+                <button id="zoom-out-btn" class="control-btn btn-primary"
+                        style="background-color: #8d6e63;">缩小
+                </button>
+            </div>
+
+            <div class="control-group" style="margin-top: 5px;">
+                <label for="speed-control">播放速度:</label>
+                <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000">
+                <span id="speed-value">正常</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对比可视化区域 -->
+    <section class="comparison-visualization-section">
+        <div class="viz-header">
+            <h2>性能可视化对比</h2>
+            <div class="viz-tabs">
+                <button class="viz-tab active" data-view="trajectory">搜索轨迹</button>
+                <button class="viz-tab" data-view="convergence">收敛速度</button>
+            </div>
+        </div>
+        <div id="comparison-canvas"></div>
+    </section>
+
+    <!-- 性能指标仪表盘 -->
+    <section class="performance-dashboard" id="performance-dashboard" style="display: none;">
+        <div class="metric-card">
+            <h3>迭代次数对比</h3>
+            <div class="metric-comparison">
+                <div class="metric-item">
+                    <span class="metric-label">黄金分割</span>
+                    <span class="metric-value" id="metric-iter-golden">-</span>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric-item">
+                    <span class="metric-label">斐波那契</span>
+                    <span class="metric-value" id="metric-iter-fib">-</span>
+                </div>
+            </div>
+            <div id="winner-iter" class="winner-tag">进行中...</div>
+        </div>
+        <div class="metric-card">
+            <h3>最终区间精度</h3>
+            <div class="metric-comparison">
+                <div class="metric-item">
+                    <span class="metric-label">黄金分割</span>
+                    <span class="metric-value" id="metric-prec-golden">-</span>
+                </div>
+                <div class="metric-divider"></div>
+                <div class="metric-item">
+                    <span class="metric-label">斐波那契</span>
+                    <span class="metric-value" id="metric-prec-fib">-</span>
+                </div>
+            </div>
+            <div id="winner-prec" class="winner-tag">进行中...</div>
+        </div>
+    </section>
+
+    <!-- 洞察分析区 -->
+    <section class="insight-analysis">
+        <h2>算法深度洞察</h2>
+        <table class="characteristic-table">
+            <thead>
+            <tr>
+                <th>特性维度</th>
+                <th>黄金分割法</th>
+                <th>斐波那契搜索法</th>
+                <th>结论</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>收敛速度</td>
+                <td>稳定 (0.618<sup>k</sup>)</td>
+                <td>理论最优 (F<sub>n-k</sub>/F<sub>n-k+1</sub>)</td>
+                <td>斐波那契法略快</td>
+            </tr>
+            <tr>
+                <td>参数依赖</td>
+                <td>仅需精度 ε</td>
+                <td>需预先指定 N 或 ε</td>
+                <td>黄金分割法更灵活</td>
+            </tr>
+            <tr>
+                <td>试探点位置</td>
+                <td>固定比例</td>
+                <td>随迭代次数变化</td>
+                <td>-</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="guidance-questions">
+            <h3>观察并回答问题</h3>
+
+            <div class="question-item">
+                <h4>问题 1：为什么斐波那契法需要预先知道总迭代次数 N ？</h4>
+                <p>观察在不同 N 下，斐波那契法初始试探点的位置变化。它如何利用 N 来优化搜索效率？</p>
+                <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+            </div>
+
+            <div class="question-item">
+                <h4>问题 2：在相同迭代次数下，哪种算法缩小的区间更小？</h4>
+                <p>通过"收敛速度"视图，对比两条曲线的斜率，感受"最优性"的含义。</p>
+                <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script type="module">
+    import {FunctionLibrary, calculateFunction} from './scripts/function-utils.js';
+    import {ComparisonController} from './scripts/comparison-controller.js';
+    import {ComparisonVisualizer} from './scripts/comparison-visualizer.js';
+    import {PerformanceMetrics} from './scripts/performance-metrics.js';
+
+    // 状态管理
+    const AppState = {
+        controller: new ComparisonController(),
+        visualizer: null,
+        currentView: 'trajectory', // 'trajectory' or 'convergence'
+        selectedFuncId: 'quadratic',
+        yScaleType: 'log', // 'log' or 'linear'
+
+        // 运行状态
+        runStatus: '未运行', // '未运行', '播放中', '已暂停', '已完成'
+        isPlaying: false,
+        speed: 1000,
+        baseSpeed: 1000,
+        timer: null,
+
+        // 参数
+        a: 0,
+        b: 10,
+        goldenEps: 0.5,
+        fibN: 10,
+        fibEps: 0.01,
+
+        subStep: 0, // 0: 初始, 1: a_try, 2: b_try, 3: compare, 4: update
+        currentTrialPoints: {golden: null, fibonacci: null}
+    };
+
+    // 初始化
+    window.addEventListener('load', () => {
+        initFuncSelector();
+        initVisualizer();
+        handleEvents();
+        doInit();
+    });
+
+    function initFuncSelector() {
+        const selector = document.getElementById('function-select');
+        selector.innerHTML = '';
+        Object.values(FunctionLibrary).forEach(f => {
+            const opt = document.createElement('option');
+            opt.value = f.id;
+            opt.textContent = `${f.name}：${f.formula}`;
+            selector.appendChild(opt);
+        });
+        selector.value = AppState.selectedFuncId;
+    }
+
+    function initVisualizer() {
+        AppState.visualizer = new ComparisonVisualizer('comparison-canvas');
+    }
+
+    function handleEvents() {
+        // 全局控制
+        document.getElementById('initial-a').addEventListener('input', (e) => {
+            AppState.a = parseFloat(e.target.value);
+            document.getElementById('a-value').textContent = AppState.a.toFixed(1);
+            doInit();
+        });
+        document.getElementById('initial-b').addEventListener('input', (e) => {
+            AppState.b = parseFloat(e.target.value);
+            document.getElementById('b-value').textContent = AppState.b.toFixed(1);
+            doInit();
+        });
+        document.getElementById('function-select').addEventListener('change', (e) => {
+            AppState.selectedFuncId = e.target.value;
+            doInit();
+        });
+
+        // 黄金分割参数
+        document.getElementById('golden-epsilon').addEventListener('input', (e) => {
+            AppState.goldenEps = parseFloat(e.target.value);
+            document.getElementById('golden-epsilon-value').textContent = AppState.goldenEps.toFixed(3);
+            doInit();
+        });
+
+        // 斐波那契参数
+        document.getElementById('fib-n').addEventListener('input', (e) => {
+            AppState.fibN = parseInt(e.target.value);
+            document.getElementById('fib-n-value').textContent = AppState.fibN;
+            doInit();
+        });
+        document.getElementById('fib-epsilon').addEventListener('input', (e) => {
+            AppState.fibEps = parseFloat(e.target.value);
+            document.getElementById('fib-epsilon-value').textContent = AppState.fibEps.toFixed(3);
+            doInit();
+        });
+
+        // 按钮
+        document.getElementById('play-btn').addEventListener('click', play);
+        document.getElementById('pause-btn').addEventListener('click', pause);
+        document.getElementById('step-btn').addEventListener('click', () => {
+            if (AppState.runStatus === '播放中') pause();
+            doStep();
+            if (AppState.runStatus !== '已完成') AppState.runStatus = '已暂停';
+            updateUI();
+        });
+        document.getElementById('reset-btn').addEventListener('click', doInit);
+
+        // 速度
+        document.getElementById('speed-control').addEventListener('input', (e) => {
+            AppState.baseSpeed = 2100 - parseInt(e.target.value);
+
+            // 根据当前视图应用速度
+            if (AppState.currentView === 'convergence') {
+                AppState.speed = AppState.baseSpeed / 4;
+            } else {
+                AppState.speed = AppState.baseSpeed;
+            }
+
+            const speedText = AppState.baseSpeed < 500 ? '快速' : AppState.baseSpeed < 1500 ? '正常' : '慢速';
+            document.getElementById('speed-value').textContent = speedText;
+
+            if (AppState.isPlaying) {
+                pause();
+                play();
+            }
+        });
+
+        // 视图切换
+        document.querySelectorAll('.viz-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.viz-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                AppState.currentView = tab.dataset.view;
+
+                // 切换视图时调整播放速度
+                if (AppState.currentView === 'convergence') {
+                    AppState.speed = AppState.baseSpeed / 4;
+                } else {
+                    AppState.speed = AppState.baseSpeed;
+                }
+
+                if (AppState.isPlaying) {
+                    pause();
+                    play();
+                }
+
+                updateVisualization();
+            });
+        });
+
+        // 平移/缩放控制（仅作用于当前视图）
+        document.getElementById('pan-left-btn').addEventListener('click', () => {
+            if (AppState.currentView === 'trajectory') {
+                AppState.visualizer.pan(-1);
+                updateUI();
+            } else {
+                AppState.visualizer.panConvergence(-1);
+            }
+        });
+        document.getElementById('pan-right-btn').addEventListener('click', () => {
+            if (AppState.currentView === 'trajectory') {
+                AppState.visualizer.pan(1);
+                updateUI();
+            } else {
+                AppState.visualizer.panConvergence(1);
+            }
+        });
+        document.getElementById('zoom-in-btn').addEventListener('click', () => {
+            if (AppState.currentView === 'trajectory') {
+                AppState.visualizer.zoom(1.2);
+                updateUI();
+            } else {
+                AppState.visualizer.zoomConvergence(1.2);
+            }
+        });
+        document.getElementById('zoom-out-btn').addEventListener('click', () => {
+            if (AppState.currentView === 'trajectory') {
+                AppState.visualizer.zoom(0.8);
+                updateUI();
+            } else {
+                AppState.visualizer.zoomConvergence(0.8);
+            }
+        });
+    }
+
+    function doInit() {
+        // 先清理计时器，不直接调用 pause 以免触发未初始化的 updateUI
+        AppState.isPlaying = false;
+        if (AppState.timer) {
+            clearInterval(AppState.timer);
+            AppState.timer = null;
+        }
+        document.getElementById('play-btn').classList.remove('btn-secondary');
+
+        AppState.runStatus = '未运行';
+        AppState.subStep = 0;
+        AppState.currentTrialPoints = {golden: null, fibonacci: null};
+
+        const func = x => calculateFunction(x, AppState.selectedFuncId);
+
+        AppState.controller.initAlgorithms({
+            func,
+            a: AppState.a,
+            b: AppState.b,
+            goldenEps: AppState.goldenEps,
+            fibEps: AppState.fibEps,
+            fibN: AppState.fibN
+        });
+
+        if (AppState.visualizer) {
+            AppState.visualizer.drawFunction(func, [AppState.a - 1, AppState.b + 1]);
+        }
+        document.getElementById('performance-dashboard').style.display = 'none';
+        updateUI();
+    }
+
+    function play() {
+        if (AppState.isPlaying || AppState.runStatus === '已完成') return;
+        AppState.isPlaying = true;
+        AppState.runStatus = '播放中';
+        updateUI();
+
+        AppState.timer = setInterval(() => {
+            if (!doStep()) {
+                pause();
+            }
+        }, AppState.speed);
+    }
+
+    function pause() {
+        AppState.isPlaying = false;
+        if (AppState.runStatus === '播放中') AppState.runStatus = '已暂停';
+        if (AppState.timer) {
+            clearInterval(AppState.timer);
+            AppState.timer = null;
+        }
+        updateUI();
+    }
+
+    function doStep() {
+        const gAlgo = AppState.controller.algorithms.golden;
+        const fAlgo = AppState.controller.algorithms.fibonacci;
+
+        const gComplete = gAlgo.isComplete;
+        const fComplete = fAlgo.isComplete;
+
+        if (gComplete && fComplete && AppState.subStep === 0) {
+            AppState.runStatus = '已完成';
+            updateUI();
+            return false;
+        }
+
+        AppState.subStep++;
+
+        if (AppState.subStep === 1) {
+            AppState.currentTrialPoints = {
+                golden: gAlgo.getTrialPoints(),
+                fibonacci: fAlgo.getTrialPoints()
+            };
+        }
+
+        if (AppState.subStep === 4) {
+            AppState.controller.stepBoth();
+            if (AppState.currentView === 'trajectory') {
+                const minA = Math.min(gAlgo.a, fAlgo.a);
+                const maxB = Math.max(gAlgo.b, fAlgo.b);
+                AppState.visualizer.autoZoom(minA, maxB);
+            }
+            AppState.subStep = 0;
+        }
+
+        updateUI();
+
+        if (gAlgo.isComplete && fAlgo.isComplete && AppState.subStep === 0) {
+            AppState.runStatus = '已完成';
+            updateUI();
+            showFinalMetrics();
+            return false;
+        }
+        return true;
+    }
+
+    function updateUI() {
+        const gAlgo = AppState.controller.algorithms.golden;
+        const fAlgo = AppState.controller.algorithms.fibonacci;
+
+        if (!gAlgo || !fAlgo) return;
+
+        // 状态文字
+        const gStatusText = gAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
+        const fStatusText = fAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
+
+        // 更新黄金分割面板表格
+        document.getElementById('golden-param-body').innerHTML = `
+                <tr><td>左端点 a</td><td class="param-value">${gAlgo.a.toFixed(4)}</td></tr>
+                <tr><td>右端点 b</td><td class="param-value">${gAlgo.b.toFixed(4)}</td></tr>
+                <tr><td>区间长度</td><td class="param-value">${Math.abs(gAlgo.b - gAlgo.a).toFixed(4)}</td></tr>
+                <tr><td>当前迭代</td><td class="param-value">${gAlgo.currentIteration}</td></tr>
+                <tr><td>状态</td><td class="param-value">${gStatusText}</td></tr>
+            `;
+
+        // 更新斐波那契面板表格
+        document.getElementById('fib-param-body').innerHTML = `
+                <tr><td>左端点 a</td><td class="param-value">${fAlgo.a.toFixed(4)}</td></tr>
+                <tr><td>右端点 b</td><td class="param-value">${fAlgo.b.toFixed(4)}</td></tr>
+                <tr><td>区间长度</td><td class="param-value">${Math.abs(fAlgo.b - fAlgo.a).toFixed(4)}</td></tr>
+                <tr><td>当前迭代</td><td class="param-value">${fAlgo.currentIteration}</td></tr>
+                <tr><td>状态</td><td class="param-value">${fStatusText}</td></tr>
+            `;
+
+        // 更新按钮状态
+        const bothComplete = gAlgo.isComplete && fAlgo.isComplete && AppState.subStep === 0;
+        document.getElementById('play-btn').disabled = AppState.isPlaying || bothComplete;
+        document.getElementById('pause-btn').disabled = !AppState.isPlaying;
+        document.getElementById('step-btn').disabled = AppState.isPlaying || bothComplete;
+
+        updateVisualization();
+    }
+
+    function updateVisualization() {
+        if (AppState.currentView === 'trajectory') {
+            AppState.visualizer.drawDualTrajectories(
+                AppState.controller.histories.golden,
+                AppState.controller.histories.fibonacci
+            );
+
+            // 更新试探点显示
+            const func = x => calculateFunction(x, AppState.selectedFuncId);
+            if (AppState.subStep > 0) {
+                const options = {
+                    showA: AppState.subStep >= 1,
+                    showB: AppState.subStep >= 2,
+                    showCompare: AppState.subStep >= 3
+                };
+                const gAlgo = AppState.controller.algorithms.golden;
+                const fAlgo = AppState.controller.algorithms.fibonacci;
+
+                AppState.visualizer.updateDualTrialPoints(
+                    gAlgo.isComplete ? null : AppState.currentTrialPoints.golden,
+                    fAlgo.isComplete ? null : AppState.currentTrialPoints.fibonacci,
+                    func,
+                    options
+                );
+            } else {
+                AppState.visualizer.clearTrialPoints();
+            }
+        } else {
+            AppState.visualizer.drawConvergenceComparison(
+                AppState.controller.histories.golden,
+                AppState.controller.histories.fibonacci,
+                AppState.yScaleType,
+                () => {
+                    const newType = AppState.visualizer.animateToggleConvergenceScale();
+                    AppState.yScaleType = newType;
+                }
+            );
+        }
+    }
+
+    function showFinalMetrics() {
+        const metrics = PerformanceMetrics.calculate(
+            AppState.controller.histories.golden,
+            AppState.controller.histories.fibonacci
+        );
+
+        if (metrics) {
+            document.getElementById('performance-dashboard').style.display = 'grid';
+
+            document.getElementById('metric-iter-golden').textContent = metrics.iterations.golden;
+            document.getElementById('metric-iter-fib').textContent = metrics.iterations.fibonacci;
+            document.getElementById('winner-iter').textContent =
+                metrics.iterations.winner === 'draw' ? '握手言和' :
+                    (metrics.iterations.winner === 'golden' ? '黄金分割法胜出' : '斐波那契法胜出');
+
+            document.getElementById('metric-prec-golden').textContent = metrics.precision.golden;
+            document.getElementById('metric-prec-fib').textContent = metrics.precision.fibonacci;
+            document.getElementById('winner-prec').textContent =
+                metrics.precision.winner === 'golden' ? '黄金分割法更精确' : '斐波那契法更精确';
+        }
+    }
+</script>
 </body>
 </html>

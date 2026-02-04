@@ -1,0 +1,11 @@
+输入：单谷函数f,初始区间[a_0, b_0],迭代次数N,修正系数ε
+输出：极小值点所在的区间[a, b]
+
+(1)令 k=0, F₀=F₁=1, Fn+2=Fn+1+Fn
+(2)若 k=N, 输出 [a, b] = [a_k, b_k]
+(3)l_k=b_k-a_k, ρ_k=1-F_(N-k)/F_(N-k+1), 当 ρ_k=0.5 时, ρ_k=0.5-ε
+(4)a_try=a_k+ρ_k*l_k, b_try=b_k-ρ_k*l_k
+(5)若 f(a_try)>f(b_try), 则 a_(k+1)=a_try, b_(k+1)=b_k；
+若 f(a_try)<f(b_try), 则 a_(k+1)=a_k, b_(k+1)=b_try；
+若 f(a_try)=f(b_try), 则 a_(k+1)=a_try, b_(k+1)=b_try
+(6)k=k+1, 转 (2)

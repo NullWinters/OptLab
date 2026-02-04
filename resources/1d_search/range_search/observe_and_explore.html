@@ -13,10 +13,11 @@
 </head>
 <body>
     <div class="container">
+        <a href="index.html" class="back-btn">← 返回首页</a>
         <!-- 页面头部 -->
         <header class="header">
             <h1>一维优化算法 - 区间搜索教学实验</h1>
-            <p class="subtitle">观察与探索：黄金分割法与斐波那契搜索法</p>
+            <p class="subtitle">观察与探索：黄金分割法与斐波那契搜索法过程演示</p>
         </header>
         
         <!-- 导航栏 -->
@@ -26,9 +27,6 @@
             </button>
             <button class="nav-btn" onclick="window.location.href='compare_and_insight.html'">
                 对比与洞察
-            </button>
-            <button class="nav-btn" onclick="window.location.href='application_and_extension.html'">
-                应用与延伸
             </button>
         </nav>
         
@@ -108,35 +106,42 @@
                 
                 <!-- 可视化控制 -->
                 <div class="viz-controls">
-                    <div class="control-group">
-                        <label for="initial-a">初始区间左端点 a:</label>
-                        <input type="range" id="initial-a" min="-5" max="5" step="0.1" value="-2">
-                        <span id="a-value">-2.0</span>
-                    </div>
-                    
-                    <div class="control-group">
-                        <label for="initial-b">初始区间右端点 b:</label>
-                        <input type="range" id="initial-b" min="-5" max="5" step="0.1" value="3">
-                        <span id="b-value">3.0</span>
-                    </div>
-                    
-                    <div class="control-group" id="precision-group">
-                        <label for="precision">精度 ε:</label>
-                        <input type="range" id="precision" min="0.001" max="0.1" step="0.001" value="0.01">
-                        <span id="epsilon-value">0.010</span>
+                    <div class="slider-row" style="display: flex; gap: 20px; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
+                        <div class="control-group">
+                            <label for="initial-a">初始区间左端点 a:</label>
+                            <input type="range" id="initial-a" min="-5" max="5" step="0.1" value="-2">
+                            <span id="a-value">-2.0</span>
+                        </div>
+                        
+                        <div class="control-group">
+                            <label for="initial-b">初始区间右端点 b:</label>
+                            <input type="range" id="initial-b" min="-5" max="5" step="0.1" value="3">
+                            <span id="b-value">3.0</span>
+                        </div>
+                        
+                        <div class="control-group" id="precision-group">
+                            <label for="precision">精度 ε:</label>
+                            <input type="range" id="precision" min="0.001" max="0.1" step="0.001" value="0.01">
+                            <span id="epsilon-value">0.010</span>
+                        </div>
+
+                        <div class="control-group" id="iterations-group" style="display: none;">
+                            <label for="iterations">迭代次数 N:</label>
+                            <input type="range" id="iterations" min="2" max="15" step="1" value="10">
+                            <span id="iterations-value">10</span>
+                        </div>
                     </div>
 
-                    <div class="control-group" id="iterations-group" style="display: none;">
-                        <label for="iterations">迭代次数 n:</label>
-                        <input type="range" id="iterations" min="2" max="15" step="1" value="10">
-                        <span id="iterations-value">10</span>
-                    </div>
-
-                    <div class="control-group">
-                        <label>画布缩放:</label>
-                        <div class="zoom-buttons" style="display: flex; gap: 5px;">
-                            <button id="zoom-in-btn" class="control-btn btn-primary" style="padding: 5px 12px; font-size: 14px;">放大</button>
-                            <button id="zoom-out-btn" class="control-btn btn-primary" style="padding: 5px 12px; font-size: 14px;">缩小</button>
+                    <div class="control-group pan-zoom-group">
+                        <div class="pan-zoom-row" style="display: flex; gap: 12px; justify-content: center; align-items: center;">
+                            <div class="pan-buttons" style="display: flex; gap: 8px;">
+                                <button id="pan-left-btn" class="control-btn btn-primary" style="padding: 5px 12px; font-size: 14px; background-color: #6d4c41;">向左</button>
+                                <button id="pan-right-btn" class="control-btn btn-primary" style="padding: 5px 12px; font-size: 14px; background-color: #6d4c41;">向右</button>
+                            </div>
+                            <div class="zoom-buttons" style="display: flex; gap: 8px;">
+                                <button id="zoom-in-btn" class="control-btn btn-primary" style="padding: 5px 12px; font-size: 14px; background-color: #795548;">放大</button>
+                                <button id="zoom-out-btn" class="control-btn btn-primary" style="padding: 5px 12px; font-size: 14px; background-color: #8d6e63;">缩小</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -201,13 +206,6 @@
                     </div>
                 </div>
                 
-                <!-- 数学原理 -->
-                <div class="panel-section">
-                    <h3>数学原理</h3>
-                    <div class="math-principle" id="math-principle-content">
-                        <!-- 动态显示当前算法的数学原理 -->
-                    </div>
-                </div>
             </section>
         </div>
         
@@ -217,7 +215,7 @@
             
             <div class="question-item">
                 <h4>问题 1：试探点的对称性</h4>
-                <p>观察两个试探点 a_try 和 b_try 在区间中的位置。它们是对称的吗？为什么算法要选择对称的试探点？</p>
+                <p>观察两个试探点 a<sub>try</sub> 和 b<sub>try</sub> 在区间中的位置。它们是对称的吗？为什么算法要选择对称的试探点？</p>
                 <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
             </div>
             
@@ -343,6 +341,14 @@
             });
 
             // 缩放控制
+            document.getElementById('pan-left-btn').addEventListener('click', () => {
+                AppState.visualizer.pan(-1);
+                updateUI();
+            });
+            document.getElementById('pan-right-btn').addEventListener('click', () => {
+                AppState.visualizer.pan(1);
+                updateUI();
+            });
             document.getElementById('zoom-in-btn').addEventListener('click', () => {
                 AppState.visualizer.zoom(1.2);
                 updateUI();
@@ -771,10 +777,12 @@
             
             const precisionLabel = document.querySelector('#precision-group label');
             if (algo === 'golden-section') {
+                document.getElementById('precision-group').style.visibility = 'visible';
                 document.getElementById('precision-group').style.display = 'flex';
                 document.getElementById('iterations-group').style.display = 'none';
                 precisionLabel.innerHTML = '精度 ε:';
             } else {
+                document.getElementById('precision-group').style.visibility = 'visible';
                 document.getElementById('precision-group').style.display = 'flex';
                 document.getElementById('iterations-group').style.display = 'flex';
                 precisionLabel.innerHTML = '修正系数 ε:';
@@ -874,7 +882,7 @@
             // 更新可视化
             AppState.visualizer.updateInterval(a, b);
             
-            if (AppState.runStatus === '未运行' || AppState.subStep === 0) {
+            if (AppState.runStatus === '未运行' || AppState.subStep === 0 || isComplete) {
                 AppState.visualizer.clearTrialPoints();
             } else if (AppState.currentTrialPoints) {
                 const options = {
@@ -919,7 +927,7 @@
             if (AppState.currentAlgorithm === 'golden-section') {
                 q4.textContent = '算法什么时候停止？最终区间 [a, b] 的长度与精度 ε 有什么关系？';
             } else {
-                q4.textContent = '算法什么时候停止？最终区间 [a, b] 的长度与总迭代次数 n 有什么关系？';
+                q4.textContent = '算法什么时候停止？最终区间 [a, b] 的长度与总迭代次数 N 有什么关系？';
             }
 
             // 更新控制按钮状态
@@ -927,41 +935,8 @@
             document.getElementById('pause-btn').disabled = !AppState.isPlaying;
             document.getElementById('step-btn').disabled = AppState.isPlaying || isComplete;
 
-            // 更新数学原理
-            updateMathPrinciple();
         }
 
-        function updateMathPrinciple() {
-            const content = document.getElementById('math-principle-content');
-            if (AppState.currentAlgorithm === 'golden-section') {
-                content.innerHTML = `
-                    <h4>黄金分割法</h4>
-                    <p>利用系数 ρ = (3 - √5) / 2 ≈ 0.382。每次迭代中试探点计算为：</p>
-                    <div class="math-formula">a<sub>try</sub> = a + ρ(b - a)</div>
-                    <div class="math-formula">b<sub>try</sub> = b - ρ(b - a)</div>
-                    <p>其中，a<sub>try</sub> ≈ a + 0.382(b - a)，b<sub>try</sub> ≈ b - 0.382(b - a)。</p>
-                    <p>区间缩小比例（1 - ρ）始终为 ≈ 0.618。</p>
-                `;
-            } else {
-                const N = AppState.solver.maxIterations;
-                const k = AppState.solver.currentIteration;
-                const eps = AppState.epsilon;
-                
-                content.innerHTML = `
-                    <h4>斐波那契搜索法</h4>
-                    <p><b>算法流程：</b></p>
-                    <ol style="padding-left: 20px; font-size: 0.9em;">
-                        <li>令 k=0, F₀=F₁=1, F<sub>n+2</sub>=F<sub>n+1</sub>+F<sub>n</sub></li>
-                        <li>若 k=N，输出 [a, b] = [a<sub>k</sub>, b<sub>k</sub>]</li>
-                        <li>l<sub>k</sub>=b<sub>k</sub>-a<sub>k</sub>, ρ<sub>k</sub>=1-F<sub>N-k</sub>/F<sub>N-k+1</sub>, 当 ρ<sub>k</sub>=0.5 时，ρ<sub>k</sub>=0.5-ε</li>
-                        <li>a<sub>try</sub>=a<sub>k</sub>+ρ<sub>k</sub>l<sub>k</sub>, b<sub>try</sub>=b<sub>k</sub>-ρ<sub>k</sub>l<sub>k</sub></li>
-                        <li>若 f(a<sub>try</sub>)>f(b<sub>try</sub>), 则 a<sub>k+1</sub>=a<sub>try</sub>, b<sub>k+1</sub>=b<sub>k</sub>；若 f(a<sub>try</sub>)<f(b<sub>try</sub>), 则 a<sub>k+1</sub>=a<sub>k</sub>, b<sub>k+1</sub>=b<sub>try</sub>；若 f(a<sub>try</sub>)=f(b<sub>try</sub>), 则 a<sub>k+1</sub>=a<sub>try</sub>, b<sub>k+1</sub>=b<sub>try</sub></li>
-                        <li>k=k+1，转 (2)</li>
-                    </ol>
-                    <p style="margin-top: 10px;">当前状态：k=${k}, N=${N}, ε=${eps}</p>
-                `;
-            }
-        }
     </script>
 </body>
 </html>

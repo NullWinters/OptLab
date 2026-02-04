@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算法介绍 - 黄金分割法与斐波那契数列法</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fffaf0;
+            color: #5d4037;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            color: #d84315;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.8em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8d6e63;
+            font-size: 1.2em;
+            margin-bottom: 50px;
+            border-bottom: 2px solid #ffcc80;
+            padding-bottom: 20px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 30px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #ffb300, #ff8f00);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            color: #d84315;
+            border-left: 5px solid #ffb300;
+            padding-left: 15px;
+            margin-top: 0;
+        }
+
+        .img-placeholder {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(135deg, #ffecb3, #ffcc80);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #5d4037;
+            margin: 30px 0;
+            border: 2px dashed #ffb300;
+        }
+
+        .img-placeholder.small {
+            height: 200px;
+        }
+
+        .img-caption {
+            text-align: center;
+            font-style: italic;
+            color: #8d6e63;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+
+        .comparison-table th {
+            background: #ffcc80;
+            color: #5d4037;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #ffecb3;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background-color: #fff8e1;
+        }
+
+        .highlight {
+            background-color: #fff8e1;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #ffb300;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 15px;
+            }
+
+            .section {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 2.2em;
+            }
+
+            .comparison-table {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back-btn">← 返回首页</a>
+
+    <h1>一维搜索算法：黄金分割法与斐波那契数列法</h1>
+    <div class="subtitle">经典优化算法详解与应用对比</div>
+
+    <!-- 一、历史背景 -->
+    <div class="section">
+        <h2>一、历史背景</h2>
+        <p><strong>黄金分割法</strong>（Golden Section
+            Search）起源于古希腊数学家欧几里得对"黄金比例"的研究。该比例（约0.618）在自然界和艺术中广泛存在，因其在分割区间时具有"对称性"和"比例不变性"，在优化理论中被发展为一种高效的一维搜索方法。20世纪中期，随着数值优化理论的发展，黄金分割法成为单谷函数极小化问题中最经典的直接搜索算法之一。
+        </p>
+
+        <!-- 配图位置 1: 斐波那契螺旋线（黄金螺旋） -->
+        <div class="img-placeholder">
+            <div>【配图位置：斐波那契螺旋线（黄金螺旋）】</div>
+            <div style="font-size: 0.8em; margin-top: 10px;">
+                建议图片：由斐波那契数列对应的矩形不断添加正方形构成的螺旋线
+            </div>
+        </div>
+        <div class="img-caption">图1：斐波那契螺旋线 - 自然界中常见的数学模式</div>
+
+        <p><strong>斐波那契数列法</strong>（Fibonacci Search）则源于13世纪意大利数学家斐波那契提出的"兔子繁殖问题"所定义的数列。20世纪50年代，J.
+            Kiefer等人发现利用斐波那契数列构造的搜索策略在给定函数评估次数下能达到最优的区间缩减效率，从而提出了斐波那契搜索法，被誉为"最优区间缩减策略"。
+        </p>
+
+        <!-- 配图位置 2: 向日葵花盘或松果的螺旋线图 -->
+        <div class="img-placeholder small">
+            <div>【配图位置：向日葵花盘螺旋线图】</div>
+            <div style="font-size: 0.8em; margin-top: 10px;">
+                建议图片：展示向日葵花盘中顺时针与逆时针螺旋的数量为相邻斐波那契数
+            </div>
+        </div>
+        <div class="img-caption">图2：向日葵花盘中的斐波那契数体现（如21与34条螺线）</div>
+    </div>
+
+    <!-- 二、算法概述与流程 -->
+    <div class="section">
+        <h2>二、算法概述与流程</h2>
+
+        <h3>1. 黄金分割法</h3>
+        <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，精度 \(\varepsilon\)</p>
+        <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
+
+        <div class="highlight">
+            <strong>流程概述：</strong>
+            <ul>
+                <li>设定比例常数 \(\rho = \frac{3 - \sqrt{5}}{2} \approx 0.382\)（即对称点比例）</li>
+                <li>每次迭代在区间内对称地选取两个试探点：</li>
+            </ul>
+            <p style="text-align: center;">\( a_{\text{try}} = a_k + \rho \cdot l_k,\quad b_{\text{try}} = b_k - \rho
+                \cdot l_k \)</p>
+            <p>其中 \( l_k = b_k - a_k \)</p>
+            <ul>
+                <li>比较 \( f(a_{\text{try}}) \) 与 \( f(b_{\text{try}}) \) 的大小，舍弃不包含极小值点的部分区间</li>
+                <li>重复直至区间长度小于精度 \(\varepsilon\)</li>
+            </ul>
+        </div>
+
+        <!-- 配图位置 3: 黄金分割比例示意图 -->
+        <div class="img-placeholder">
+            <div>【配图位置：黄金分割比例示意图】</div>
+            <div style="font-size: 0.8em; margin-top: 10px;">建议图片：展示一条线段按黄金比例（约0.618:1）分割的几何图形
+            </div>
+        </div>
+        <div class="img-caption">图3：黄金分割比例示意图 - 线段按约0.618:1的比例分割</div>
+
+        <h3>2. 斐波那契数列法</h3>
+        <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，迭代次数 \(N\)，修正系数 \(\varepsilon\)</p>
+        <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
+
+        <div class="highlight">
+            <strong>流程概述：</strong>
+            <ul>
+                <li>预先计算斐波那契数列 \( F_0 = F_1 = 1, F_{n+2} = F_{n+1} + F_n \)</li>
+                <li>在第 \(k\) 步使用比例：</li>
+            </ul>
+            <p style="text-align: center;">\( \rho_k = 1 - \frac{F_{N-k}}{F_{N-k+1}} \)</p>
+            <p>若 \(\rho_k = 0.5\)，则取 \(\rho_k = 0.5 - \varepsilon\) 以避免对称重复</p>
+            <ul>
+                <li>类似黄金分割法，对称取点并比较函数值，逐步缩小区间</li>
+                <li>固定迭代 \(N\) 次后结束</li>
+            </ul>
+        </div>
+
+        <!-- 配图位置 4: 斐波那契法搜索流程图 -->
+        <div class="img-placeholder">
+            <div>【配图位置：斐波那契法搜索流程图】</div>
+            <div style="font-size: 0.8em; margin-top: 10px;">
+                建议图片：清晰的算法流程图，展现从初始化、计算试探点到区间更新的完整逻辑
+            </div>
+        </div>
+        <div class="img-caption">图4：斐波那契数列法搜索流程图</div>
+    </div>
+
+    <!-- 三、算法数学原理 -->
+    <div class="section">
+        <h2>三、算法数学原理</h2>
+        <p>两种方法均基于<strong>单谷函数</strong>的性质：函数在极小值点左侧单调递减，右侧单调递增。</p>
+
+        <h3>黄金分割法：</h3>
+        <ul>
+            <li>每次缩小区间后，保留的点与新区间仍保持黄金比例，因此每次区间缩减比例恒为：</li>
+        </ul>
+        <p style="text-align: center;">\( \text{新区间长度} = \rho \times \text{原区间长度} \approx 0.618 \times
+            \text{原区间长度} \)</p>
+
+        <!-- 配图位置 5: 黄金分割法区间搜索示意图 -->
+        <div class="img-placeholder">
+            <div>【配图位置：黄金分割法区间搜索示意图】</div>
+            <div style="font-size: 0.8em; margin-top: 10px;">
+                建议图片：展示"缩小区间"核心步骤的示意图，包含函数曲线和标记的试探点
+            </div>
+        </div>
+        <div class="img-caption">图5：黄金分割法区间搜索过程示意图</div>
+
+        <h3>斐波那契数列法：</h3>
+        <ul>
+            <li>使用斐波那契数决定每次试探点的位置，使得在固定评估次数 \(N\) 下，最终区间长度最小</li>
+            <li>区间缩减比逐步变化，第 \(k\) 步比例为：</li>
+        </ul>
+        <p style="text-align: center;">\( \frac{F_{N-k-1}}{F_{N-k+1}} \)</p>
+        <ul>
+            <li>当 \(N \to \infty\) 时，斐波那契比例趋近于黄金比例</li>
+        </ul>
+    </div>
+
+    <!-- 四、算法性质对比 -->
+    <div class="section">
+        <h2>四、算法性质对比</h2>
+
+        <table class="comparison-table">
+            <thead>
+            <tr>
+                <th>特性</th>
+                <th>黄金分割法</th>
+                <th>斐波那契数列法</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><strong>比例固定性</strong></td>
+                <td>固定为 \(\rho \approx 0.382\)</td>
+                <td>比例随迭代变化</td>
+            </tr>
+            <tr>
+                <td><strong>收敛速度</strong></td>
+                <td>线性收敛（比例约0.618）</td>
+                <td>在固定次数下最优</td>
+            </tr>
+            <tr>
+                <td><strong>停止条件</strong></td>
+                <td>基于区间长度精度 \(\varepsilon\)</td>
+                <td>基于预设迭代次数 \(N\)</td>
+            </tr>
+            <tr>
+                <td><strong>函数评估次数</strong></td>
+                <td>每次迭代1次新评估</td>
+                <td>每次迭代1次新评估</td>
+            </tr>
+            <tr>
+                <td><strong>适用场景</strong></td>
+                <td>精度要求明确的情况</td>
+                <td>函数评估成本高，需控制总次数</td>
+            </tr>
+            <tr>
+                <td><strong>计算复杂度</strong></td>
+                <td>简单，无需预计算</td>
+                <td>需预计算斐波那契数列</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- 配图位置 6: 算法迭代过程对比图 -->
+        <div class="img-placeholder">
+            <div>【配图位置：算法迭代过程对比图】</div>
+            <div style="font-size: 0.8em; margin-top: 10px;">
+                建议图片：并列展示两种方法在前几次迭代中试探点在区间中的位置变化
+            </div>
+        </div>
+        <div class="img-caption">图6：黄金分割法与斐波那契数列法迭代过程对比</div>
+    </div>
+
+    <!-- 五、算法应用场景 -->
+    <div class="section">
+        <h2>五、算法应用场景</h2>
+
+        <!-- 配图位置 7: 一维函数优化应用示意图 -->
+        <div class="img-placeholder">
+            <div>【配图位置：一维函数优化应用示意图】</div>
+            <div style="font-size: 0.8em; margin-top: 10px;">
+                建议图片：展示一个单峰函数（如抛物线），标记出通过搜索算法逐步逼近的极小值点所在区间
+            </div>
+        </div>
+        <div class="img-caption">图7：一维函数优化问题示意图</div>
+
+        <h3>黄金分割法适用于：</h3>
+        <ul>
+            <li>对收敛精度有明确要求的工程优化问题</li>
+            <li>函数评估成本较低，可进行多次迭代</li>
+            <li>需要稳定、可预测的收敛行为的情况</li>
+        </ul>
+
+        <h3>斐波那契数列法适用于：</h3>
+        <ul>
+            <li>函数评估代价高昂（如实验、仿真），需严格控制总评估次数</li>
+            <li>预先知道可承受的最大迭代次数</li>
+            <li>对区间缩减效率要求极高，愿意为最优策略付出额外计算</li>
+        </ul>
+
+        <div class="highlight">
+            <strong>补充说明：</strong> 斐波那契搜索是黄金分割搜索的离散化最优形式，当迭代次数趋近无穷时，斐波那契法的缩减比会趋近黄金分割率。
+        </div>
+    </div>
+
+    <!-- 六、总结 -->
+    <div class="section">
+        <h2>六、总结</h2>
+        <p>黄金分割法与斐波那契数列法均是<strong>无导数一维搜索</strong>中的经典方法，适用于单谷函数的极小值定位。黄金分割法以其简单、稳定著称；斐波那契数列法则在固定评估次数下达到最优区间缩减效率。在实际应用中，可根据函数评估成本、精度要求与迭代限制灵活选择。
+        </p>
+
+        <div style="text-align: center; margin-top: 40px;">
+            <a href="index.html" class="back-btn">返回首页</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

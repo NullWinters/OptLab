@@ -143,6 +143,18 @@ export class OptimizationVisualizer {
     }
 
     /**
+     * 平移画布
+     * @param {number} direction 方向，-1 为向左，1 为向右
+     */
+    pan(direction) {
+        const [xMin, xMax] = this.currentDomain;
+        const width = xMax - xMin;
+        const step = width * 0.2 * direction;
+        this.currentDomain = [xMin + step, xMax + step];
+        this.drawFunction();
+    }
+
+    /**
      * 自动聚焦到给定区间，并留有一定的边距
      */
     autoZoom(a, b) {
@@ -152,108 +164,159 @@ export class OptimizationVisualizer {
     }
     
     updateInterval(a, b) {
-        this.intervalLayer.selectAll('*').remove();
-        
         const xA = this.xScale(a);
         const xB = this.xScale(b);
         const xMin = Math.min(xA, xB);
         const xMax = Math.max(xA, xB);
+        const duration = 400;
         
-        // 绘制阴影区域
-        this.intervalLayer.append('rect')
-            .attr('class', 'interval-viz')
-            .attr('x', xMin)
+        // 1. 绘制/更新阴影区域
+        const rectData = (a !== undefined && b !== undefined) ? [null] : [];
+        let rect = this.intervalLayer.selectAll('rect.interval-rect').data(rectData);
+        rect.exit().transition().duration(duration).style('opacity', 0).remove();
+        rect.enter().append('rect')
+            .attr('class', 'interval-rect')
             .attr('y', 0)
-            .attr('width', xMax - xMin)
             .attr('height', this.plotHeight)
-            .attr('fill', 'rgba(216, 67, 21, 0.05)');
+            .attr('fill', 'rgba(216, 67, 21, 0.05)')
+            .attr('x', xMin)
+            .attr('width', Math.max(0, xMax - xMin))
+            .style('opacity', 0)
+            .merge(rect)
+            .transition().duration(duration)
+            .attr('x', xMin)
+            .attr('width', Math.max(0, xMax - xMin))
+            .style('opacity', 1);
             
-        // 绘制边界线
-        [a, b].forEach((val, i) => {
-            const x = this.xScale(val);
-            this.intervalLayer.append('line')
-                .attr('class', 'interval-viz')
-                .attr('x1', x)
-                .attr('x2', x)
-                .attr('y1', 0)
-                .attr('y2', this.plotHeight)
-                .attr('stroke', '#e53935')
-                .attr('stroke-width', 2)
-                .attr('stroke-dasharray', '5,5');
-                
-            this.intervalLayer.append('text')
-                .attr('class', 'interval-viz')
-                .attr('x', x)
-                .attr('y', -10)
-                .attr('text-anchor', 'middle')
-                .attr('font-size', '12px')
-                .attr('font-weight', 'bold')
-                .attr('fill', '#e53935')
-                .text(`${i === 0 ? 'a' : 'b'}=${val.toFixed(3)}`);
-        });
+        // 2. 绘制/更新边界线
+        const lineData = (a !== undefined && b !== undefined) ? [
+            { val: a, id: 'a', label: 'a' },
+            { val: b, id: 'b', label: 'b' }
+        ] : [];
+        
+        let lines = this.intervalLayer.selectAll('line.interval-line').data(lineData, d => d.id);
+        lines.exit().transition().duration(duration).style('opacity', 0).remove();
+        lines.enter().append('line')
+            .attr('class', 'interval-line')
+            .attr('x1', d => this.xScale(d.val))
+            .attr('x2', d => this.xScale(d.val))
+            .attr('y1', 0)
+            .attr('y2', this.plotHeight)
+            .attr('stroke', '#e53935')
+            .attr('stroke-width', 2)
+            .attr('stroke-dasharray', '5,5')
+            .style('opacity', 0)
+            .merge(lines)
+            .transition().duration(duration)
+            .attr('x1', d => this.xScale(d.val))
+            .attr('x2', d => this.xScale(d.val))
+            .style('opacity', 1);
+            
+        // 3. 绘制/更新标签
+        let texts = this.intervalLayer.selectAll('text.interval-text').data(lineData, d => d.id);
+        texts.exit().transition().duration(duration).style('opacity', 0).remove();
+        texts.enter().append('text')
+            .attr('class', 'interval-text')
+            .attr('x', d => this.xScale(d.val))
+            .attr('y', -10)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '12px')
+            .attr('font-weight', 'bold')
+            .attr('fill', '#e53935')
+            .style('opacity', 0)
+            .merge(texts)
+            .transition().duration(duration)
+            .attr('x', d => this.xScale(d.val))
+            .text(d => `${d.label}=${d.val.toFixed(3)}`)
+            .style('opacity', 1);
     }
     
-    clearTrialPoints() {
-        this.trialPointsLayer.selectAll('*').remove();
+    clearTrialPoints(animated = true) {
+        if (animated) {
+            const duration = 400;
+            this.trialPointsLayer.selectAll('*').transition().duration(duration).style('opacity', 0).remove();
+        } else {
+            this.trialPointsLayer.selectAll('*').remove();
+        }
     }
     
     updateTrialPoints(a_try, b_try, calculateFunc, options = { showA: true, showB: true, showCompare: true }) {
-        this.clearTrialPoints();
-        
+        const duration = 400;
         const points = [];
-        if (options.showA) points.push({ label: 'a_try', x: a_try, color: '#f9a825' });
-        if (options.showB) points.push({ label: 'b_try', x: b_try, color: '#f9a825' });
+        if (options.showA) points.push({ id: 'a_try', label: 'a_try', x: a_try, color: '#f9a825' });
+        if (options.showB) points.push({ id: 'b_try', label: 'b_try', x: b_try, color: '#f9a825' });
         
-        points.forEach(p => {
-            const x = this.xScale(p.x);
-            const y = this.yScale(calculateFunc(p.x));
-            
-            // 垂直线
-            this.trialPointsLayer.append('line')
-                .attr('class', 'trial-viz')
-                .attr('x1', x)
-                .attr('x2', x)
-                .attr('y1', this.plotHeight)
-                .attr('y2', y)
-                .attr('stroke', p.color)
-                .attr('stroke-width', 1.5)
-                .attr('stroke-dasharray', '3,3');
-                
-            // 点
-            this.trialPointsLayer.append('circle')
-                .attr('class', 'trial-viz')
-                .attr('cx', x)
-                .attr('cy', y)
-                .attr('r', 6)
-                .attr('fill', p.color)
-                .attr('stroke', '#fff')
-                .attr('stroke-width', 2);
-                
-            // 标签
-            this.trialPointsLayer.append('text')
-                .attr('class', 'trial-viz')
-                .attr('x', x)
-                .attr('y', y - 15)
-                .attr('text-anchor', 'middle')
-                .attr('font-size', '11px')
-                .attr('fill', p.color)
-                .text(`${p.label}=${p.x.toFixed(3)}`);
-        });
-        
-        // 比较指示器
-        if (options.showCompare && options.showA && options.showB) {
-            const fa = calculateFunc(a_try);
-            const fb = calculateFunc(b_try);
-            const midX = this.xScale((a_try + b_try) / 2);
-            
-            this.trialPointsLayer.append('text')
-                .attr('class', 'trial-viz')
-                .attr('x', midX)
-                .attr('y', 20)
-                .attr('text-anchor', 'middle')
-                .attr('font-weight', 'bold')
-                .attr('fill', fa > fb ? '#e53935' : '#f9a825')
-                .text(fa > fb ? 'f(a_try) > f(b_try)' : 'f(a_try) < f(b_try)');
-        }
+        // 1. 处理引导线
+        let lines = this.trialPointsLayer.selectAll('line.trial-line').data(points, d => d.id);
+        lines.exit().transition().duration(duration).style('opacity', 0).remove();
+        lines.enter().append('line')
+            .attr('class', 'trial-line')
+            .attr('x1', d => this.xScale(d.x))
+            .attr('x2', d => this.xScale(d.x))
+            .attr('y1', this.plotHeight)
+            .attr('y2', this.plotHeight) // 从底部生长
+            .attr('stroke', d => d.color)
+            .attr('stroke-width', 1.5)
+            .attr('stroke-dasharray', '3,3')
+            .style('opacity', 0)
+            .merge(lines)
+            .transition().duration(duration)
+            .attr('x1', d => this.xScale(d.x))
+            .attr('x2', d => this.xScale(d.x))
+            .attr('y2', d => this.yScale(calculateFunc(d.x)))
+            .style('opacity', 1);
+
+        // 2. 处理试点
+        let circles = this.trialPointsLayer.selectAll('circle.trial-point').data(points, d => d.id);
+        circles.exit().transition().duration(duration).attr('r', 0).remove();
+        circles.enter().append('circle')
+            .attr('class', 'trial-point')
+            .attr('r', 0) // 从 0 变大
+            .attr('fill', d => d.color)
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2)
+            .attr('cx', d => this.xScale(d.x))
+            .attr('cy', d => this.yScale(calculateFunc(d.x)))
+            .merge(circles)
+            .transition().duration(duration)
+            .attr('cx', d => this.xScale(d.x))
+            .attr('cy', d => this.yScale(calculateFunc(d.x)))
+            .attr('r', 6);
+
+        // 3. 处理试点标签
+        let labels = this.trialPointsLayer.selectAll('text.trial-label').data(points, d => d.id);
+        labels.exit().transition().duration(duration).style('opacity', 0).remove();
+        labels.enter().append('text')
+            .attr('class', 'trial-label')
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '11px')
+            .attr('fill', d => d.color)
+            .attr('x', d => this.xScale(d.x))
+            .attr('y', d => this.yScale(calculateFunc(d.x)) - 5)
+            .style('opacity', 0)
+            .merge(labels)
+            .transition().duration(duration)
+            .attr('x', d => this.xScale(d.x))
+            .attr('y', d => this.yScale(calculateFunc(d.x)) - 15)
+            .text(d => `${d.label}=${d.x.toFixed(3)}`)
+            .style('opacity', 1);
+
+        // 4. 处理比较指示器
+        const compareData = (options.showCompare && options.showA && options.showB) ? [ { a_try, b_try } ] : [];
+        let compareText = this.trialPointsLayer.selectAll('text.compare-text').data(compareData);
+        compareText.exit().transition().duration(duration).style('opacity', 0).remove();
+        compareText.enter().append('text')
+            .attr('class', 'compare-text')
+            .attr('y', 20)
+            .attr('text-anchor', 'middle')
+            .attr('font-weight', 'bold')
+            .attr('x', d => this.xScale((d.a_try + d.b_try) / 2))
+            .style('opacity', 0)
+            .merge(compareText)
+            .transition().duration(duration)
+            .attr('x', d => this.xScale((d.a_try + d.b_try) / 2))
+            .attr('fill', d => calculateFunc(d.a_try) > calculateFunc(d.b_try) ? '#e53935' : '#f9a825')
+            .text(d => calculateFunc(d.a_try) > calculateFunc(d.b_try) ? 'f(a_try) > f(b_try)' : 'f(a_try) < f(b_try)')
+            .style('opacity', 1);
     }
 }
