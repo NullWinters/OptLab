@@ -7,6 +7,8 @@
 
     <!-- D3.js 可视化库 -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Math.js 科学计算库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
 
     <!-- 自定义样式 -->
     <link rel="stylesheet" href="styles/main.css">
@@ -76,9 +78,12 @@
             <h3>全局控制</h3>
             <div class="control-group">
                 <label for="function-select">测试函数:</label>
-                <select id="function-select" style="width: 100%;">
-                    <!-- 动态填充 -->
-                </select>
+                <div style="display: flex; gap: 5px;">
+                    <select id="function-select" style="flex: 1;">
+                        <!-- 动态填充 -->
+                    </select>
+                    <button id="custom-func-btn" class="control-btn btn-primary" style="padding: 5px 10px; font-size: 14px;">自定义</button>
+                </div>
             </div>
 
             <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -136,6 +141,36 @@
         </div>
         <div id="comparison-canvas"></div>
     </section>
+
+    <!-- 自定义函数模态框 -->
+    <div id="custom-func-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>自定义函数解析器 (math.js)</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body" style="text-align: left;">
+                <div class="input-group">
+                    <label for="custom-expr-input">输入函数表达式 f(x):</label>
+                    <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4" style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    <div id="expr-error" style="color: red; font-size: 0.9em; margin-top: 5px; min-height: 1.2em;"></div>
+                </div>
+                <div class="examples-section" style="margin-top: 15px;">
+                    <h4>示例表达式:</h4>
+                    <ul style="font-size: 0.9em; color: #666; padding-left: 20px;">
+                        <li>连续函数: <code>x^2 - 2*x + 1</code></li>
+                        <li>三角函数: <code>sin(x) + 0.5*x</code></li>
+                        <li>非连续(垂直渐近线): <code>1 / (x - 1)</code></li>
+                        <li>非连续(跳跃): <code>x < 0 ? -1 : 1</code> (支持三元运算符)</li>
+                        <li>绝对值: <code>abs(x)</code></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-custom-func" class="control-btn btn-primary">应用函数</button>
+            </div>
+        </div>
+    </div>
 
     <!-- 性能指标仪表盘 -->
     <section class="performance-dashboard" id="performance-dashboard" style="display: none;">
@@ -294,6 +329,62 @@
         document.getElementById('function-select').addEventListener('change', (e) => {
             AppState.selectedFuncId = e.target.value;
             doInit();
+        });
+
+        // 自定义函数
+        document.getElementById('custom-func-btn').addEventListener('click', () => {
+            document.getElementById('custom-func-modal').style.display = 'flex';
+        });
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            document.getElementById('custom-func-modal').style.display = 'none';
+        });
+
+        const customExprInput = document.getElementById('custom-expr-input');
+        const exprError = document.getElementById('expr-error');
+
+        document.getElementById('confirm-custom-func').addEventListener('click', () => {
+            const expr = customExprInput.value.trim();
+            if (!expr) {
+                exprError.textContent = '请输入函数表达式！';
+                return;
+            }
+
+            try {
+                const result = math.evaluate(expr, { x: 1 });
+                if (typeof result !== 'number' && typeof result !== 'object') {
+                    throw new Error("表达式计算结果无效");
+                }
+
+                const selectContainer = document.getElementById('function-select');
+                const customId = 'custom_' + Date.now();
+                
+                FunctionLibrary[customId] = {
+                    id: customId,
+                    name: "自定义函数",
+                    formula: "f(x) = " + expr,
+                    expression: expr,
+                    domain: [-10, 10]
+                };
+
+                const option = document.createElement('option');
+                option.value = customId;
+                option.textContent = `自定义：f(x) = ${expr}`;
+                selectContainer.insertBefore(option, selectContainer.lastElementChild);
+                selectContainer.value = customId;
+                
+                AppState.selectedFuncId = customId;
+                doInit();
+                
+                document.getElementById('custom-func-modal').style.display = 'none';
+                customExprInput.value = '';
+                exprError.textContent = '';
+            } catch (e) {
+                exprError.textContent = '错误: ' + e.message;
+            }
+        });
+
+        customExprInput.addEventListener('input', () => {
+            exprError.textContent = '';
         });
 
         // 黄金分割参数

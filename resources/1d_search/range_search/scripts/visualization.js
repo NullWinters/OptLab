@@ -2,6 +2,8 @@
  * 可视化引擎 - 基于 D3.js
  */
 
+import { smartSampling, detectDiscontinuities } from './function-utils.js';
+
 export class OptimizationVisualizer {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
@@ -75,8 +77,8 @@ export class OptimizationVisualizer {
             .text('f(x)');
     }
     
-    drawFunction(calculateFunc, domain) {
-        if (calculateFunc) this.currentFunc = calculateFunc;
+    drawFunction(funcIdOrExpr, domain) {
+        if (funcIdOrExpr) this.currentFunc = funcIdOrExpr;
         if (domain) this.currentDomain = [...domain];
         
         const func = this.currentFunc;
@@ -84,18 +86,23 @@ export class OptimizationVisualizer {
 
         if (!func) return;
 
-        // 生成数据
-        const data = [];
-        const step = (dom[1] - dom[0]) / 200;
+        // 使用智能采样获取分段数据
+        const segments = smartSampling(func, dom[0], dom[1], 1000);
+        
+        // 计算全局 y 轴范围，限制异常值
         let minY = Infinity, maxY = -Infinity;
+        segments.forEach(segment => {
+            segment.forEach(d => {
+                if (d.y < minY) minY = d.y;
+                if (d.y > maxY) maxY = d.y;
+            });
+        });
         
-        for (let x = dom[0]; x <= dom[1]; x += step) {
-            const y = func(x);
-            data.push({ x, y });
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-        }
-        
+        // 限制 Y 轴范围，避免无穷大导致绘制失败
+        const yLimit = 1000;
+        minY = Math.max(minY, -yLimit);
+        maxY = Math.min(maxY, yLimit);
+
         // 更新比例尺
         this.xScale.domain(dom);
         const yPadding = (maxY - minY) * 0.2 || 1;
@@ -118,15 +125,55 @@ export class OptimizationVisualizer {
         this.xAxisG.transition().duration(duration).call(d3.axisBottom(this.xScale));
         this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
             
-        // 更新曲线
+        // 绘制多段曲线
         const line = d3.line()
             .x(d => this.xScale(d.x))
             .y(d => this.yScale(d.y))
-            .curve(d3.curveMonotoneX);
+            .curve(d3.curveMonotoneX)
+            .defined(d => Math.abs(d.y) <= yLimit); // 过滤超出范围的点
             
-        this.functionPath.datum(data)
+        // 数据绑定与绘制
+        const paths = this.functionLayer.selectAll('path.curve').data(segments);
+        
+        paths.exit().remove();
+        
+        paths.enter().append('path')
+            .attr('class', 'curve')
+            .attr('fill', 'none')
+            .attr('stroke', '#d84315')
+            .attr('stroke-width', 2.5)
+            .merge(paths)
             .transition().duration(duration)
             .attr('d', line);
+
+        // 隐藏旧的 functionPath (如果有)
+        if (this.functionPath) this.functionPath.style('display', 'none');
+
+        // 间断点检测与标识
+        this.drawDiscontinuities(func, dom);
+    }
+
+    drawDiscontinuities(func, dom) {
+        const discontinuities = detectDiscontinuities(func, dom);
+        const duration = 400;
+
+        // 绘制垂直渐近线
+        const verticalAsymptotes = discontinuities.filter(d => d.type === 'vertical' || d.type === 'jump');
+        const vLines = this.functionLayer.selectAll('line.asymptote').data(verticalAsymptotes);
+
+        vLines.exit().remove();
+
+        vLines.enter().append('line')
+            .attr('class', 'asymptote')
+            .attr('stroke', '#ccc')
+            .attr('stroke-dasharray', '5,5')
+            .style('stroke-width', '1px')
+            .merge(vLines)
+            .transition().duration(duration)
+            .attr('x1', d => this.xScale(d.x))
+            .attr('x2', d => this.xScale(d.x))
+            .attr('y1', 0)
+            .attr('y2', this.plotHeight);
     }
 
     /**

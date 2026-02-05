@@ -7,6 +7,8 @@
     
     <!-- D3.js 可视化库 -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Math.js 科学计算库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
     
     <!-- 自定义样式 -->
     <link rel="stylesheet" href="styles/main.css">
@@ -48,55 +50,28 @@
                 <div id="custom-func-modal" class="modal" style="display: none;">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h3>自定义函数编辑器</h3>
+                            <h3>自定义函数解析器 (math.js)</h3>
                             <span class="close-modal">&times;</span>
                         </div>
                         <div class="modal-body">
-                            <div class="formula-preview">
-                                <span>f(x) = </span>
-                                <div id="formula-container" class="formula-display">
-                                    <span class="cursor"></span>
-                                </div>
+                            <div class="input-group">
+                                <label for="custom-expr-input">输入函数表达式 f(x):</label>
+                                <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4" style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px;">
+                                <div id="expr-error" style="color: red; font-size: 0.9em; margin-top: 5px; min-height: 1.2em;"></div>
                             </div>
-                            <div class="formula-controls">
-                                <div class="control-row">
-                                    <button class="formula-key" data-type="var" data-value="x">x</button>
-                                    <button class="formula-key" data-type="const" data-value="e">e</button>
-                                    <button class="formula-key" data-type="const" data-value="π">π</button>
-                                    <button class="formula-key" data-type="op" data-value="+">+</button>
-                                    <button class="formula-key" data-type="op" data-value="-">-</button>
-                                    <button class="formula-key" data-type="op" data-value="*">×</button>
-                                </div>
-                                <div class="control-row">
-                                    <button class="formula-key" data-type="num" data-value="1">1</button>
-                                    <button class="formula-key" data-type="num" data-value="2">2</button>
-                                    <button class="formula-key" data-type="num" data-value="3">3</button>
-                                    <button class="formula-key" data-type="num" data-value="4">4</button>
-                                    <button class="formula-key" data-type="num" data-value="5">5</button>
-                                    <button class="formula-key" data-type="num" data-value="6">6</button>
-                                    <button class="formula-key" data-type="num" data-value="7">7</button>
-                                    <button class="formula-key" data-type="num" data-value="8">8</button>
-                                    <button class="formula-key" data-type="num" data-value="9">9</button>
-                                    <button class="formula-key" data-type="num" data-value="0">0</button>
-                                    <button class="formula-key" data-type="num" data-value=".">.</button>
-                                </div>
-                                <div class="control-row">
-                                    <button class="formula-key" data-type="text" data-value="sin(x)">sinx</button>
-                                    <button class="formula-key" data-type="text" data-value="cos(x)">cosx</button>
-                                    <button class="formula-key" data-type="pow" data-value="pow">^</button>
-                                    <button class="formula-key" data-type="bracket" data-value="(">(</button>
-                                    <button class="formula-key" data-type="bracket" data-value=")">)</button>
-                                </div>
-                                <div class="control-row">
-                                    <button class="formula-key" data-type="nav" data-value="left">←</button>
-                                    <button class="formula-key" data-type="nav" data-value="right">→</button>
-                                    <button class="formula-key delete-key" data-type="action" data-value="delete">退格</button>
-                                    <button class="formula-key clear-key" data-type="action" data-value="clear">清空</button>
-                                </div>
+                            <div class="examples-section" style="margin-top: 15px;">
+                                <h4>示例表达式:</h4>
+                                <ul style="font-size: 0.9em; color: #666; padding-left: 20px;">
+                                    <li>连续函数: <code>x^2 - 2*x + 1</code></li>
+                                    <li>三角函数: <code>sin(x) + 0.5*x</code></li>
+                                    <li>非连续(垂直渐近线): <code>1 / (x - 1)</code></li>
+                                    <li>非连续(跳跃): <code>x < 0 ? -1 : 1</code> (支持三元运算符)</li>
+                                    <li>绝对值: <code>abs(x)</code></li>
+                                </ul>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button id="confirm-custom-func" class="control-btn btn-primary">确定</button>
+                            <button id="confirm-custom-func" class="control-btn btn-primary">应用函数</button>
                         </div>
                     </div>
                 </div>
@@ -373,7 +348,6 @@
             // 自定义函数按钮
             document.getElementById('custom-func-btn').addEventListener('click', () => {
                 document.getElementById('custom-func-modal').style.display = 'flex';
-                updateFormulaDisplay();
             });
 
             // 模态框关闭
@@ -382,290 +356,23 @@
             });
 
             // 自定义函数逻辑
-            const formulaContainer = document.getElementById('formula-container');
-            const cursor = formulaContainer.querySelector('.cursor');
-            
-            // 数据结构：递归数组
-            // 节点类型：{ type: 'text', value: 'x' }, { type: 'func', name: 'sin', children: [[]] }
-            // power: { type: 'pow', children: [[]] }
-            // log: { type: 'log', children: [[], []] } // [base, arg]
-            let formulaData = [];
-            let cursorPath = []; // 存储路径中的节点对象和子容器索引
-            let cursorIndex = 0; // 当前层级的索引
-            let currentArray = formulaData; // 当前操作的数组
-
-            function updateFormulaDisplay() {
-                formulaContainer.innerHTML = '';
-                renderList(formulaData, formulaContainer, []);
-                
-                // 确保光标在正确位置
-                if (cursorPath.length === 0) {
-                    insertCursorAt(formulaContainer, cursorIndex);
-                }
-            }
-
-            function renderList(list, container, path) {
-                list.forEach((node, index) => {
-                    // 如果光标在当前层级且位置在此
-                    if (isCursorAt(path, index)) {
-                        container.appendChild(cursor);
-                    }
-
-                    const el = document.createElement('span');
-                    el.className = 'formula-el';
-                    
-                    if (node.type === 'text') {
-                        let text = node.value;
-                        if (text === '*') text = '×';
-                        else if (text === 'sin(x)') text = 'sin x';
-                        else if (text === 'cos(x)') text = 'cos x';
-                        el.textContent = text;
-                        container.appendChild(el);
-                    } else if (node.type === 'pow') {
-                        renderComplexNode(node, container, [...path, index]);
-                    }
-                });
-
-                // 检查末尾光标
-                if (isCursorAt(path, list.length)) {
-                    container.appendChild(cursor);
-                }
-            }
-
-            function isCursorAt(path, index) {
-                if (path.length !== cursorPath.length) return false;
-                for (let i = 0; i < path.length; i++) {
-                    if (path[i].node !== cursorPath[i].node || path[i].childIdx !== cursorPath[i].childIdx) return false;
-                }
-                return cursorIndex === index;
-            }
-
-            function renderComplexNode(node, container, path) {
-                const wrapper = document.createElement('span');
-                wrapper.className = 'formula-complex';
-                
-                if (node.type === 'pow') {
-                    const sup = document.createElement('sup');
-                    sup.className = 'formula-power';
-                    const box = createBox(node.children[0], path, 0, node);
-                    sup.appendChild(box);
-                    wrapper.appendChild(sup);
-                }
-                
-                container.appendChild(wrapper);
-            }
-
-            function createBox(content, parentPath, childIdx, node) {
-                const box = document.createElement('span');
-                box.className = 'placeholder-box';
-                
-                // 检查此 box 是否是活跃路径的一部分
-                const isActive = cursorPath.length > parentPath.length && 
-                                 cursorPath[parentPath.length].node === node && 
-                                 cursorPath[parentPath.length].childIdx === childIdx;
-                
-                if (isActive) {
-                    box.classList.add('active');
-                    // 递归渲染子列表
-                    renderList(content, box, [...parentPath, { node, childIdx }]);
-                } else {
-                    if (content.length === 0) {
-                        // 保持空框样式
-                    } else {
-                        // 非活跃但有内容的框，简单渲染
-                        renderListStatic(content, box);
-                    }
-                }
-                
-                // 点击进入框内
-                box.addEventListener('mousedown', (e) => {
-                    e.stopPropagation();
-                    cursorPath = [...parentPath, { node, childIdx }];
-                    cursorIndex = content.length;
-                    currentArray = content;
-                    updateFormulaDisplay();
-                });
-
-                return box;
-            }
-
-            function renderListStatic(list, container) {
-                list.forEach(node => {
-                    const el = document.createElement('span');
-                    if (node.type === 'text') {
-                        let text = node.value;
-                        if (text === '*') text = '×';
-                        else if (text === 'sin(x)') text = 'sin x';
-                        else if (text === 'cos(x)') text = 'cos x';
-                        el.textContent = text;
-                        container.appendChild(el);
-                    } else if (node.type === 'pow') {
-                        const sup = document.createElement('sup');
-                        sup.className = 'formula-power';
-                        renderListStatic(node.children[0], sup);
-                        el.appendChild(sup);
-                        container.appendChild(el);
-                    }
-                });
-            }
-
-            function insertCursorAt(container, index) {
-                // 这个函数现在通过 renderList 自动处理了
-            }
-
-            document.querySelectorAll('.formula-key').forEach(key => {
-                key.addEventListener('click', () => {
-                    const type = key.dataset.type;
-                    const value = key.dataset.value;
-
-                    if (type === 'nav') {
-                        moveCursor(value);
-                    } else if (type === 'action') {
-                        if (value === 'delete') {
-                            handleDelete();
-                        } else if (value === 'clear') {
-                            formulaData = [];
-                            cursorPath = [];
-                            cursorIndex = 0;
-                            currentArray = formulaData;
-                        }
-                    } else if (type === 'pow') {
-                        const newNode = { type: 'pow', children: [[]] };
-                        currentArray.splice(cursorIndex, 0, newNode);
-                        cursorPath.push({ node: newNode, childIdx: 0 });
-                        currentArray = newNode.children[0];
-                        cursorIndex = 0;
-                    } else {
-                        // 幂运算限制：仅允许输入数字作为指数
-                        if (cursorPath.length > 0) {
-                            const last = cursorPath[cursorPath.length - 1];
-                            if (last.node.type === 'pow') {
-                                if (type !== 'num' || value === '.') return;
-                            }
-                        }
-                        currentArray.splice(cursorIndex, 0, { type: 'text', value });
-                        cursorIndex++;
-                    }
-                    updateFormulaDisplay();
-                });
-            });
-
-            function moveCursor(dir) {
-                if (dir === 'left') {
-                    if (cursorIndex > 0) {
-                        const prevNode = currentArray[cursorIndex - 1];
-                        if (prevNode && prevNode.type === 'pow') {
-                            // 进入右侧最近的子框
-                            const lastChildIdx = prevNode.children.length - 1;
-                            cursorPath.push({ node: prevNode, childIdx: lastChildIdx });
-                            currentArray = prevNode.children[lastChildIdx];
-                            cursorIndex = currentArray.length;
-                        } else {
-                            cursorIndex--;
-                        }
-                    } else if (cursorPath.length > 0) {
-                        // 退出当前框
-                        const last = cursorPath.pop();
-                        if (last.childIdx > 0) {
-                            // 移入上一个子框
-                            last.childIdx--;
-                            cursorPath.push(last);
-                            currentArray = last.node.children[last.childIdx];
-                            cursorIndex = currentArray.length;
-                        } else {
-                            // 彻底退出该节点，放在节点之前
-                            findCurrentArray();
-                            const idx = currentArray.findIndex(n => n === last.node);
-                            cursorIndex = idx !== -1 ? idx : 0;
-                        }
-                    }
-                } else if (dir === 'right') {
-                    if (cursorIndex < currentArray.length) {
-                        const nextNode = currentArray[cursorIndex];
-                        if (nextNode && nextNode.type === 'pow') {
-                            // 进入第一个子框
-                            cursorPath.push({ node: nextNode, childIdx: 0 });
-                            currentArray = nextNode.children[0];
-                            cursorIndex = 0;
-                        } else {
-                            cursorIndex++;
-                        }
-                    } else if (cursorPath.length > 0) {
-                        // 退出当前框
-                        const last = cursorPath.pop();
-                        if (last.childIdx < last.node.children.length - 1) {
-                            // 移入下一个子框
-                            last.childIdx++;
-                            cursorPath.push(last);
-                            currentArray = last.node.children[last.childIdx];
-                            cursorIndex = 0;
-                        } else {
-                            // 彻底退出该节点，放在节点之后
-                            findCurrentArray();
-                            const idx = currentArray.findIndex(n => n === last.node);
-                            cursorIndex = idx !== -1 ? idx + 1 : currentArray.length;
-                        }
-                    }
-                }
-                updateFormulaDisplay();
-            }
-
-            function handleDelete() {
-                if (cursorIndex > 0) {
-                    const nodeToDelete = currentArray[cursorIndex - 1];
-                    currentArray.splice(cursorIndex - 1, 1);
-                    cursorIndex--;
-                } else if (cursorPath.length > 0) {
-                    // 如果在框的开头按退格，尝试退出框
-                    moveCursor('left');
-                }
-            }
-
-            function findCurrentArray() {
-                let arr = formulaData;
-                for (const p of cursorPath) {
-                    arr = p.node.children[p.childIdx];
-                }
-                currentArray = arr;
-                return arr;
-            }
-
-            // 键盘监听
-            window.addEventListener('keydown', (e) => {
-                if (document.getElementById('custom-func-modal').style.display === 'flex') {
-                    if (e.key === 'ArrowLeft') {
-                        e.preventDefault();
-                        moveCursor('left');
-                    } else if (e.key === 'ArrowRight') {
-                        e.preventDefault();
-                        moveCursor('right');
-                    } else if (e.key === 'Backspace') {
-                        e.preventDefault();
-                        handleDelete();
-                        updateFormulaDisplay();
-                    }
-                }
-            });
+            const customExprInput = document.getElementById('custom-expr-input');
+            const exprError = document.getElementById('expr-error');
 
             document.getElementById('confirm-custom-func').addEventListener('click', () => {
-                if (formulaData.length === 0) {
-                    alert('请输入函数表达式！');
+                const expr = customExprInput.value.trim();
+                if (!expr) {
+                    exprError.textContent = '请输入函数表达式！';
                     return;
                 }
 
                 try {
-                    const jsFormula = nodesToJS(formulaData);
-                    const displayFormula = nodesToDisplay(formulaData);
-
-                    // 验证合法性
+                    // 验证表达式合法性
                     const testX = 1;
-                    const testFunc = new Function('x', `return ${jsFormula}`);
-                    const testVal = testFunc(testX);
+                    const result = math.evaluate(expr, { x: testX });
                     
-                    if (isNaN(testVal) && !isNaN(testX)) {
-                         // 可能是在定义域外，再试一个点
-                         const testVal2 = testFunc(2);
-                         if (isNaN(testVal2)) throw new Error("表达式计算结果非数字 (NaN)");
+                    if (typeof result !== 'number' && typeof result !== 'object') {
+                         throw new Error("表达式计算结果无效");
                     }
 
                     // 添加到下拉列表
@@ -675,14 +382,14 @@
                     FunctionLibrary[customId] = {
                         id: customId,
                         name: "自定义函数",
-                        formula: "f(x) = " + displayFormula,
-                        calculate: testFunc,
+                        formula: "f(x) = " + expr,
+                        expression: expr,
                         domain: [-5, 5]
                     };
 
                     const option = document.createElement('option');
                     option.value = customId;
-                    option.textContent = `自定义：f(x) = ${nodesToText(formulaData)}`;
+                    option.textContent = `自定义：f(x) = ${expr}`;
                     selectContainer.insertBefore(option, selectContainer.lastElementChild);
                     selectContainer.value = customId;
                     
@@ -690,84 +397,18 @@
                     resetApp();
                     
                     document.getElementById('custom-func-modal').style.display = 'none';
-                    formulaData = [];
-                    cursorPath = [];
-                    cursorIndex = 0;
-                    currentArray = formulaData;
-                    updateFormulaDisplay();
+                    customExprInput.value = '';
+                    exprError.textContent = '';
 
                 } catch (e) {
-                    // 尝试定位非法输入
-                    let errorMsg = '函数表达式不合法，请检查！\n';
-                    if (e.message.includes('Unexpected token') || e.message.includes('is not defined')) {
-                        errorMsg += '可能的错误位置：' + findErrorContext(formulaData);
-                    } else {
-                        errorMsg += '错误详情：' + e.message;
-                    }
-                    alert(errorMsg);
+                    exprError.textContent = '错误: ' + e.message;
                 }
             });
 
-            function nodesToJS(nodes) {
-                let res = "";
-                nodes.forEach(node => {
-                    if (node.type === 'text') {
-                        if (node.value === 'e') res += "Math.E";
-                        else if (node.value === 'π') res += "Math.PI";
-                        else if (node.value === 'sin(x)') res += "Math.sin(x)";
-                        else if (node.value === 'cos(x)') res += "Math.cos(x)";
-                        else res += node.value;
-                    } else if (node.type === 'pow') {
-                        const exp = nodesToJS(node.children[0]);
-                        res += `**(${exp || '1'})`;
-                    }
-                });
-                return res;
-            }
-
-            function nodesToDisplay(nodes) {
-                let res = "";
-                nodes.forEach(node => {
-                    if (node.type === 'text') {
-                        if (node.value === '*') res += '×';
-                        else if (node.value === 'sin(x)') res += 'sin x';
-                        else if (node.value === 'cos(x)') res += 'cos x';
-                        else res += node.value;
-                    } else if (node.type === 'pow') {
-                        res += `<sup>${nodesToDisplay(node.children[0])}</sup>`;
-                    }
-                });
-                return res;
-            }
-            
-            function nodesToText(nodes) {
-                let res = "";
-                nodes.forEach(node => {
-                    if (node.type === 'text') {
-                        if (node.value === 'sin(x)') res += 'sin x';
-                        else if (node.value === 'cos(x)') res += 'cos x';
-                        else res += node.value;
-                    } else if (node.type === 'pow') {
-                        res += `^(${nodesToText(node.children[0])})`;
-                    }
-                });
-                return res;
-            }
-
-            function findErrorContext(nodes) {
-                // 简单的启发式定位
-                let text = nodesToText(nodes);
-                if (!text.includes('x')) return "缺少变量 x";
-                // 检查括号匹配
-                let stack = 0;
-                for (let char of text) {
-                    if (char === '(') stack++;
-                    if (char === ')') stack--;
-                    if (stack < 0) return "括号不匹配 (多余的右括号)";
-                }
-                if (stack > 0) return "括号不匹配 (未闭合的左括号)";
-                return text;
-            }
+            // 监听输入框，清除错误提示
+            customExprInput.addEventListener('input', () => {
+                exprError.textContent = '';
+            });
         }
 
         function switchAlgorithm(algo) {
