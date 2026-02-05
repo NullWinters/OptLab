@@ -14,8 +14,8 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.convergenceLayer = this.plot.append('g').attr('class', 'convergence-layer').style('display', 'none');
     }
 
-    // 绘制双轨迹对比
-    drawDualTrajectories(goldenHistory, fibHistory, calculateFunc) {
+    // 绘制三算法轨迹对比
+    drawDualTrajectories(goldenHistory, fibHistory, bisHistory) {
         this.convergenceLayer.style('display', 'none');
         this.functionLayer.style('display', 'block');
         this.intervalLayer.style('display', 'block');
@@ -23,14 +23,14 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.axisLayer.style('display', 'block');
         this.labelLayer.style('display', 'block');
 
-        // 这里我们可以根据需求决定如何展示双轨迹
-        // 方案一：只展示当前的区间，但用两种颜色标识
-        
         const lastG = (goldenHistory && goldenHistory.length > 0) ? goldenHistory[goldenHistory.length - 1] : null;
         this.drawInterval(lastG ? lastG.a : undefined, lastG ? lastG.b : undefined, '#d84315', 'G', 0);
 
         const lastF = (fibHistory && fibHistory.length > 0) ? fibHistory[fibHistory.length - 1] : null;
-        this.drawInterval(lastF ? lastF.a : undefined, lastF ? lastF.b : undefined, '#f9a825', 'F', 20); // 偏移一点文字位置
+        this.drawInterval(lastF ? lastF.a : undefined, lastF ? lastF.b : undefined, '#f9a825', 'F', 20);
+
+        const lastB = (bisHistory && bisHistory.length > 0) ? bisHistory[bisHistory.length - 1] : null;
+        this.drawInterval(lastB ? lastB.a : undefined, lastB ? lastB.b : undefined, '#6d4c41', 'B', 40);
     }
 
     drawInterval(a, b, color, labelPrefix, textOffset) {
@@ -102,7 +102,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
     }
 
     // 绘制收敛速度对比 (区间长度随迭代次数变化)
-    drawConvergenceComparison(goldenHistory, fibHistory, yScaleType = 'log', onYLabelClick = null) {
+    drawConvergenceComparison(goldenHistory, fibHistory, bisHistory, yScaleType = 'log', onYLabelClick = null) {
         // 切换层级显示
         this.functionLayer.style('display', 'none');
         this.intervalLayer.style('display', 'none');
@@ -114,13 +114,16 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         // 准备数据
         const gData = goldenHistory.map((d, i) => ({ x: i, y: Math.abs(d.b - d.a) }));
         const fData = fibHistory.map((d, i) => ({ x: i, y: Math.abs(d.b - d.a) }));
+        const bData = bisHistory.map((d, i) => ({ x: i, y: Math.abs(d.b - d.a) }));
         this.gData = gData;
         this.fData = fData;
+        this.bData = bData;
 
-        const maxIter = Math.max(gData.length, fData.length, 1);
+        const maxIter = Math.max(gData.length, fData.length, bData.length, 1);
         const maxLen = Math.max(
             gData.length > 0 ? gData[0].y : 0,
             fData.length > 0 ? fData[0].y : 0,
+            bData.length > 0 ? bData[0].y : 0,
             0.1
         );
 
@@ -136,6 +139,8 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
                 .attr('fill', 'none').attr('stroke', '#d84315').attr('stroke-width', 2);
             this.convFibPath = this.convPathsG.append('path')
                 .attr('fill', 'none').attr('stroke', '#f9a825').attr('stroke-width', 2);
+            this.convBisPath = this.convPathsG.append('path')
+                .attr('fill', 'none').attr('stroke', '#6d4c41').attr('stroke-width', 2);
 
             this.convLegendG = this.convRoot.append('g').attr('class', 'conv-legend')
                 .attr('transform', `translate(${this.plotWidth - 120}, 20)`);
@@ -143,6 +148,8 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             this.convLegendG.append('text').attr('x', 20).attr('y', 12).text('黄金分割法').attr('font-size', '12px');
             this.convLegendG.append('rect').attr('x', 0).attr('y', 25).attr('width', 15).attr('height', 15).attr('fill', '#f9a825');
             this.convLegendG.append('text').attr('x', 20).attr('y', 37).text('斐波那契法').attr('font-size', '12px');
+            this.convLegendG.append('rect').attr('x', 0).attr('y', 50).attr('width', 15).attr('height', 15).attr('fill', '#6d4c41');
+            this.convLegendG.append('text').attr('x', 20).attr('y', 62).text('二分法').attr('font-size', '12px');
 
             this.convXLabel = this.convRoot.append('text')
                 .attr('x', this.plotWidth / 2)
@@ -198,6 +205,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
 
         this.convGoldenPath.datum(gData).transition().duration(duration).attr('d', line);
         this.convFibPath.datum(fData).transition().duration(duration).attr('d', line);
+        this.convBisPath.datum(bData).transition().duration(duration).attr('d', line);
     }
 
     /**
@@ -228,6 +236,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .call(newType === 'log' ? d3.axisLeft(this.convYScale).ticks(10, "~e") : d3.axisLeft(this.convYScale));
         this.convGoldenPath.transition().duration(duration).attr('d', line);
         this.convFibPath.transition().duration(duration).attr('d', line);
+        this.convBisPath.transition().duration(duration).attr('d', line);
 
         this.convYLabel.text(`区间长度 |b-a| (${newType === 'log' ? '对数刻度' : '普通刻度'})`);
         return newType;
@@ -249,6 +258,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         const line = d3.line().x(d => this.convXScale(d.x)).y(d => this.convYScale(Math.max(d.y, 1e-7)));
         this.convGoldenPath.transition().duration(duration).attr('d', line);
         this.convFibPath.transition().duration(duration).attr('d', line);
+        this.convBisPath.transition().duration(duration).attr('d', line);
     }
 
     /**
@@ -267,6 +277,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         const line = d3.line().x(d => this.convXScale(d.x)).y(d => this.convYScale(Math.max(d.y, 1e-7)));
         this.convGoldenPath.transition().duration(duration).attr('d', line);
         this.convFibPath.transition().duration(duration).attr('d', line);
+        this.convBisPath.transition().duration(duration).attr('d', line);
     }
 
     clearComparisonLayers() {
@@ -274,10 +285,36 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.fibonacciLayer.selectAll('*').remove();
     }
 
-    updateDualTrialPoints(gPoints, fPoints, calculateFunc, options) {
-        // 不再全局清空，交给各子方法进行数据驱动更新
+    updateTripleTrialPoints(gPoints, fPoints, bAlgo, calculateFunc, options) {
+        // 黄金分割 G: 红色 yOffset=0
         this.drawAlgorithmTrialPoints(gPoints, calculateFunc, '#d84315', 'G', options, 0);
-        this.drawAlgorithmTrialPoints(fPoints, calculateFunc, '#f9a825', 'F', options, 15);
+        // 斐波那契 F: 琥珀色 yOffset=20 (增加间距)
+        this.drawAlgorithmTrialPoints(fPoints, calculateFunc, '#f9a825', 'F', options, 20);
+        
+        // 二分法 B: 棕色 yOffset=40
+        if (!bAlgo) {
+            // 清理二分法的试点相关元素
+            this.trialPointsLayer.selectAll('line.trial-line-B').remove();
+            this.trialPointsLayer.selectAll('circle.trial-point-B').remove();
+            this.trialPointsLayer.selectAll('text.trial-label-B').remove();
+            this.trialPointsLayer.selectAll('text.compare-text-B').remove();
+            return;
+        }
+
+        const bOptions = {
+            showEndDerivs: options.showA,
+            showMidDeriv: options.showB,
+            showCompare: options.showCompare
+        };
+        this.updateBisectionPoints(
+            bAlgo.a, bAlgo.b, bAlgo.getMidpoint(),
+            calculateFunc,
+            x => bAlgo.getDerivative(x),
+            bOptions,
+            40, // yOffset
+            '#6d4c41', // customColor
+            'B' // labelPrefix
+        );
     }
 
     drawAlgorithmTrialPoints(points, calculateFunc, color, labelPrefix, options, yOffset) {

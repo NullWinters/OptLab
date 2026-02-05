@@ -1,34 +1,40 @@
 import { GoldenSectionSearch } from './golden-section.js';
 import { FibonacciSearch } from './fibonacci-search.js';
+import { BisectionSearch } from './bisection-search.js';
 
 export class ComparisonController {
     constructor() {
         this.algorithms = {
             golden: null,
-            fibonacci: null
+            fibonacci: null,
+            bisection: null
         };
         this.histories = {
             golden: [],
-            fibonacci: []
+            fibonacci: [],
+            bisection: []
         };
         this.isPlaying = false;
         this.syncMode = 'synchronous'; // 'independent' or 'synchronous'
     }
 
     initAlgorithms(config) {
-        const { func, a, b, goldenEps, fibEps, fibN } = config;
+        const { func, expr, a, b, goldenEps, fibEps, fibN, bisEps } = config;
         
         this.algorithms.golden = new GoldenSectionSearch(func, a, b, goldenEps);
         this.algorithms.fibonacci = new FibonacciSearch(func, a, b, fibEps, fibN);
+        this.algorithms.bisection = new BisectionSearch(expr || func, a, b, bisEps);
         
         this.resetHistories();
         this.recordStep('golden');
         this.recordStep('fibonacci');
+        this.recordStep('bisection');
     }
 
     resetHistories() {
         this.histories.golden = [];
         this.histories.fibonacci = [];
+        this.histories.bisection = [];
     }
 
     recordStep(type) {
@@ -53,7 +59,8 @@ export class ComparisonController {
     stepBoth() {
         const gMoved = this.step('golden');
         const fMoved = this.step('fibonacci');
-        return gMoved || fMoved;
+        const bMoved = this.step('bisection');
+        return gMoved || fMoved || bMoved;
     }
 
     reset() {

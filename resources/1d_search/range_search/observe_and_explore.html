@@ -19,7 +19,7 @@
         <!-- 页面头部 -->
         <header class="header">
             <h1>一维优化算法 - 区间搜索教学实验</h1>
-            <p class="subtitle">观察与探索：黄金分割法与斐波那契搜索法过程演示</p>
+            <p class="subtitle">观察与探索：黄金分割法、斐波那契搜索法与二分法过程演示</p>
         </header>
         
         <!-- 导航栏 -->
@@ -134,6 +134,9 @@
                         <button class="algo-btn" id="fibonacci-btn">
                             斐波那契数列法
                         </button>
+                        <button class="algo-btn" id="bisection-btn">
+                            二分法
+                        </button>
                     </div>
                 </div>
                 
@@ -218,6 +221,7 @@
         import { FunctionLibrary, calculateFunction } from './scripts/function-utils.js';
         import { GoldenSectionSearch } from './scripts/golden-section.js';
         import { FibonacciSearch } from './scripts/fibonacci-search.js';
+        import { BisectionSearch } from './scripts/bisection-search.js';
         import { OptimizationVisualizer } from './scripts/visualization.js';
 
         // 应用程序状态
@@ -273,6 +277,9 @@
             });
             document.getElementById('fibonacci-btn').addEventListener('click', () => {
                 switchAlgorithm('fibonacci');
+            });
+            document.getElementById('bisection-btn').addEventListener('click', () => {
+                switchAlgorithm('bisection');
             });
 
             // 控制按钮
@@ -415,9 +422,10 @@
             AppState.currentAlgorithm = algo;
             document.getElementById('golden-section-btn').classList.toggle('active', algo === 'golden-section');
             document.getElementById('fibonacci-btn').classList.toggle('active', algo === 'fibonacci');
+            document.getElementById('bisection-btn').classList.toggle('active', algo === 'bisection');
             
             const precisionLabel = document.querySelector('#precision-group label');
-            if (algo === 'golden-section') {
+            if (algo === 'golden-section' || algo === 'bisection') {
                 document.getElementById('precision-group').style.visibility = 'visible';
                 document.getElementById('precision-group').style.display = 'flex';
                 document.getElementById('iterations-group').style.display = 'none';
@@ -437,12 +445,17 @@
             AppState.runStatus = '未运行';
             AppState.subStep = 0;
             AppState.currentTrialPoints = null;
-            const func = x => calculateFunction(x, AppState.functionType);
+            
+            const funcType = AppState.functionType;
+            const expr = FunctionLibrary[funcType].expression || FunctionLibrary[funcType].calculate;
+            const func = x => calculateFunction(x, funcType);
             
             if (AppState.currentAlgorithm === 'golden-section') {
                 AppState.solver = new GoldenSectionSearch(func, AppState.a, AppState.b, AppState.epsilon);
-            } else {
+            } else if (AppState.currentAlgorithm === 'fibonacci') {
                 AppState.solver = new FibonacciSearch(func, AppState.a, AppState.b, AppState.epsilon, AppState.n);
+            } else {
+                AppState.solver = new BisectionSearch(expr, AppState.a, AppState.b, AppState.epsilon);
             }
 
             AppState.visualizer.drawFunction(func, FunctionLibrary[AppState.functionType].domain);
@@ -491,28 +504,36 @@
             // 推进子步骤
             AppState.subStep++;
             
-            if (AppState.subStep === 1) {
-                // 开始新一轮迭代前的准备：获取试探点
-                AppState.currentTrialPoints = AppState.solver.getTrialPoints();
-            }
-
-            let shouldContinue = true;
-            if (AppState.subStep === 4) {
-                // 执行真正的算法迭代（更新 a, b）
-                const moved = AppState.solver.iterate();
-                if (moved) {
-                    const { a, b } = AppState.solver;
-                    AppState.visualizer.autoZoom(a, b);
+            if (AppState.currentAlgorithm === 'bisection') {
+                // 二分法子步骤处理
+                if (AppState.subStep === 4) {
+                    const moved = AppState.solver.iterate();
+                    if (moved) {
+                        const { a, b } = AppState.solver;
+                        AppState.visualizer.autoZoom(a, b);
+                    }
+                    AppState.subStep = 0;
+                    if (AppState.solver.isComplete) return false;
                 }
-                // 迭代完成，重置子步骤
-                AppState.subStep = 0;
-                if (AppState.solver.isComplete) {
-                    shouldContinue = false;
+            } else {
+                // 黄金分割和斐波那契子步骤处理
+                if (AppState.subStep === 1) {
+                    AppState.currentTrialPoints = AppState.solver.getTrialPoints();
+                }
+
+                if (AppState.subStep === 4) {
+                    const moved = AppState.solver.iterate();
+                    if (moved) {
+                        const { a, b } = AppState.solver;
+                        AppState.visualizer.autoZoom(a, b);
+                    }
+                    AppState.subStep = 0;
+                    if (AppState.solver.isComplete) return false;
                 }
             }
             
             updateUI();
-            return shouldContinue;
+            return true;
         }
 
         function updateUI() {
@@ -525,18 +546,26 @@
             
             if (AppState.runStatus === '未运行' || AppState.subStep === 0 || isComplete) {
                 AppState.visualizer.clearTrialPoints();
-            } else if (AppState.currentTrialPoints) {
-                const options = {
-                    showA: AppState.subStep >= 1,
-                    showB: AppState.subStep >= 2,
-                    showCompare: AppState.subStep >= 3
-                };
-                AppState.visualizer.updateTrialPoints(
-                    AppState.currentTrialPoints.a_try, 
-                    AppState.currentTrialPoints.b_try, 
-                    func, 
-                    options
-                );
+            } else {
+                if (AppState.currentAlgorithm === 'bisection') {
+                    AppState.visualizer.updateBisectionPoints(a, b, AppState.solver.getMidpoint(), func, x => AppState.solver.getDerivative(x), {
+                        showEndDerivs: AppState.subStep >= 1,
+                        showMidDeriv: AppState.subStep >= 2,
+                        showCompare: AppState.subStep >= 3
+                    });
+                } else if (AppState.currentTrialPoints) {
+                    const options = {
+                        showA: AppState.subStep >= 1,
+                        showB: AppState.subStep >= 2,
+                        showCompare: AppState.subStep >= 3
+                    };
+                    AppState.visualizer.updateTrialPoints(
+                        AppState.currentTrialPoints.a_try, 
+                        AppState.currentTrialPoints.b_try, 
+                        func, 
+                        options
+                    );
+                }
             }
 
             // 更新表格
@@ -553,7 +582,7 @@
                 ['区间长度', Math.abs(b - a).toFixed(4)],
             ];
             
-            if (AppState.currentAlgorithm === 'golden-section') {
+            if (AppState.currentAlgorithm === 'golden-section' || AppState.currentAlgorithm === 'bisection') {
                 data.push(['目标精度', AppState.epsilon.toFixed(4)]);
             } else {
                 data.push(['总迭代次数', AppState.n]);
@@ -565,7 +594,7 @@
 
             // 更新引导问题 4
             const q4 = document.getElementById('question-4-text');
-            if (AppState.currentAlgorithm === 'golden-section') {
+            if (AppState.currentAlgorithm === 'golden-section' || AppState.currentAlgorithm === 'bisection') {
                 q4.textContent = '算法什么时候停止？最终区间 [a, b] 的长度与精度 ε 有什么关系？';
             } else {
                 q4.textContent = '算法什么时候停止？最终区间 [a, b] 的长度与总迭代次数 N 有什么关系？';

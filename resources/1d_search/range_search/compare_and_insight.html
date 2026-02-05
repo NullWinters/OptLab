@@ -19,7 +19,7 @@
     <!-- 页面头部 -->
     <header class="header">
         <h1>一维优化算法 - 区间搜索教学实验</h1>
-        <p class="subtitle">对比与洞察：黄金分割法 vs 斐波那契搜索法</p>
+        <p class="subtitle">对比与洞察：黄金分割法 vs 斐波那契搜索法 vs 二分法</p>
     </header>
 
     <!-- 导航栏 -->
@@ -32,8 +32,8 @@
         </button>
     </nav>
 
-    <!-- 双算法控制面板 -->
-    <div class="dual-control-panel">
+    <!-- 三算法控制面板 -->
+    <div class="dual-control-panel triple-control-panel" style="grid-template-columns: 1fr 1fr 1fr;">
         <!-- 黄金分割法控制 -->
         <div class="algorithm-panel golden-panel">
             <h3>黄金分割法 (Golden Section)</h3>
@@ -73,16 +73,36 @@
                 </table>
             </div>
         </div>
-        <!-- 全局控制面板 -->
-        <div class="global-controls">
+        <!-- 二分法控制 -->
+        <div class="algorithm-panel bisection-panel" style="border-top: 5px solid #6d4c41 !important;">
+            <h3>二分法 (Bisection)</h3>
+            <div class="control-group">
+                <label for="bis-epsilon">精度 epsilon (ε):</label>
+                <input type="range" id="bis-epsilon" min="0.001" max="1" step="0.001" value="0.5">
+                <span id="bis-epsilon-value">0.500</span>
+            </div>
+            <div class="parameter-display">
+                <table class="param-table">
+                    <tbody id="bis-param-body">
+                    <!-- 动态填充 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 对比可视化区域布局 -->
+    <div class="comparison-main-layout" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 30px;">
+        <!-- 全局控制面板 (移至侧边) -->
+        <div class="global-controls" style="width: 320px; flex-shrink: 0;">
             <h3>全局控制</h3>
             <div class="control-group">
                 <label for="function-select">测试函数:</label>
                 <div style="display: flex; gap: 5px;">
-                    <select id="function-select" style="flex: 1;">
+                    <select id="function-select" style="width: 180px;">
                         <!-- 动态填充 -->
                     </select>
-                    <button id="custom-func-btn" class="control-btn btn-primary" style="padding: 5px 10px; font-size: 14px;">自定义</button>
+                    <button id="custom-func-btn" class="control-btn btn-primary" style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义</button>
                 </div>
             </div>
 
@@ -128,19 +148,18 @@
                 <span id="speed-value">正常</span>
             </div>
         </div>
-    </div>
 
-    <!-- 对比可视化区域 -->
-    <section class="comparison-visualization-section">
-        <div class="viz-header">
-            <h2>性能可视化对比</h2>
-            <div class="viz-tabs">
-                <button class="viz-tab active" data-view="trajectory">搜索轨迹</button>
-                <button class="viz-tab" data-view="convergence">收敛速度</button>
+        <section class="comparison-visualization-section" style="flex: 1; min-width: 0;">
+            <div class="viz-header">
+                <h2>性能可视化对比</h2>
+                <div class="viz-tabs">
+                    <button class="viz-tab active" data-view="trajectory">搜索轨迹</button>
+                    <button class="viz-tab" data-view="convergence">收敛速度</button>
+                </div>
             </div>
-        </div>
-        <div id="comparison-canvas"></div>
-    </section>
+            <div id="comparison-canvas" style="height: 500px;"></div>
+        </section>
+    </div>
 
     <!-- 自定义函数模态框 -->
     <div id="custom-func-modal" class="modal" style="display: none;">
@@ -186,6 +205,11 @@
                     <span class="metric-label">斐波那契</span>
                     <span class="metric-value" id="metric-iter-fib">-</span>
                 </div>
+                <div class="metric-divider"></div>
+                <div class="metric-item">
+                    <span class="metric-label">二分法</span>
+                    <span class="metric-value" id="metric-iter-bis">-</span>
+                </div>
             </div>
             <div id="winner-iter" class="winner-tag">进行中...</div>
         </div>
@@ -201,6 +225,11 @@
                     <span class="metric-label">斐波那契</span>
                     <span class="metric-value" id="metric-prec-fib">-</span>
                 </div>
+                <div class="metric-divider"></div>
+                <div class="metric-item">
+                    <span class="metric-label">二分法</span>
+                    <span class="metric-value" id="metric-prec-bis">-</span>
+                </div>
             </div>
             <div id="winner-prec" class="winner-tag">进行中...</div>
         </div>
@@ -215,6 +244,7 @@
                 <th>特性维度</th>
                 <th>黄金分割法</th>
                 <th>斐波那契搜索法</th>
+                <th>二分法 (导数)</th>
                 <th>结论</th>
             </tr>
             </thead>
@@ -223,19 +253,29 @@
                 <td>收敛速度</td>
                 <td>稳定 (0.618<sup>k</sup>)</td>
                 <td>理论最优 (F<sub>n-k</sub>/F<sub>n-k+1</sub>)</td>
-                <td>斐波那契法略快</td>
+                <td>极快 (0.5<sup>k</sup>)</td>
+                <td>二分法收敛最快</td>
+            </tr>
+            <tr>
+                <td>信息需求</td>
+                <td>仅函数值</td>
+                <td>仅函数值</td>
+                <td>需一阶导数</td>
+                <td>二分法对函数要求最高</td>
             </tr>
             <tr>
                 <td>参数依赖</td>
-                <td>仅需精度 ε</td>
-                <td>需预先指定 N 或 ε</td>
-                <td>黄金分割法更灵活</td>
+                <td>仅精度 ε</td>
+                <td>需预知 N</td>
+                <td>仅精度 ε</td>
+                <td>黄金分割与二分法更灵活</td>
             </tr>
             <tr>
-                <td>试探点位置</td>
-                <td>固定比例</td>
-                <td>随迭代次数变化</td>
-                <td>-</td>
+                <td>试探点/逻辑</td>
+                <td>双试点比较</td>
+                <td>双试点比较</td>
+                <td>中点导数符号</td>
+                <td>二分法逻辑最简单</td>
             </tr>
             </tbody>
         </table>
@@ -251,7 +291,13 @@
 
             <div class="question-item">
                 <h4>问题 2：在相同迭代次数下，哪种算法缩小的区间更小？</h4>
-                <p>通过"收敛速度"视图，对比两条曲线的斜率，感受"最优性"的含义。</p>
+                <p>通过"收敛速度"视图，对比三条曲线的斜率。二分法、黄金分割法和斐波那契法的理论收敛因子分别是多少？</p>
+                <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+            </div>
+
+            <div class="question-item">
+                <h4>问题 3：二分法的优缺点</h4>
+                <p>二分法虽然收敛极快，但它对目标函数 $f(x)$ 提出了什么额外的数学要求？在实际工程中，如果导数难以获取，该如何选择？</p>
                 <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
             </div>
         </div>
@@ -285,9 +331,10 @@
         goldenEps: 0.5,
         fibN: 10,
         fibEps: 0.01,
+        bisEps: 0.5,
 
         subStep: 0, // 0: 初始, 1: a_try, 2: b_try, 3: compare, 4: update
-        currentTrialPoints: {golden: null, fibonacci: null}
+        currentTrialPoints: {golden: null, fibonacci: null, bisection: null}
     };
 
     // 初始化
@@ -394,15 +441,10 @@
             doInit();
         });
 
-        // 斐波那契参数
-        document.getElementById('fib-n').addEventListener('input', (e) => {
-            AppState.fibN = parseInt(e.target.value);
-            document.getElementById('fib-n-value').textContent = AppState.fibN;
-            doInit();
-        });
-        document.getElementById('fib-epsilon').addEventListener('input', (e) => {
-            AppState.fibEps = parseFloat(e.target.value);
-            document.getElementById('fib-epsilon-value').textContent = AppState.fibEps.toFixed(3);
+        // 二分法参数
+        document.getElementById('bis-epsilon').addEventListener('input', (e) => {
+            AppState.bisEps = parseFloat(e.target.value);
+            document.getElementById('bis-epsilon-value').textContent = AppState.bisEps.toFixed(3);
             doInit();
         });
 
@@ -496,7 +538,7 @@
     }
 
     function doInit() {
-        // 先清理计时器，不直接调用 pause 以免触发未初始化的 updateUI
+        // 先清理计时器
         AppState.isPlaying = false;
         if (AppState.timer) {
             clearInterval(AppState.timer);
@@ -506,17 +548,21 @@
 
         AppState.runStatus = '未运行';
         AppState.subStep = 0;
-        AppState.currentTrialPoints = {golden: null, fibonacci: null};
+        AppState.currentTrialPoints = {golden: null, fibonacci: null, bisection: null};
 
-        const func = x => calculateFunction(x, AppState.selectedFuncId);
+        const funcType = AppState.selectedFuncId;
+        const expr = FunctionLibrary[funcType].expression;
+        const func = x => calculateFunction(x, funcType);
 
         AppState.controller.initAlgorithms({
-            func,
+            func: func,
+            expr: expr,
             a: AppState.a,
             b: AppState.b,
             goldenEps: AppState.goldenEps,
             fibEps: AppState.fibEps,
-            fibN: AppState.fibN
+            fibN: AppState.fibN,
+            bisEps: AppState.bisEps
         });
 
         if (AppState.visualizer) {
@@ -552,11 +598,11 @@
     function doStep() {
         const gAlgo = AppState.controller.algorithms.golden;
         const fAlgo = AppState.controller.algorithms.fibonacci;
+        const bAlgo = AppState.controller.algorithms.bisection;
 
-        const gComplete = gAlgo.isComplete;
-        const fComplete = fAlgo.isComplete;
+        const allComplete = gAlgo.isComplete && fAlgo.isComplete && bAlgo.isComplete;
 
-        if (gComplete && fComplete && AppState.subStep === 0) {
+        if (allComplete && AppState.subStep === 0) {
             AppState.runStatus = '已完成';
             updateUI();
             return false;
@@ -574,8 +620,8 @@
         if (AppState.subStep === 4) {
             AppState.controller.stepBoth();
             if (AppState.currentView === 'trajectory') {
-                const minA = Math.min(gAlgo.a, fAlgo.a);
-                const maxB = Math.max(gAlgo.b, fAlgo.b);
+                const minA = Math.min(gAlgo.a, fAlgo.a, bAlgo.a);
+                const maxB = Math.max(gAlgo.b, fAlgo.b, bAlgo.b);
                 AppState.visualizer.autoZoom(minA, maxB);
             }
             AppState.subStep = 0;
@@ -583,7 +629,7 @@
 
         updateUI();
 
-        if (gAlgo.isComplete && fAlgo.isComplete && AppState.subStep === 0) {
+        if (gAlgo.isComplete && fAlgo.isComplete && bAlgo.isComplete && AppState.subStep === 0) {
             AppState.runStatus = '已完成';
             updateUI();
             showFinalMetrics();
@@ -595,12 +641,14 @@
     function updateUI() {
         const gAlgo = AppState.controller.algorithms.golden;
         const fAlgo = AppState.controller.algorithms.fibonacci;
+        const bAlgo = AppState.controller.algorithms.bisection;
 
-        if (!gAlgo || !fAlgo) return;
+        if (!gAlgo || !fAlgo || !bAlgo) return;
 
         // 状态文字
         const gStatusText = gAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
         const fStatusText = fAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
+        const bStatusText = bAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
 
         // 更新黄金分割面板表格
         document.getElementById('golden-param-body').innerHTML = `
@@ -619,12 +667,21 @@
                 <tr><td>当前迭代</td><td class="param-value">${fAlgo.currentIteration}</td></tr>
                 <tr><td>状态</td><td class="param-value">${fStatusText}</td></tr>
             `;
+        
+        // 更新二分法面板表格
+        document.getElementById('bis-param-body').innerHTML = `
+                <tr><td>左端点 a</td><td class="param-value">${bAlgo.a.toFixed(4)}</td></tr>
+                <tr><td>右端点 b</td><td class="param-value">${bAlgo.b.toFixed(4)}</td></tr>
+                <tr><td>区间长度</td><td class="param-value">${Math.abs(bAlgo.b - bAlgo.a).toFixed(4)}</td></tr>
+                <tr><td>当前迭代</td><td class="param-value">${bAlgo.currentIteration}</td></tr>
+                <tr><td>状态</td><td class="param-value">${bStatusText}</td></tr>
+            `;
 
         // 更新按钮状态
-        const bothComplete = gAlgo.isComplete && fAlgo.isComplete && AppState.subStep === 0;
-        document.getElementById('play-btn').disabled = AppState.isPlaying || bothComplete;
+        const allComplete = gAlgo.isComplete && fAlgo.isComplete && bAlgo.isComplete && AppState.subStep === 0;
+        document.getElementById('play-btn').disabled = AppState.isPlaying || allComplete;
         document.getElementById('pause-btn').disabled = !AppState.isPlaying;
-        document.getElementById('step-btn').disabled = AppState.isPlaying || bothComplete;
+        document.getElementById('step-btn').disabled = AppState.isPlaying || allComplete;
 
         updateVisualization();
     }
@@ -633,23 +690,28 @@
         if (AppState.currentView === 'trajectory') {
             AppState.visualizer.drawDualTrajectories(
                 AppState.controller.histories.golden,
-                AppState.controller.histories.fibonacci
+                AppState.controller.histories.fibonacci,
+                AppState.controller.histories.bisection
             );
 
             // 更新试探点显示
-            const func = x => calculateFunction(x, AppState.selectedFuncId);
+            const funcType = AppState.selectedFuncId;
+            const func = x => calculateFunction(x, funcType);
+            const gAlgo = AppState.controller.algorithms.golden;
+            const fAlgo = AppState.controller.algorithms.fibonacci;
+            const bAlgo = AppState.controller.algorithms.bisection;
+
             if (AppState.subStep > 0) {
                 const options = {
                     showA: AppState.subStep >= 1,
                     showB: AppState.subStep >= 2,
                     showCompare: AppState.subStep >= 3
                 };
-                const gAlgo = AppState.controller.algorithms.golden;
-                const fAlgo = AppState.controller.algorithms.fibonacci;
 
-                AppState.visualizer.updateDualTrialPoints(
+                AppState.visualizer.updateTripleTrialPoints(
                     gAlgo.isComplete ? null : AppState.currentTrialPoints.golden,
                     fAlgo.isComplete ? null : AppState.currentTrialPoints.fibonacci,
+                    bAlgo.isComplete ? null : bAlgo,
                     func,
                     options
                 );
@@ -660,6 +722,7 @@
             AppState.visualizer.drawConvergenceComparison(
                 AppState.controller.histories.golden,
                 AppState.controller.histories.fibonacci,
+                AppState.controller.histories.bisection,
                 AppState.yScaleType,
                 () => {
                     const newType = AppState.visualizer.animateToggleConvergenceScale();
@@ -672,7 +735,8 @@
     function showFinalMetrics() {
         const metrics = PerformanceMetrics.calculate(
             AppState.controller.histories.golden,
-            AppState.controller.histories.fibonacci
+            AppState.controller.histories.fibonacci,
+            AppState.controller.histories.bisection
         );
 
         if (metrics) {
@@ -680,14 +744,17 @@
 
             document.getElementById('metric-iter-golden').textContent = metrics.iterations.golden;
             document.getElementById('metric-iter-fib').textContent = metrics.iterations.fibonacci;
-            document.getElementById('winner-iter').textContent =
-                metrics.iterations.winner === 'draw' ? '握手言和' :
-                    (metrics.iterations.winner === 'golden' ? '黄金分割法胜出' : '斐波那契法胜出');
+            document.getElementById('metric-iter-bis').textContent = metrics.iterations.bisection;
+            
+            const iterWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
+            document.getElementById('winner-iter').textContent = iterWinnerMap[metrics.iterations.winner] + '胜出';
 
             document.getElementById('metric-prec-golden').textContent = metrics.precision.golden;
             document.getElementById('metric-prec-fib').textContent = metrics.precision.fibonacci;
-            document.getElementById('winner-prec').textContent =
-                metrics.precision.winner === 'golden' ? '黄金分割法更精确' : '斐波那契法更精确';
+            document.getElementById('metric-prec-bis').textContent = metrics.precision.bisection;
+            
+            const precWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
+            document.getElementById('winner-prec').textContent = precWinnerMap[metrics.precision.winner] + '更精确';
         }
     }
 </script>

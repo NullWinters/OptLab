@@ -293,60 +293,7 @@ export class OptimizationVisualizer {
         if (options.showA) points.push({ id: 'a_try', label: 'a_try', x: a_try, color: '#f9a825' });
         if (options.showB) points.push({ id: 'b_try', label: 'b_try', x: b_try, color: '#f9a825' });
         
-        // 1. 处理引导线
-        let lines = this.trialPointsLayer.selectAll('line.trial-line').data(points, d => d.id);
-        lines.exit().transition().duration(duration).style('opacity', 0).remove();
-        lines.enter().append('line')
-            .attr('class', 'trial-line')
-            .attr('x1', d => this.xScale(d.x))
-            .attr('x2', d => this.xScale(d.x))
-            .attr('y1', this.plotHeight)
-            .attr('y2', this.plotHeight) // 从底部生长
-            .attr('stroke', d => d.color)
-            .attr('stroke-width', 1.5)
-            .attr('stroke-dasharray', '3,3')
-            .style('opacity', 0)
-            .merge(lines)
-            .transition().duration(duration)
-            .attr('x1', d => this.xScale(d.x))
-            .attr('x2', d => this.xScale(d.x))
-            .attr('y2', d => this.yScale(calculateFunc(d.x)))
-            .style('opacity', 1);
-
-        // 2. 处理试点
-        let circles = this.trialPointsLayer.selectAll('circle.trial-point').data(points, d => d.id);
-        circles.exit().transition().duration(duration).attr('r', 0).remove();
-        circles.enter().append('circle')
-            .attr('class', 'trial-point')
-            .attr('r', 0) // 从 0 变大
-            .attr('fill', d => d.color)
-            .attr('stroke', '#fff')
-            .attr('stroke-width', 2)
-            .attr('cx', d => this.xScale(d.x))
-            .attr('cy', d => this.yScale(calculateFunc(d.x)))
-            .merge(circles)
-            .transition().duration(duration)
-            .attr('cx', d => this.xScale(d.x))
-            .attr('cy', d => this.yScale(calculateFunc(d.x)))
-            .attr('r', 6);
-
-        // 3. 处理试点标签
-        let labels = this.trialPointsLayer.selectAll('text.trial-label').data(points, d => d.id);
-        labels.exit().transition().duration(duration).style('opacity', 0).remove();
-        labels.enter().append('text')
-            .attr('class', 'trial-label')
-            .attr('text-anchor', 'middle')
-            .attr('font-size', '11px')
-            .attr('fill', d => d.color)
-            .attr('x', d => this.xScale(d.x))
-            .attr('y', d => this.yScale(calculateFunc(d.x)) - 5)
-            .style('opacity', 0)
-            .merge(labels)
-            .transition().duration(duration)
-            .attr('x', d => this.xScale(d.x))
-            .attr('y', d => this.yScale(calculateFunc(d.x)) - 15)
-            .text(d => `${d.label}=${d.x.toFixed(3)}`)
-            .style('opacity', 1);
+        this.renderPoints(points, calculateFunc, duration);
 
         // 4. 处理比较指示器
         const compareData = (options.showCompare && options.showA && options.showB) ? [ { a_try, b_try } ] : [];
@@ -364,6 +311,109 @@ export class OptimizationVisualizer {
             .attr('x', d => this.xScale((d.a_try + d.b_try) / 2))
             .attr('fill', d => calculateFunc(d.a_try) > calculateFunc(d.b_try) ? '#e53935' : '#f9a825')
             .text(d => calculateFunc(d.a_try) > calculateFunc(d.b_try) ? 'f(a_try) > f(b_try)' : 'f(a_try) < f(b_try)')
+            .style('opacity', 1);
+    }
+
+    updateBisectionPoints(a, b, m, calculateY, getDerivative, options = { showEndDerivs: false, showMidDeriv: false, showCompare: false }, yOffset = 10, customColor = null, labelPrefix = '') {
+        const duration = 400;
+        const color = customColor || '#d84315';
+        const points = [];
+        const prefix = labelPrefix ? `-${labelPrefix}` : '';
+        if (options.showEndDerivs) {
+            points.push({ id: `bis-a${prefix}`, label: "f'(a)", x: a, color: color });
+            points.push({ id: `bis-b${prefix}`, label: "f'(b)", x: b, color: color });
+        }
+        if (options.showMidDeriv) {
+            points.push({ id: `bis-m${prefix}`, label: "f'(m)", x: m, color: '#d84315' }); // 中点通常突出显示
+        }
+
+        this.renderPoints(points, calculateY, duration, x => getDerivative(x).toFixed(4), prefix);
+
+        // 处理导数比较指示器
+        const compareData = (options.showCompare && options.showMidDeriv && options.showEndDerivs) ? [{ a, b, m }] : [];
+        let compareText = this.trialPointsLayer.selectAll(`text.compare-text${prefix}`).data(compareData);
+        compareText.exit().transition().duration(duration).style('opacity', 0).remove();
+        compareText.enter().append('text')
+            .attr('class', `compare-text${prefix}`)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '11px')
+            .attr('font-weight', 'bold')
+            .attr('x', d => this.xScale(d.m))
+            .attr('y', 20 + yOffset)
+            .style('opacity', 0)
+            .merge(compareText)
+            .transition().duration(duration)
+            .attr('x', d => this.xScale(d.m))
+            .attr('y', 20 + yOffset)
+            .attr('fill', d => {
+                const dfm = getDerivative(d.m);
+                const dfa = getDerivative(d.a);
+                return dfm * dfa > 0 ? '#e53935' : '#f9a825';
+            })
+            .text(d => {
+                const dfm = getDerivative(d.m);
+                const dfa = getDerivative(d.a);
+                const result = dfm * dfa > 0 ? '>' : '<';
+                const label = labelPrefix ? `${labelPrefix}: ` : '';
+                return `${label}f'(m) · f'(a) ${result} 0`;
+            })
+            .style('opacity', 1);
+    }
+
+    renderPoints(points, calculateY, duration, labelFormatter = null, classSuffix = '') {
+        // 1. 处理引导线
+        let lines = this.trialPointsLayer.selectAll(`line.trial-line${classSuffix}`).data(points, d => d.id);
+        lines.exit().transition().duration(duration).style('opacity', 0).remove();
+        lines.enter().append('line')
+            .attr('class', `trial-line${classSuffix}`)
+            .attr('x1', d => this.xScale(d.x))
+            .attr('x2', d => this.xScale(d.x))
+            .attr('y1', this.plotHeight)
+            .attr('y2', this.plotHeight)
+            .attr('stroke', d => d.color)
+            .attr('stroke-width', 1.5)
+            .attr('stroke-dasharray', '3,3')
+            .style('opacity', 0)
+            .merge(lines)
+            .transition().duration(duration)
+            .attr('x1', d => this.xScale(d.x))
+            .attr('x2', d => this.xScale(d.x))
+            .attr('y2', d => this.yScale(calculateY(d.x)))
+            .style('opacity', 1);
+
+        // 2. 处理点
+        let circles = this.trialPointsLayer.selectAll(`circle.trial-point${classSuffix}`).data(points, d => d.id);
+        circles.exit().transition().duration(duration).attr('r', 0).remove();
+        circles.enter().append('circle')
+            .attr('class', `trial-point${classSuffix}`)
+            .attr('r', 0)
+            .attr('fill', d => d.color)
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2)
+            .attr('cx', d => this.xScale(d.x))
+            .attr('cy', d => this.yScale(calculateY(d.x)))
+            .merge(circles)
+            .transition().duration(duration)
+            .attr('cx', d => this.xScale(d.x))
+            .attr('cy', d => this.yScale(calculateY(d.x)))
+            .attr('r', 6);
+
+        // 3. 处理标签
+        let labels = this.trialPointsLayer.selectAll(`text.trial-label${classSuffix}`).data(points, d => d.id);
+        labels.exit().transition().duration(duration).style('opacity', 0).remove();
+        labels.enter().append('text')
+            .attr('class', `trial-label${classSuffix}`)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '11px')
+            .attr('fill', d => d.color)
+            .attr('x', d => this.xScale(d.x))
+            .attr('y', d => this.yScale(calculateY(d.x)) - 5)
+            .style('opacity', 0)
+            .merge(labels)
+            .transition().duration(duration)
+            .attr('x', d => this.xScale(d.x))
+            .attr('y', d => this.yScale(calculateY(d.x)) - 15)
+            .text(d => labelFormatter ? `${d.label}=${labelFormatter(d.x)}` : `${d.label}=${d.x.toFixed(3)}`)
             .style('opacity', 1);
     }
 }

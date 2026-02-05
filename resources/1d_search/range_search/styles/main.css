@@ -538,7 +538,7 @@ select, input[type="range"] {
 }
 
 /* 对比页面专用样式 */
-.dual-control-panel {
+.dual-control-panel, .triple-control-panel {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;  /* 三个面板等宽并行排列 */
     gap: 20px;
@@ -548,6 +548,13 @@ select, input[type="range"] {
     box-sizing: border-box;
 }
 
+.comparison-main-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
 .global-controls {
     background: var(--card-bg);
     border-radius: 12px;
@@ -555,10 +562,24 @@ select, input[type="range"] {
     box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
-    justify-content: flex-start; /* 改为顶部对齐 */
+    justify-content: flex-start;
     gap: 15px;
     text-align: center;
-    height: fit-content; /* 高度自适应内容 */
+    height: fit-content;
+}
+
+@media (max-width: 1200px) {
+    .dual-control-panel, .triple-control-panel {
+        grid-template-columns: 1fr;
+    }
+    
+    .comparison-main-layout {
+        flex-direction: column;
+    }
+    
+    .global-controls {
+        width: 100% !important;
+    }
 }
 
 .golden-panel {
