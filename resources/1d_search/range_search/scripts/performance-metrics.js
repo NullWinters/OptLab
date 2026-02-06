@@ -1,6 +1,6 @@
 export class PerformanceMetrics {
     static calculate(goldenHistory, fibHistory, bisHistory) {
-        if (!goldenHistory || !fibHistory || !bisHistory || 
+        if (!goldenHistory || !fibHistory || !bisHistory ||
             goldenHistory.length === 0 || fibHistory.length === 0 || bisHistory.length === 0) {
             return null;
         }
@@ -17,11 +17,11 @@ export class PerformanceMetrics {
         const fFinalInterval = Math.abs(fLast.b - fLast.a);
         const bFinalInterval = Math.abs(bLast.b - bLast.a);
 
-        const iterWinner = (gIters <= fIters && gIters <= bIters) ? 'golden' : 
-                          (fIters <= gIters && fIters <= bIters) ? 'fibonacci' : 'bisection';
-        
+        const iterWinner = (gIters <= fIters && gIters <= bIters) ? 'golden' :
+            (fIters <= gIters && fIters <= bIters) ? 'fibonacci' : 'bisection';
+
         const precWinner = (gFinalInterval <= fFinalInterval && gFinalInterval <= bFinalInterval) ? 'golden' :
-                          (fFinalInterval <= gFinalInterval && fFinalInterval <= bFinalInterval) ? 'fibonacci' : 'bisection';
+            (fFinalInterval <= gFinalInterval && fFinalInterval <= bFinalInterval) ? 'fibonacci' : 'bisection';
 
         return {
             iterations: {

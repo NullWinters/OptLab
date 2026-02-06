@@ -2,38 +2,38 @@
  * 可视化引擎 - 基于 D3.js
  */
 
-import { smartSampling, detectDiscontinuities } from './function-utils.js';
+import {smartSampling, detectDiscontinuities} from './function-utils.js';
 
 export class OptimizationVisualizer {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
-        this.margin = options.margin || { top: 40, right: 40, bottom: 60, left: 60 };
+        this.margin = options.margin || {top: 40, right: 40, bottom: 60, left: 60};
         this.width = options.width || document.getElementById(containerId).clientWidth;
         this.height = options.height || 500;
-        
+
         this.plotWidth = this.width - this.margin.left - this.margin.right;
         this.plotHeight = this.height - this.margin.top - this.margin.bottom;
-        
+
         this.currentFunc = null;
         this.currentDomain = [-5, 5];
-        
+
         this.initSvg();
     }
-    
+
     initSvg() {
         // 清除容器
         d3.select(`#${this.containerId}`).selectAll("*").remove();
-        
+
         this.svg = d3.select(`#${this.containerId}`)
             .append('svg')
             .attr('width', this.width)
             .attr('height', this.height)
             .attr('viewBox', `0 0 ${this.width} ${this.height}`)
             .attr('preserveAspectRatio', 'xMidYMid meet');
-            
+
         this.plot = this.svg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
-            
+
         // 比例尺定义域暂设为默认，后面通过 drawFunction 更新
         this.xScale = d3.scaleLinear().range([0, this.plotWidth]);
         this.yScale = d3.scaleLinear().range([this.plotHeight, 0]);
@@ -42,14 +42,14 @@ export class OptimizationVisualizer {
         this.gridLayer = this.plot.append('g').attr('class', 'grid-layer');
         this.gridX = this.gridLayer.append('g').attr('class', 'grid-x');
         this.gridY = this.gridLayer.append('g').attr('class', 'grid-y');
-        
+
         this.axisLayer = this.plot.append('g').attr('class', 'axis-layer');
         this.xAxisG = this.axisLayer.append('g')
             .attr('class', 'x-axis')
             .attr('transform', `translate(0,${this.plotHeight})`);
         this.yAxisG = this.axisLayer.append('g')
             .attr('class', 'y-axis');
-        
+
         this.functionLayer = this.plot.append('g').attr('class', 'function-layer');
         this.functionPath = this.functionLayer.append('path')
             .attr('fill', 'none')
@@ -67,7 +67,7 @@ export class OptimizationVisualizer {
             .attr('text-anchor', 'middle')
             .attr('fill', '#5d4037')
             .text('x');
-            
+
         this.labelLayer.append('text')
             .attr('transform', 'rotate(-90)')
             .attr('x', -this.plotHeight / 2)
@@ -76,11 +76,11 @@ export class OptimizationVisualizer {
             .attr('fill', '#5d4037')
             .text('f(x)');
     }
-    
+
     drawFunction(funcIdOrExpr, domain) {
         if (funcIdOrExpr) this.currentFunc = funcIdOrExpr;
         if (domain) this.currentDomain = [...domain];
-        
+
         const func = this.currentFunc;
         const dom = this.currentDomain;
 
@@ -88,7 +88,7 @@ export class OptimizationVisualizer {
 
         // 使用智能采样获取分段数据
         const segments = smartSampling(func, dom[0], dom[1], 1000);
-        
+
         // 计算全局 y 轴范围，限制异常值
         let minY = Infinity, maxY = -Infinity;
         segments.forEach(segment => {
@@ -97,7 +97,7 @@ export class OptimizationVisualizer {
                 if (d.y > maxY) maxY = d.y;
             });
         });
-        
+
         // 限制 Y 轴范围，避免无穷大导致绘制失败
         const yLimit = 1000;
         minY = Math.max(minY, -yLimit);
@@ -107,7 +107,7 @@ export class OptimizationVisualizer {
         this.xScale.domain(dom);
         const yPadding = (maxY - minY) * 0.2 || 1;
         this.yScale.domain([minY - yPadding, maxY + yPadding]);
-        
+
         const duration = 400;
 
         // 更新网格
@@ -115,28 +115,28 @@ export class OptimizationVisualizer {
             .attr('stroke', '#e0e0e0')
             .attr('stroke-opacity', 0.5)
             .call(d3.axisBottom(this.xScale).tickSize(this.plotHeight).tickFormat(''));
-            
+
         this.gridY.transition().duration(duration)
             .attr('stroke', '#e0e0e0')
             .attr('stroke-opacity', 0.5)
             .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
-            
+
         // 更新坐标轴
         this.xAxisG.transition().duration(duration).call(d3.axisBottom(this.xScale));
         this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
-            
+
         // 绘制多段曲线
         const line = d3.line()
             .x(d => this.xScale(d.x))
             .y(d => this.yScale(d.y))
             .curve(d3.curveMonotoneX)
             .defined(d => Math.abs(d.y) <= yLimit); // 过滤超出范围的点
-            
+
         // 数据绑定与绘制
         const paths = this.functionLayer.selectAll('path.curve').data(segments);
-        
+
         paths.exit().remove();
-        
+
         paths.enter().append('path')
             .attr('class', 'curve')
             .attr('fill', 'none')
@@ -184,7 +184,7 @@ export class OptimizationVisualizer {
         const [xMin, xMax] = this.currentDomain;
         const center = (xMin + xMax) / 2;
         const halfWidth = (xMax - xMin) / (2 * factor);
-        
+
         this.currentDomain = [center - halfWidth, center + halfWidth];
         this.drawFunction();
     }
@@ -209,14 +209,14 @@ export class OptimizationVisualizer {
         this.currentDomain = [Math.min(a, b) - padding, Math.max(a, b) + padding];
         this.drawFunction();
     }
-    
+
     updateInterval(a, b) {
         const xA = this.xScale(a);
         const xB = this.xScale(b);
         const xMin = Math.min(xA, xB);
         const xMax = Math.max(xA, xB);
         const duration = 400;
-        
+
         // 1. 绘制/更新阴影区域
         const rectData = (a !== undefined && b !== undefined) ? [null] : [];
         let rect = this.intervalLayer.selectAll('rect.interval-rect').data(rectData);
@@ -234,13 +234,13 @@ export class OptimizationVisualizer {
             .attr('x', xMin)
             .attr('width', Math.max(0, xMax - xMin))
             .style('opacity', 1);
-            
+
         // 2. 绘制/更新边界线
         const lineData = (a !== undefined && b !== undefined) ? [
-            { val: a, id: 'a', label: 'a' },
-            { val: b, id: 'b', label: 'b' }
+            {val: a, id: 'a', label: 'a'},
+            {val: b, id: 'b', label: 'b'}
         ] : [];
-        
+
         let lines = this.intervalLayer.selectAll('line.interval-line').data(lineData, d => d.id);
         lines.exit().transition().duration(duration).style('opacity', 0).remove();
         lines.enter().append('line')
@@ -258,7 +258,7 @@ export class OptimizationVisualizer {
             .attr('x1', d => this.xScale(d.val))
             .attr('x2', d => this.xScale(d.val))
             .style('opacity', 1);
-            
+
         // 3. 绘制/更新标签
         let texts = this.intervalLayer.selectAll('text.interval-text').data(lineData, d => d.id);
         texts.exit().transition().duration(duration).style('opacity', 0).remove();
@@ -277,7 +277,7 @@ export class OptimizationVisualizer {
             .text(d => `${d.label}=${d.val.toFixed(3)}`)
             .style('opacity', 1);
     }
-    
+
     clearTrialPoints(animated = true) {
         if (animated) {
             const duration = 400;
@@ -286,17 +286,17 @@ export class OptimizationVisualizer {
             this.trialPointsLayer.selectAll('*').remove();
         }
     }
-    
-    updateTrialPoints(a_try, b_try, calculateFunc, options = { showA: true, showB: true, showCompare: true }) {
+
+    updateTrialPoints(a_try, b_try, calculateFunc, options = {showA: true, showB: true, showCompare: true}) {
         const duration = 400;
         const points = [];
-        if (options.showA) points.push({ id: 'a_try', label: 'a_try', x: a_try, color: '#f9a825' });
-        if (options.showB) points.push({ id: 'b_try', label: 'b_try', x: b_try, color: '#f9a825' });
-        
+        if (options.showA) points.push({id: 'a_try', label: 'a_try', x: a_try, color: '#f9a825'});
+        if (options.showB) points.push({id: 'b_try', label: 'b_try', x: b_try, color: '#f9a825'});
+
         this.renderPoints(points, calculateFunc, duration);
 
         // 4. 处理比较指示器
-        const compareData = (options.showCompare && options.showA && options.showB) ? [ { a_try, b_try } ] : [];
+        const compareData = (options.showCompare && options.showA && options.showB) ? [{a_try, b_try}] : [];
         let compareText = this.trialPointsLayer.selectAll('text.compare-text').data(compareData);
         compareText.exit().transition().duration(duration).style('opacity', 0).remove();
         compareText.enter().append('text')
@@ -314,23 +314,27 @@ export class OptimizationVisualizer {
             .style('opacity', 1);
     }
 
-    updateBisectionPoints(a, b, m, calculateY, getDerivative, options = { showEndDerivs: false, showMidDeriv: false, showCompare: false }, yOffset = 10, customColor = null, labelPrefix = '') {
+    updateBisectionPoints(a, b, m, calculateY, getDerivative, options = {
+        showEndDerivs: false,
+        showMidDeriv: false,
+        showCompare: false
+    }, yOffset = 10, customColor = null, labelPrefix = '') {
         const duration = 400;
         const color = customColor || '#d84315';
         const points = [];
         const prefix = labelPrefix ? `-${labelPrefix}` : '';
         if (options.showEndDerivs) {
-            points.push({ id: `bis-a${prefix}`, label: "f'(a)", x: a, color: color });
-            points.push({ id: `bis-b${prefix}`, label: "f'(b)", x: b, color: color });
+            points.push({id: `bis-a${prefix}`, label: "f'(a)", x: a, color: color});
+            points.push({id: `bis-b${prefix}`, label: "f'(b)", x: b, color: color});
         }
         if (options.showMidDeriv) {
-            points.push({ id: `bis-m${prefix}`, label: "f'(m)", x: m, color: '#d84315' }); // 中点通常突出显示
+            points.push({id: `bis-m${prefix}`, label: "f'(m)", x: m, color: '#d84315'}); // 中点通常突出显示
         }
 
         this.renderPoints(points, calculateY, duration, x => getDerivative(x).toFixed(4), prefix);
 
         // 处理导数比较指示器
-        const compareData = (options.showCompare && options.showMidDeriv && options.showEndDerivs) ? [{ a, b, m }] : [];
+        const compareData = (options.showCompare && options.showMidDeriv && options.showEndDerivs) ? [{a, b, m}] : [];
         let compareText = this.trialPointsLayer.selectAll(`text.compare-text${prefix}`).data(compareData);
         compareText.exit().transition().duration(duration).style('opacity', 0).remove();
         compareText.enter().append('text')

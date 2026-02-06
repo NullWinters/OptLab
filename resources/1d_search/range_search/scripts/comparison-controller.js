@@ -1,6 +1,6 @@
-import { GoldenSectionSearch } from './golden-section.js';
-import { FibonacciSearch } from './fibonacci-search.js';
-import { BisectionSearch } from './bisection-search.js';
+import {GoldenSectionSearch} from './golden-section.js';
+import {FibonacciSearch} from './fibonacci-search.js';
+import {BisectionSearch} from './bisection-search.js';
 
 export class ComparisonController {
     constructor() {
@@ -19,12 +19,12 @@ export class ComparisonController {
     }
 
     initAlgorithms(config) {
-        const { func, expr, a, b, goldenEps, fibEps, fibN, bisEps } = config;
-        
+        const {func, expr, a, b, goldenEps, fibEps, fibN, bisEps} = config;
+
         this.algorithms.golden = new GoldenSectionSearch(func, a, b, goldenEps);
         this.algorithms.fibonacci = new FibonacciSearch(func, a, b, fibEps, fibN);
         this.algorithms.bisection = new BisectionSearch(expr || func, a, b, bisEps);
-        
+
         this.resetHistories();
         this.recordStep('golden');
         this.recordStep('fibonacci');

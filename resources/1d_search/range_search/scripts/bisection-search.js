@@ -29,7 +29,7 @@ export class BisectionSearch {
     // 计算导数
     getDerivative(x) {
         if (this.derivativeExpr) {
-            return this.derivativeExpr.evaluate({ x: x });
+            return this.derivativeExpr.evaluate({x: x});
         } else if (typeof this.funcOrExpr === 'function') {
             // 数值微分 (简单中心差分)
             const h = 1e-7;

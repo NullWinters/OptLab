@@ -68,9 +68,21 @@
             box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
         }
 
-        .introduction { background: linear-gradient(135deg, #ffb300, #ff8f00); }    /* 橙黄 */
-        .observe { background: linear-gradient(135deg, #fdd835, #f9a825); }        /* 明黄/金黄 */
-        .compare { background: linear-gradient(135deg, #e53935, #b71c1c); }       /* 红色/深红 */
+        .introduction {
+            background: linear-gradient(135deg, #ffb300, #ff8f00);
+        }
+
+        /* 橙黄 */
+        .observe {
+            background: linear-gradient(135deg, #fdd835, #f9a825);
+        }
+
+        /* 明黄/金黄 */
+        .compare {
+            background: linear-gradient(135deg, #e53935, #b71c1c);
+        }
+
+        /* 红色/深红 */
 
         .module-card span {
             margin-top: 12px;
@@ -85,33 +97,37 @@
             .grid-container {
                 grid-template-columns: 1fr;
             }
+
             .container {
                 padding: 30px 20px;
                 margin: 20px;
             }
-            h1 { font-size: 2em; }
+
+            h1 {
+                font-size: 2em;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>一维搜索算法 ～ 区间搜索</h1>
-        <p class="description">学习并对比黄金分割法与斐波那契数列法如何求解单谷函数的极小点区间</p>
+<div class="container">
+    <h1>一维搜索算法：区间收缩法</h1>
+    <p class="description">学习区间收缩法如何求解单谷函数的极小点区间</p>
 
-        <div class="grid-container">
-            <a href="introduction.html" class="module-card introduction">
-                算法介绍
-                <span>Introduction</span>
-            </a>
-            <a href="observe_and_explore.html" class="module-card observe">
-                观察与探索
-                <span>Observe & Explore</span>
-            </a>
-            <a href="compare_and_insight.html" class="module-card compare">
-                对比与洞察
-                <span>Compare & Insight</span>
-            </a>
-        </div>
+    <div class="grid-container">
+        <a href="introduction.html" class="module-card introduction">
+            算法介绍
+            <span>Introduction</span>
+        </a>
+        <a href="observe_and_explore.html" class="module-card observe">
+            观察与探索
+            <span>Observe & Explore</span>
+        </a>
+        <a href="compare_and_insight.html" class="module-card compare">
+            对比与洞察
+            <span>Compare & Insight</span>
+        </a>
     </div>
+</div>
 </body>
 </html>

@@ -12,7 +12,7 @@ export const FunctionLibrary = {
         calculate: (x) => x * x - 4 * x + 4,
         domain: [-5, 5]
     },
-    
+
     sinusoid: {
         id: "sinusoid",
         name: "正弦函数",
@@ -21,7 +21,7 @@ export const FunctionLibrary = {
         calculate: (x) => Math.sin(x) + 0.1 * x * x,
         domain: [-5, 5]
     },
-    
+
     rosenbrock: {
         id: "rosenbrock",
         name: "Rosenbrock函数（一维）",
@@ -44,7 +44,7 @@ export function safeEvaluate(expr, x) {
             return expr(x);
         }
         // 使用 math.js 进行解析
-        return math.evaluate(expr, { x: x });
+        return math.evaluate(expr, {x: x});
     } catch (e) {
         return NaN;
     }
@@ -78,7 +78,7 @@ export function smartSampling(funcIdOrExpr, start, end, points = 1000) {
                 currentSegment = [];
             }
         } else {
-            currentSegment.push({ x, y });
+            currentSegment.push({x, y});
         }
     }
 
@@ -115,13 +115,13 @@ export function detectDiscontinuities(funcIdOrExpr, domain, epsilon = 1e-6) {
 
         if (isNaN(y) && !isNaN(yLeft) && !isNaN(yRight)) {
             // 可去间断点
-            discontinuities.push({ x, type: 'removable' });
+            discontinuities.push({x, type: 'removable'});
         } else if (!isNaN(yLeft) && !isNaN(yRight) && Math.abs(yLeft - yRight) > 10) { // 阈值可调
             // 跳跃间断点
-            discontinuities.push({ x, type: 'jump', yLeft, yRight });
+            discontinuities.push({x, type: 'jump', yLeft, yRight});
         } else if (isNaN(y) && (isNaN(yLeft) || isNaN(yRight))) {
             // 无穷间断点或未定义区间
-            discontinuities.push({ x, type: 'vertical' });
+            discontinuities.push({x, type: 'vertical'});
         }
     }
 
@@ -147,11 +147,11 @@ export function isUnimodal(funcIdOrExpr, a, b, samples = 100) {
     let decreasing = true;
     let hasValley = false;
     let prevY = calculateFunction(a, funcIdOrExpr);
-    
+
     for (let i = 1; i <= samples; i++) {
         const x = a + i * step;
         const y = calculateFunction(x, funcIdOrExpr);
-        
+
         if (isNaN(y) || !isFinite(y)) continue;
 
         if (decreasing && y > prevY) {
@@ -160,9 +160,9 @@ export function isUnimodal(funcIdOrExpr, a, b, samples = 100) {
         } else if (!decreasing && y < prevY) {
             return false;
         }
-        
+
         prevY = y;
     }
-    
+
     return hasValley;
 }

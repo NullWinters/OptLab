@@ -1,4 +1,4 @@
-import { OptimizationVisualizer } from './visualization.js';
+import {OptimizationVisualizer} from './visualization.js';
 
 export class ComparisonVisualizer extends OptimizationVisualizer {
     constructor(containerId, options = {}) {
@@ -9,7 +9,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
     initComparisonLayers() {
         this.goldenLayer = this.plot.append('g').attr('class', 'golden-layer');
         this.fibonacciLayer = this.plot.append('g').attr('class', 'fibonacci-layer');
-        
+
         // 用于收敛速度图的图层
         this.convergenceLayer = this.plot.append('g').attr('class', 'convergence-layer').style('display', 'none');
     }
@@ -39,7 +39,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         const xMin = Math.min(xA, xB);
         const xMax = Math.max(xA, xB);
         const duration = 400;
-        
+
         // 1. 矩形阴影
         const rectData = (a !== undefined && b !== undefined) ? [null] : [];
         let rect = this.intervalLayer.selectAll(`rect.interval-rect-${labelPrefix}`).data(rectData);
@@ -58,13 +58,13 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .attr('x', xMin)
             .attr('width', Math.max(0, xMax - xMin))
             .style('opacity', 1);
-            
+
         // 2. 边界线和标签
         const lineData = (a !== undefined && b !== undefined) ? [
-            { val: a, id: 'a', label: `${labelPrefix}-a` },
-            { val: b, id: 'b', label: `${labelPrefix}-b` }
+            {val: a, id: 'a', label: `${labelPrefix}-a`},
+            {val: b, id: 'b', label: `${labelPrefix}-b`}
         ] : [];
-        
+
         let lines = this.intervalLayer.selectAll(`line.interval-line-${labelPrefix}`).data(lineData, d => d.id);
         lines.exit().transition().duration(duration).style('opacity', 0).remove();
         lines.enter().append('line')
@@ -112,9 +112,9 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.convergenceLayer.style('display', 'block');
 
         // 准备数据
-        const gData = goldenHistory.map((d, i) => ({ x: i, y: Math.abs(d.b - d.a) }));
-        const fData = fibHistory.map((d, i) => ({ x: i, y: Math.abs(d.b - d.a) }));
-        const bData = bisHistory.map((d, i) => ({ x: i, y: Math.abs(d.b - d.a) }));
+        const gData = goldenHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)}));
+        const fData = fibHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)}));
+        const bData = bisHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)}));
         this.gData = gData;
         this.fData = fData;
         this.bData = bData;
@@ -290,7 +290,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.drawAlgorithmTrialPoints(gPoints, calculateFunc, '#d84315', 'G', options, 0);
         // 斐波那契 F: 琥珀色 yOffset=20 (增加间距)
         this.drawAlgorithmTrialPoints(fPoints, calculateFunc, '#f9a825', 'F', options, 20);
-        
+
         // 二分法 B: 棕色 yOffset=40
         if (!bAlgo) {
             // 清理二分法的试点相关元素
@@ -320,9 +320,9 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
     drawAlgorithmTrialPoints(points, calculateFunc, color, labelPrefix, options, yOffset) {
         const duration = 400;
         const pts = [];
-        if (points && options.showA) pts.push({ id: `${labelPrefix}-a`, label: `${labelPrefix}-a`, x: points.a_try });
-        if (points && options.showB) pts.push({ id: `${labelPrefix}-b`, label: `${labelPrefix}-b`, x: points.b_try });
-        
+        if (points && options.showA) pts.push({id: `${labelPrefix}-a`, label: `${labelPrefix}-a`, x: points.a_try});
+        if (points && options.showB) pts.push({id: `${labelPrefix}-b`, label: `${labelPrefix}-b`, x: points.b_try});
+
         // 1. 引导线
         let lines = this.trialPointsLayer.selectAll(`line.trial-line-${labelPrefix}`).data(pts, d => d.id);
         lines.exit().transition().duration(duration).style('opacity', 0).remove();
@@ -338,7 +338,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .attr('x1', d => this.xScale(d.x)).attr('x2', d => this.xScale(d.x))
             .attr('y2', d => this.yScale(calculateFunc(d.x)))
             .style('opacity', 1);
-            
+
         // 2. 点
         let circles = this.trialPointsLayer.selectAll(`circle.trial-point-${labelPrefix}`).data(pts, d => d.id);
         circles.exit().transition().duration(duration).attr('r', 0).remove();
@@ -351,7 +351,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .transition().duration(duration)
             .attr('cx', d => this.xScale(d.x)).attr('cy', d => this.yScale(calculateFunc(d.x)))
             .attr('r', 4);
-            
+
         // 3. 标签
         let labels = this.trialPointsLayer.selectAll(`text.trial-label-${labelPrefix}`).data(pts, d => d.id);
         labels.exit().transition().duration(duration).style('opacity', 0).remove();
@@ -369,7 +369,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .style('opacity', 1);
 
         // 4. 比较指示器
-        const compareData = (points && options.showCompare && options.showA && options.showB) ? [ points ] : [];
+        const compareData = (points && options.showCompare && options.showA && options.showB) ? [points] : [];
         let compareText = this.trialPointsLayer.selectAll(`text.compare-text-${labelPrefix}`).data(compareData);
         compareText.exit().transition().duration(duration).style('opacity', 0).remove();
         compareText.enter().append('text')

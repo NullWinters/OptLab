@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>区间搜索：对比与洞察</title>
+    <title>区间收缩法</title>
 
     <!-- D3.js 可视化库 -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -13,12 +14,13 @@
     <!-- 自定义样式 -->
     <link rel="stylesheet" href="styles/main.css">
 </head>
+
 <body>
 <div class="container">
     <a href="index.html" class="back-btn">← 返回首页</a>
     <!-- 页面头部 -->
     <header class="header">
-        <h1>一维优化算法 - 区间搜索教学实验</h1>
+        <h1>区间收缩法教学实验</h1>
         <p class="subtitle">对比与洞察：黄金分割法 vs 斐波那契搜索法 vs 二分法</p>
     </header>
 
@@ -36,9 +38,9 @@
     <div class="dual-control-panel triple-control-panel" style="grid-template-columns: 1fr 1fr 1fr;">
         <!-- 黄金分割法控制 -->
         <div class="algorithm-panel golden-panel">
-            <h3>黄金分割法 (Golden Section)</h3>
+            <h3>黄金分割法</h3>
             <div class="control-group">
-                <label for="golden-epsilon">精度 epsilon (ε):</label>
+                <label for="golden-epsilon">精度 ε :</label>
                 <input type="range" id="golden-epsilon" min="0.001" max="1" step="0.001" value="0.5">
                 <span id="golden-epsilon-value">0.500</span>
             </div>
@@ -50,18 +52,19 @@
                 </table>
             </div>
         </div>
-        <!-- 斐波那契搜索法控制 -->
+        <!-- 斐波那契数列法控制 -->
         <div class="algorithm-panel fibonacci-panel">
-            <h3>斐波那契搜索法 (Fibonacci)</h3>
+            <h3>斐波那契数列法</h3>
             <div class="slider-row" style="display: flex; gap: 15px; flex-wrap: wrap;">
                 <div class="control-group" style="flex: 1; min-width: 150px;">
-                    <label for="fib-n">迭代次数 n:</label>
+                    <label for="fib-n">迭代次数 N:</label>
                     <input type="range" id="fib-n" min="2" max="20" step="1" value="10" style="width: 100%;">
                     <span id="fib-n-value">10</span>
                 </div>
                 <div class="control-group" style="flex: 1; min-width: 150px;">
-                    <label for="fib-epsilon">修正系数 epsilon (ε):</label>
-                    <input type="range" id="fib-epsilon" min="0.001" max="0.1" step="0.001" value="0.01" style="width: 100%;">
+                    <label for="fib-epsilon">修正系数 ε :</label>
+                    <input type="range" id="fib-epsilon" min="0.001" max="0.1" step="0.001" value="0.01"
+                           style="width: 100%;">
                     <span id="fib-epsilon-value">0.010</span>
                 </div>
             </div>
@@ -75,9 +78,9 @@
         </div>
         <!-- 二分法控制 -->
         <div class="algorithm-panel bisection-panel" style="border-top: 5px solid #6d4c41 !important;">
-            <h3>二分法 (Bisection)</h3>
+            <h3>二分法</h3>
             <div class="control-group">
-                <label for="bis-epsilon">精度 epsilon (ε):</label>
+                <label for="bis-epsilon">精度 ε :</label>
                 <input type="range" id="bis-epsilon" min="0.001" max="1" step="0.001" value="0.5">
                 <span id="bis-epsilon-value">0.500</span>
             </div>
@@ -92,7 +95,8 @@
     </div>
 
     <!-- 对比可视化区域布局 -->
-    <div class="comparison-main-layout" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 30px;">
+    <div class="comparison-main-layout"
+         style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 30px;">
         <!-- 全局控制面板 (移至侧边) -->
         <div class="global-controls" style="width: 320px; flex-shrink: 0;">
             <h3>全局控制</h3>
@@ -102,7 +106,9 @@
                     <select id="function-select" style="width: 180px;">
                         <!-- 动态填充 -->
                     </select>
-                    <button id="custom-func-btn" class="control-btn btn-primary" style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义</button>
+                    <button id="custom-func-btn" class="control-btn btn-primary"
+                            style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
+                    </button>
                 </div>
             </div>
 
@@ -115,7 +121,8 @@
 
                 <div class="control-group" style="flex: 1; min-width: 120px;">
                     <label for="initial-b">初始区间右端点 b:</label>
-                    <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10" style="width: 100%;">
+                    <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10"
+                           style="width: 100%;">
                     <span id="b-value">10.0</span>
                 </div>
             </div>
@@ -128,17 +135,13 @@
             </div>
 
             <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
-                <button id="pan-left-btn" class="control-btn btn-primary"
-                        style="background-color: #6d4c41;">向左
+                <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
                 </button>
-                <button id="pan-right-btn" class="control-btn btn-primary"
-                        style="background-color: #6d4c41;">向右
+                <button id="pan-right-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向右
                 </button>
-                <button id="zoom-in-btn" class="control-btn btn-primary"
-                        style="background-color: #795548;">放大
+                <button id="zoom-in-btn" class="control-btn btn-primary" style="background-color: #795548;">放大
                 </button>
-                <button id="zoom-out-btn" class="control-btn btn-primary"
-                        style="background-color: #8d6e63;">缩小
+                <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
                 </button>
             </div>
 
@@ -171,8 +174,10 @@
             <div class="modal-body" style="text-align: left;">
                 <div class="input-group">
                     <label for="custom-expr-input">输入函数表达式 f(x):</label>
-                    <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4" style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
-                    <div id="expr-error" style="color: red; font-size: 0.9em; margin-top: 5px; min-height: 1.2em;"></div>
+                    <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4"
+                           style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                    <div id="expr-error" style="color: red; font-size: 0.9em; margin-top: 5px; min-height: 1.2em;">
+                    </div>
                 </div>
                 <div class="examples-section" style="margin-top: 15px;">
                     <h4>示例表达式:</h4>
@@ -197,12 +202,12 @@
             <h3>迭代次数对比</h3>
             <div class="metric-comparison">
                 <div class="metric-item">
-                    <span class="metric-label">黄金分割</span>
+                    <span class="metric-label">黄金分割法</span>
                     <span class="metric-value" id="metric-iter-golden">-</span>
                 </div>
                 <div class="metric-divider"></div>
                 <div class="metric-item">
-                    <span class="metric-label">斐波那契</span>
+                    <span class="metric-label">斐波那契数列法</span>
                     <span class="metric-value" id="metric-iter-fib">-</span>
                 </div>
                 <div class="metric-divider"></div>
@@ -217,12 +222,12 @@
             <h3>最终区间精度</h3>
             <div class="metric-comparison">
                 <div class="metric-item">
-                    <span class="metric-label">黄金分割</span>
+                    <span class="metric-label">黄金分割法</span>
                     <span class="metric-value" id="metric-prec-golden">-</span>
                 </div>
                 <div class="metric-divider"></div>
                 <div class="metric-item">
-                    <span class="metric-label">斐波那契</span>
+                    <span class="metric-label">斐波那契数列法</span>
                     <span class="metric-value" id="metric-prec-fib">-</span>
                 </div>
                 <div class="metric-divider"></div>
@@ -236,72 +241,27 @@
     </section>
 
     <!-- 洞察分析区 -->
-    <section class="insight-analysis">
-        <h2>算法深度洞察</h2>
-        <table class="characteristic-table">
-            <thead>
-            <tr>
-                <th>特性维度</th>
-                <th>黄金分割法</th>
-                <th>斐波那契搜索法</th>
-                <th>二分法 (导数)</th>
-                <th>结论</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td>收敛速度</td>
-                <td>稳定 (0.618<sup>k</sup>)</td>
-                <td>理论最优 (F<sub>n-k</sub>/F<sub>n-k+1</sub>)</td>
-                <td>极快 (0.5<sup>k</sup>)</td>
-                <td>二分法收敛最快</td>
-            </tr>
-            <tr>
-                <td>信息需求</td>
-                <td>仅函数值</td>
-                <td>仅函数值</td>
-                <td>需一阶导数</td>
-                <td>二分法对函数要求最高</td>
-            </tr>
-            <tr>
-                <td>参数依赖</td>
-                <td>仅精度 ε</td>
-                <td>需预知 N</td>
-                <td>仅精度 ε</td>
-                <td>黄金分割与二分法更灵活</td>
-            </tr>
-            <tr>
-                <td>试探点/逻辑</td>
-                <td>双试点比较</td>
-                <td>双试点比较</td>
-                <td>中点导数符号</td>
-                <td>二分法逻辑最简单</td>
-            </tr>
-            </tbody>
-        </table>
 
-        <div class="guidance-questions">
-            <h3>观察并回答问题</h3>
-
-            <div class="question-item">
-                <h4>问题 1：为什么斐波那契法需要预先知道总迭代次数 N ？</h4>
-                <p>观察在不同 N 下，斐波那契法初始试探点的位置变化。它如何利用 N 来优化搜索效率？</p>
-                <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-            </div>
-
-            <div class="question-item">
-                <h4>问题 2：在相同迭代次数下，哪种算法缩小的区间更小？</h4>
-                <p>通过"收敛速度"视图，对比三条曲线的斜率。二分法、黄金分割法和斐波那契法的理论收敛因子分别是多少？</p>
-                <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-            </div>
-
-            <div class="question-item">
-                <h4>问题 3：二分法的优缺点</h4>
-                <p>二分法虽然收敛极快，但它对目标函数 $f(x)$ 提出了什么额外的数学要求？在实际工程中，如果导数难以获取，该如何选择？</p>
-                <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-            </div>
+    <div class="guidance-questions">
+        <h2>观察并回答问题</h2>
+        <div class="question-item">
+            <h4>问题 1：速度比较</h4>
+            <p>黄金分割法与斐波那契数列法在前期的迭代曲线几乎重合，请分析原因。</p>
+            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
         </div>
-    </section>
+
+        <div class="question-item">
+            <h4>问题 2：区间精度</h4>
+            <p>为什么斐波那契数列法总是能求出更精确的区间精度？</p>
+            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+        </div>
+
+        <div class="question-item">
+            <h4>问题 3：极限分析</h4>
+            <p>斐波那契数列法能比二分法更快收敛吗？请尝试记录一组可行情形。</p>
+            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+        </div>
+    </div>
 </div>
 
 <script type="module">
@@ -397,14 +357,14 @@
             }
 
             try {
-                const result = math.evaluate(expr, { x: 1 });
+                const result = math.evaluate(expr, {x: 1});
                 if (typeof result !== 'number' && typeof result !== 'object') {
                     throw new Error("表达式计算结果无效");
                 }
 
                 const selectContainer = document.getElementById('function-select');
                 const customId = 'custom_' + Date.now();
-                
+
                 FunctionLibrary[customId] = {
                     id: customId,
                     name: "自定义函数",
@@ -418,10 +378,10 @@
                 option.textContent = `自定义：f(x) = ${expr}`;
                 selectContainer.insertBefore(option, selectContainer.lastElementChild);
                 selectContainer.value = customId;
-                
+
                 AppState.selectedFuncId = customId;
                 doInit();
-                
+
                 document.getElementById('custom-func-modal').style.display = 'none';
                 customExprInput.value = '';
                 exprError.textContent = '';
@@ -441,6 +401,17 @@
             doInit();
         });
 
+        // 斐波那契数列法参数
+        document.getElementById('fib-n').addEventListener('input', (e) => {
+            AppState.fibN = parseInt(e.target.value);
+            document.getElementById('fib-n-value').textContent = AppState.fibN;
+            doInit();
+        });
+        document.getElementById('fib-epsilon').addEventListener('input', (e) => {
+            AppState.fibEps = parseFloat(e.target.value);
+            document.getElementById('fib-epsilon-value').textContent = AppState.fibEps.toFixed(3);
+            doInit();
+        });
         // 二分法参数
         document.getElementById('bis-epsilon').addEventListener('input', (e) => {
             AppState.bisEps = parseFloat(e.target.value);
@@ -667,7 +638,7 @@
                 <tr><td>当前迭代</td><td class="param-value">${fAlgo.currentIteration}</td></tr>
                 <tr><td>状态</td><td class="param-value">${fStatusText}</td></tr>
             `;
-        
+
         // 更新二分法面板表格
         document.getElementById('bis-param-body').innerHTML = `
                 <tr><td>左端点 a</td><td class="param-value">${bAlgo.a.toFixed(4)}</td></tr>
@@ -745,18 +716,19 @@
             document.getElementById('metric-iter-golden').textContent = metrics.iterations.golden;
             document.getElementById('metric-iter-fib').textContent = metrics.iterations.fibonacci;
             document.getElementById('metric-iter-bis').textContent = metrics.iterations.bisection;
-            
-            const iterWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
+
+            const iterWinnerMap = {golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法'};
             document.getElementById('winner-iter').textContent = iterWinnerMap[metrics.iterations.winner] + '胜出';
 
             document.getElementById('metric-prec-golden').textContent = metrics.precision.golden;
             document.getElementById('metric-prec-fib').textContent = metrics.precision.fibonacci;
             document.getElementById('metric-prec-bis').textContent = metrics.precision.bisection;
-            
-            const precWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
+
+            const precWinnerMap = {golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法'};
             document.getElementById('winner-prec').textContent = precWinnerMap[metrics.precision.winner] + '更精确';
         }
     }
 </script>
 </body>
+
 </html>
