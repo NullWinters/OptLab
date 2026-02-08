@@ -18,7 +18,13 @@ export class BisectionSearch {
         // 预解析导函数 (如果输入是字符串表达式)
         if (typeof funcOrExpr === 'string') {
             this.expr = funcOrExpr;
-            this.derivativeExpr = math.derivative(funcOrExpr, 'x');
+            try {
+                this.derivativeExpr = math.derivative(funcOrExpr, 'x');
+            } catch (e) {
+                // 捕获 math.js 无法处理 ConditionalNode (三元运算符) 的错误
+                console.warn("Symbolic differentiation failed, falling back to numerical differentiation:", e.message);
+                this.derivativeExpr = null;
+            }
         } else {
             // 如果是函数，我们可能需要使用数值微分，但由于项目已经引入 math.js 且支持自定义表达式，
             // 我们优先考虑表达式。如果是预设函数，我们需要对应的表达式。
@@ -29,13 +35,28 @@ export class BisectionSearch {
     // 计算导数
     getDerivative(x) {
         if (this.derivativeExpr) {
-            return this.derivativeExpr.evaluate({x: x});
-        } else if (typeof this.funcOrExpr === 'function') {
-            // 数值微分 (简单中心差分)
-            const h = 1e-7;
-            return (this.funcOrExpr(x + h) - this.funcOrExpr(x - h)) / (2 * h);
+            try {
+                return this.derivativeExpr.evaluate({x: x});
+            } catch (e) {
+                console.error("Error evaluating derivative expression:", e);
+                // 失败后继续尝试数值微分
+            }
         }
-        return 0;
+
+        // 数值微分
+        const h = 1e-7;
+        try {
+            const f = (val) => {
+                if (typeof this.funcOrExpr === 'function') {
+                    return this.funcOrExpr(val);
+                }
+                return math.evaluate(this.funcOrExpr, {x: val});
+            };
+            return (f(x + h) - f(x - h)) / (2 * h);
+        } catch (e) {
+            console.error("Numerical differentiation failed:", e);
+            return 0;
+        }
     }
 
     // 执行一次迭代

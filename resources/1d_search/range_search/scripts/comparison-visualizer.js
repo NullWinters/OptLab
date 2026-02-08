@@ -292,7 +292,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.drawAlgorithmTrialPoints(fPoints, calculateFunc, '#f9a825', 'F', options, 20);
 
         // 二分法 B: 棕色 yOffset=40
-        if (!bAlgo) {
+        if (!bAlgo || typeof bAlgo.getMidpoint !== 'function') {
             // 清理二分法的试点相关元素
             this.trialPointsLayer.selectAll('line.trial-line-B').remove();
             this.trialPointsLayer.selectAll('circle.trial-point-B').remove();

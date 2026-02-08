@@ -5,163 +5,163 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>算法介绍 - 区间收缩法</title>
-    <link rel="stylesheet" href="/styles/introduction.css">
+    <link rel="stylesheet" href="styles/introduction.css">
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <a href="/index.html" class="back-btn">← 返回首页</a>
+<div class="container">
+    <a href="index.html" class="back-btn">← 返回首页</a>
 
-        <h1>区间收缩法</h1>
-        <div class="subtitle">经典优化算法详解与应用对比</div>
+    <h1>区间收缩法</h1>
+    <div class="subtitle">经典优化算法详解与应用对比</div>
 
-        <!-- 综述 -->
-        <div class="section">
-            <h2>一维搜索算法：区间收缩法</h2>
-            <p>
-                单谷函数是存在唯一极小值点的一类函数。区间收缩法是一类用于寻找单谷函数或单谷区间内极小值点的一维搜索算法。
-                算法通过不断舍弃不包含极小值点的区间，逐步缩小包含极小值点的区间范围。
-            </p>
-            <p>
-                <strong>黄金分割法</strong>与<strong>斐波那契数列法</strong>通过比较函数在区间内选取的试探点处的函数值，决定舍弃哪一部分区间，从而实现对极小值点所在区间的逐步缩小。
-                <strong>二分法</strong>则通过比较区间中点处的函数值与两侧点的函数值，直接舍弃一半区间。
-                虽然二分法在某些情况下效率较高，但在单谷函数优化中，黄金分割法和斐波那契数列法因其更优的区间缩减效率而更为常用。
-            </p>
-        </div>
+    <!-- 综述 -->
+    <div class="section">
+        <h2>一维搜索算法：区间收缩法</h2>
+        <p>
+            单谷函数是存在唯一极小值点的一类函数。区间收缩法是一类用于寻找单谷函数或单谷区间内极小值点的一维搜索算法。
+            算法通过不断舍弃不包含极小值点的区间，逐步缩小包含极小值点的区间范围。
+        </p>
+        <p>
+            <strong>黄金分割法</strong>与<strong>斐波那契数列法</strong>通过比较函数在区间内选取的试探点处的函数值，决定舍弃哪一部分区间，从而实现对极小值点所在区间的逐步缩小。
+            <strong>二分法</strong>则通过比较区间中点处的函数值与两侧点的函数值，直接舍弃一半区间。
+            虽然二分法在某些情况下效率较高，但在单谷函数优化中，黄金分割法和斐波那契数列法因其更优的区间缩减效率而更为常用。
+        </p>
+    </div>
 
-        <!-- 黄金分割法 -->
-        <div class="section">
-            <h2><a href="https://baike.baidu.com/item/%E9%BB%84%E9%87%91%E5%88%86%E5%89%B2%E6%B3%95/10900935"
-                    class="no-link-style">黄金分割法</a>
-            </h2>
-            <p>
-                黄金分割法（Golden Section Search）最早可追溯至公元前6世纪古希腊毕达哥拉斯学派对<a
-                    href="https://cloud.kepuchina.cn/newSearch/imgText?id=6972628539641880576">正五边形和正十边形作图的研究</a>。
-                20世纪50年代，美国数学家杰克·基弗（Jack Kiefer）正式提出了用于一维搜索的<a
-                    href="https://baike.baidu.com/item/0.618%E6%B3%95/7238973">0.618法</a>，后由我国数学家华罗庚先生推广应用。
+    <!-- 黄金分割法 -->
+    <div class="section">
+        <h2><a href="https://baike.baidu.com/item/%E9%BB%84%E9%87%91%E5%88%86%E5%89%B2%E6%B3%95/10900935"
+               class="no-link-style">黄金分割法</a>
+        </h2>
+        <p>
+            黄金分割法（Golden Section Search）最早可追溯至公元前6世纪古希腊毕达哥拉斯学派对<a
+                href="https://cloud.kepuchina.cn/newSearch/imgText?id=6972628539641880576">正五边形和正十边形作图的研究</a>。
+            20世纪50年代，美国数学家杰克·基弗（Jack Kiefer）正式提出了用于一维搜索的<a
+                href="https://baike.baidu.com/item/0.618%E6%B3%95/7238973">0.618法</a>，后由我国数学家华罗庚先生推广应用。
 
-            </p>
-            <h3>计算过程</h3>
-            <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，精度 \(\varepsilon\)</p>
-            <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
-            <div class="highlight">
-                <strong>算法步骤：</strong>
-                <ol>
-                    <li>令 \( k = 0 \), \( \rho = \frac{3 - \sqrt{5}}{2} \)</li>
-                    <li>计算区间长度 \( l_k = b_k - a_k \)
-                        <ul>
-                            <li>若 \( l_k &lt; \varepsilon \)，输出 \([a, b] = [a_k, b_k]\)，算法结束</li>
-                        </ul>
-                    </li>
-                    <li>计算试探点：
-                        <ul>
-                            <li>\( a_{\text{try}} = a_k + \rho \cdot l_k \)</li>
-                            <li>\( b_{\text{try}} = b_k - \rho \cdot l_k \)</li>
-                        </ul>
-                    </li>
-                    <li>比较函数值：
-                        <ul>
-                            <li>若 \( f(a_{\text{try}}) &gt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}}, \quad
-                                b_{k+1} = b_k \)
-                            </li>
-                            <li>若 \( f(a_{\text{try}}) &lt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_k, \quad b_{k+1} =
-                                b_{\text{try}} \)
-                            </li>
-                            <li>若 \( f(a_{\text{try}}) = f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}}, \quad
-                                b_{k+1} = b_{\text{try}} \)
-                            </li>
-                        </ul>
-                    </li>
-                    <li>令 \( k = k + 1 \)，转步骤 2</li>
-                </ol>
-            </div>
-        </div>
-
-        <!-- 斐波那契数列法 -->
-        <div class="section">
-            <h2><a href="https://baike.baidu.com/item/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E6%B3%95/19133162"
-                    class="no-link-style"></a>斐波那契数列法</h2>
-            <p>
-                斐波那契数列法（Fibonacci Search）由美国数学家爱德华·斐波那契（Leonardo Fibonacci）在13世纪提出，
-                最初用于研究<a
-                    href="https://baike.baidu.com/item/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E5%85%94%E5%AD%90%E9%97%AE%E9%A2%98/1430035">兔子繁殖问题</a>。
-                同样由美国数学家杰克·基弗于20世纪50年代将其应用于一维搜索算法的设计。
-            </p>
-            <h3>计算过程</h3>
-            <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，迭代次数 \( N \)，修正系数 \(\varepsilon\)</p>
-            <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
-            <div class="highlight">
-                <strong>算法步骤：</strong>
-                <ol>
-                    <li>令 \( k = 0 \)，\( F_0 = F_1 = 1 \)，\( F_{n+2} = F_{n+1} + F_n \)</li>
-                    <li>若 \( k = N \)，输出 \([a, b] = [a_k, b_k]\)，算法结束</li>
-                    <li>计算区间长度 \( l_k = b_k - a_k \)，\( \rho_k = 1 - \frac{F_{N-k}}{F_{N-k+1}} \)
-                        <ul>
-                            <li>当 \( \rho_k = 0.5 \) 时，\( \rho_k = 0.5 - \varepsilon \)</li>
-                        </ul>
-                    </li>
-                    <li>计算试探点：
-                        <ul>
-                            <li>\( a_{\text{try}} = a_k + \rho_k \cdot l_k \)</li>
-                            <li>\( b_{\text{try}} = b_k - \rho_k \cdot l_k \)</li>
-                        </ul>
-                    </li>
-                    <li>比较函数值：
-                        <ul>
-                            <li>若 \( f(a_{\text{try}}) &gt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}} \)，\(
-                                b_{k+1} = b_k \)
-                            </li>
-                            <li>若 \( f(a_{\text{try}}) &lt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_k \)，\( b_{k+1} =
-                                b_{\text{try}} \)
-                            </li>
-                            <li>若 \( f(a_{\text{try}}) = f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}} \)，\(
-                                b_{k+1} = b_{\text{try}} \)
-                            </li>
-                        </ul>
-                    </li>
-                    <li>令 \( k = k + 1 \)，转步骤 2</li>
-                </ol>
-            </div>
-        </div>
-
-        <!-- 二分法 -->
-        <div class="section">
-            <h2><a href="https://www.kepuchina.cn/article/articleinfo?business_type=100&classify=0&ar_id=291180"
-                    class="no-link-style">二分法</a></h2>
-            <p>
-                二分思想古已有之，但作为数值方法，其在方程求根和优化搜索中的应用被系统研究和发展是在计算机时代。
-            </p>
-            <p>
-                二分法（Bisection Method）要求函数在搜索区间内不仅是单谷的，还需满足在极小值点左侧单调递减、右侧单调递增的更强条件。
-                算法的原理非常直接：通过考察区间中点处的导数（或函数值的变化趋势），可以确定极小值点位于中点的哪一侧，从而精确地将不确定区间对半分割。
-            </p>
-            <h3>计算过程</h3>
-            <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，精度 \(\varepsilon\)</p>
-            <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
-            <div class="highlight">
-                <strong>算法步骤：</strong>
-                <ol>
-                    <li>令 \( k = 0 \)，中点 \( m = \frac{a_k + b_k}{2} \)</li>
-                    <li>计算区间长度 \( l_k = b_k - a_k \)
-                        <ul>
-                            <li>若 \( l_k &lt; \varepsilon \)，输出 \([a, b] = [a_k, b_k]\)，算法结束</li>
-                        </ul>
-                    </li>
-                    <li>计算导数值 \( f'(m) \)，\( f'(a_k) \)，\( f'(b_k) \)</li>
-                    <li>判断导数值符号：
-                        <ul>
-                            <li>若 \( f'(m) = 0 \)，输出 \([a, b] = [0, 0]\)</li>
-                            <li>若 \( f'(m) \) 与 \( f'(a_k) \) 同号，则 \( a_{k+1} = m \)，\( b_{k+1} = b_k \)</li>
-                            <li>若 \( f'(m) \) 与 \( f'(b_k) \) 同号，则 \( a_{k+1} = a_k \)，\( b_{k+1} = m \)</li>
-                        </ul>
-                    </li>
-                    <li>令 \( k = k + 1 \)，转步骤 2</li>
-                </ol>
-            </div>
+        </p>
+        <h3>计算过程</h3>
+        <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，精度 \(\varepsilon\)</p>
+        <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
+        <div class="highlight">
+            <strong>算法步骤：</strong>
+            <ol>
+                <li>令 \( k = 0 \), \( \rho = \frac{3 - \sqrt{5}}{2} \)</li>
+                <li>计算区间长度 \( l_k = b_k - a_k \)
+                    <ul>
+                        <li>若 \( l_k &lt; \varepsilon \)，输出 \([a, b] = [a_k, b_k]\)，算法结束</li>
+                    </ul>
+                </li>
+                <li>计算试探点：
+                    <ul>
+                        <li>\( a_{\text{try}} = a_k + \rho \cdot l_k \)</li>
+                        <li>\( b_{\text{try}} = b_k - \rho \cdot l_k \)</li>
+                    </ul>
+                </li>
+                <li>比较函数值：
+                    <ul>
+                        <li>若 \( f(a_{\text{try}}) &gt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}}, \quad
+                            b_{k+1} = b_k \)
+                        </li>
+                        <li>若 \( f(a_{\text{try}}) &lt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_k, \quad b_{k+1} =
+                            b_{\text{try}} \)
+                        </li>
+                        <li>若 \( f(a_{\text{try}}) = f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}}, \quad
+                            b_{k+1} = b_{\text{try}} \)
+                        </li>
+                    </ul>
+                </li>
+                <li>令 \( k = k + 1 \)，转步骤 2</li>
+            </ol>
         </div>
     </div>
+
+    <!-- 斐波那契数列法 -->
+    <div class="section">
+        <h2><a href="https://baike.baidu.com/item/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E6%B3%95/19133162"
+               class="no-link-style"></a>斐波那契数列法</h2>
+        <p>
+            斐波那契数列法（Fibonacci Search）由美国数学家爱德华·斐波那契（Leonardo Fibonacci）在13世纪提出，
+            最初用于研究<a
+                href="https://baike.baidu.com/item/%E6%96%90%E6%B3%A2%E9%82%A3%E5%A5%91%E5%85%94%E5%AD%90%E9%97%AE%E9%A2%98/1430035">兔子繁殖问题</a>。
+            同样由美国数学家杰克·基弗于20世纪50年代将其应用于一维搜索算法的设计。
+        </p>
+        <h3>计算过程</h3>
+        <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，迭代次数 \( N \)，修正系数 \(\varepsilon\)</p>
+        <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
+        <div class="highlight">
+            <strong>算法步骤：</strong>
+            <ol>
+                <li>令 \( k = 0 \)，\( F_0 = F_1 = 1 \)，\( F_{n+2} = F_{n+1} + F_n \)</li>
+                <li>若 \( k = N \)，输出 \([a, b] = [a_k, b_k]\)，算法结束</li>
+                <li>计算区间长度 \( l_k = b_k - a_k \)，\( \rho_k = 1 - \frac{F_{N-k}}{F_{N-k+1}} \)
+                    <ul>
+                        <li>当 \( \rho_k = 0.5 \) 时，\( \rho_k = 0.5 - \varepsilon \)</li>
+                    </ul>
+                </li>
+                <li>计算试探点：
+                    <ul>
+                        <li>\( a_{\text{try}} = a_k + \rho_k \cdot l_k \)</li>
+                        <li>\( b_{\text{try}} = b_k - \rho_k \cdot l_k \)</li>
+                    </ul>
+                </li>
+                <li>比较函数值：
+                    <ul>
+                        <li>若 \( f(a_{\text{try}}) &gt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}} \)，\(
+                            b_{k+1} = b_k \)
+                        </li>
+                        <li>若 \( f(a_{\text{try}}) &lt; f(b_{\text{try}}) \)，则 \( a_{k+1} = a_k \)，\( b_{k+1} =
+                            b_{\text{try}} \)
+                        </li>
+                        <li>若 \( f(a_{\text{try}}) = f(b_{\text{try}}) \)，则 \( a_{k+1} = a_{\text{try}} \)，\(
+                            b_{k+1} = b_{\text{try}} \)
+                        </li>
+                    </ul>
+                </li>
+                <li>令 \( k = k + 1 \)，转步骤 2</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- 二分法 -->
+    <div class="section">
+        <h2><a href="https://www.kepuchina.cn/article/articleinfo?business_type=100&classify=0&ar_id=291180"
+               class="no-link-style">二分法</a></h2>
+        <p>
+            二分思想古已有之，但作为数值方法，其在方程求根和优化搜索中的应用被系统研究和发展是在计算机时代。
+        </p>
+        <p>
+            二分法（Bisection Method）要求函数在搜索区间内不仅是单谷的，还需满足在极小值点左侧单调递减、右侧单调递增的更强条件。
+            算法的原理非常直接：通过考察区间中点处的导数（或函数值的变化趋势），可以确定极小值点位于中点的哪一侧，从而精确地将不确定区间对半分割。
+        </p>
+        <h3>计算过程</h3>
+        <p><strong>输入</strong>：单谷函数 \( f \)，初始区间 \([a_0, b_0]\)，精度 \(\varepsilon\)</p>
+        <p><strong>输出</strong>：极小值点所在的区间 \([a, b]\)</p>
+        <div class="highlight">
+            <strong>算法步骤：</strong>
+            <ol>
+                <li>令 \( k = 0 \)，中点 \( m = \frac{a_k + b_k}{2} \)</li>
+                <li>计算区间长度 \( l_k = b_k - a_k \)
+                    <ul>
+                        <li>若 \( l_k &lt; \varepsilon \)，输出 \([a, b] = [a_k, b_k]\)，算法结束</li>
+                    </ul>
+                </li>
+                <li>计算导数值 \( f'(m) \)，\( f'(a_k) \)，\( f'(b_k) \)</li>
+                <li>判断导数值符号：
+                    <ul>
+                        <li>若 \( f'(m) = 0 \)，输出 \([a, b] = [0, 0]\)</li>
+                        <li>若 \( f'(m) \) 与 \( f'(a_k) \) 同号，则 \( a_{k+1} = m \)，\( b_{k+1} = b_k \)</li>
+                        <li>若 \( f'(m) \) 与 \( f'(b_k) \) 同号，则 \( a_{k+1} = a_k \)，\( b_{k+1} = m \)</li>
+                    </ul>
+                </li>
+                <li>令 \( k = k + 1 \)，转步骤 2</li>
+            </ol>
+        </div>
+    </div>
+</div>
 </body>
 
 </html>
