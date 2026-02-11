@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点搜索</title>
+    <link rel="stylesheet" href="styles/observation.css">
+    <link rel="stylesheet" href="styles/utils.css">
+    <!-- D3.js 可视化库 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Math.js 科学计算库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back-btn">返回首页</a>
+    <!-- 页面首部-->
+    <header class="header">
+        <h1>点搜索教学实验</h1>
+        <p class="subtitle">观察梯度下降法、牛顿法与割线法的执行过程</p>
+    </header>
+    <!-- 实验导航栏 -->
+        <nav class="navigation">
+        <button class="nav-btn active" onclick="window.location.href='observation.html'">
+            流程观察
+        </button>
+        <button class="nav-btn" onclick="window.location.href='comparison.html'">
+            性质对比
+        </button>
+    </nav>
+    <div class="main-content">
+        <!-- 左侧：画布 -->
+        <section class="visualization-section">
+            <div class="viz-header">
+                <h2>算法可视化展示</h2>
+                <div class="function-selector">
+                    <label for="function-select">选择测试函数：</label>
+                    <select id="function-select">
+                        <!-- 动态填充 -->
+                    </select>
+                    <button id="custom-func-btn" class="control-btn btn-primary">自定义函数
+                    </button>
+                </div>
+            </div>
+            <!-- 自定义函数模态框 -->
+            <div id="custom-func-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>自定义函数解析器 (math.js)</h3>
+                        <span class="close-modal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group">
+                            <label for="custom-expr-input">输入函数表达式 f(x):</label>
+                            <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4">
+                            <div id="expr-error"></div>
+                        </div>
+                        <div class="examples-section" style="margin-top: 15px;">
+                            <h4>示例表达式:</h4>
+                            <ul>
+                                <li>连续函数: <code>x^2 - 2*x + 1</code></li>
+                                <li>三角函数: <code>sin(x) + 0.5*x</code></li>
+                                <li>非连续(垂直渐近线): <code>1 / (x - 1)</code></li>
+                                <li>绝对值: <code>abs(x)</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="confirm-custom-func" class="control-btn btn-primary">确定</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- D3.js 可视化画布 -->
+            <div id="function-canvas"></div>
+
+            <!-- 可视化控制 -->
+            <div class="viz-controls">
+                <div class="slider-row">
+                    <div class="control-group">
+                        <label for="initial-x0">初始点 x<sub>0</sub>:</label>
+                        <input type="range" id="initial-x0" min="-10" max="10" step="0.1" value="1">
+                        <span id="x0-value">1.0</span>
+                    </div>
+
+                    <div class="control-group" id="x_prev_group" style="display: none;">
+                        <label for="initial-x_prev">初始点 x<sub>-1</sub>:</label>
+                        <input type="range" id="initial-x_prev" min="-10" max="10" step="0.1" value="0">
+                        <span id="x_prev-value">0.0</span>
+                    </div>
+
+                    <div class="control-group" id="learning-rate-group">
+                        <label for="learning-rate">学习率 α:</label>
+                        <input type="range" id="learning-rate" min="0.001" max="1" step="0.001" value="0.01">
+                        <span id="learning-rate-value">0.01</span>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="iterations">迭代次数 N:</label>
+                        <input type="range" id="iterations" min="2" max="50" step="1" value="10">
+                        <span id="iterations-value">10</span>
+                    </div>
+                </div>
+
+                <div class="control-group pan-zoom-group">
+                    <div class="pan-zoom-row">
+                        <div class="pan-buttons">
+                            <button id="pan-left-btn" class="control-btn btn-primary">向左</button>
+                            <button id="pan-right-btn" class="control-btn btn-primary">向右</button>
+                        </div>
+                        <div class="zoom-buttons">
+                            <button id="zoom-in-btn" class="control-btn btn-primary">放大</button>
+                            <button id="zoom-out-btn" class="control-btn btn-primary">缩小</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- 右侧：控制面板 -->
+        <section class="algorithm-panel">
+            <!-- 算法选择 -->
+            <div class="panel-section">
+                <h3>选择算法</h3>
+                <div class="algorithm-selector">
+                    <button class="algo-btn active" id="gd-btn">
+                        梯度下降法
+                    </button>
+                    <button class="algo-btn" id="newton-btn">
+                        牛顿法
+                    </button>
+                    <button class="algo-btn" id="secant-btn">
+                        割线法
+                    </button>
+                </div>
+            </div>
+            <!-- 算法控制按钮 -->
+            <div class="panel-section">
+                <h3>算法控制</h3>
+                <div class="control-buttons">
+                    <button class="control-btn btn-primary" id="play-btn">
+                        ▶ 播放
+                    </button>
+                    <button class="control-btn btn-secondary" id="pause-btn">
+                        ⏸ 暂停
+                    </button>
+                    <button class="control-btn btn-primary" id="step-btn">
+                        ⏭ 单步
+                    </button>
+                    <button class="control-btn btn-accent" id="reset-btn">
+                        ↻ 重置
+                    </button>
+                </div>
+
+                <!-- 速度控制 -->
+                <div class="control-group">
+                    <label for="speed-control">播放速度：</label>
+                    <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000">
+                    <span id="speed-value">正常</span>
+                </div>
+            </div>
+
+            <!-- 参数显示 -->
+            <div class="panel-section">
+                <h3>当前参数状态</h3>
+                <div class="parameter-display">
+                    <table class="param-table">
+                        <thead>
+                        <tr>
+                            <th>参数</th>
+                            <th>值</th>
+                        </tr>
+                        </thead>
+                        <tbody id="param-table-body">
+                        <!-- 动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 思考记录区域 -->
+    <section class="questions">
+        <h2>请观察算法运行并思考</h2>
+
+        <div class="question-item">
+            <h4>问题 1：梯度下降</h4>
+            <p>
+                为什么要选择负梯度方向作为迭代方向？
+            </p>
+            <label for="observation-q1"></label>
+            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q1"></textarea>
+            <h4>问题 2：学习率</h4>
+            <p>
+                观察并记录不同学习率对算法收敛的影响。你认为求解最小值点时学习率应如何变化？
+            </p>
+            <label for="observation-q2"></label>
+            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q2"></textarea>
+            <h4>问题 3：二次收敛性</h4>
+            <p>
+                观察牛顿法与割线法能否在有限步内达到二次函数的极小值点，并分析其原因。
+            </p>
+            <label for="observation-q3"></label>
+            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q3"></textarea>
+            <h4>问题 4：逆抛物线插值法</h4>
+            <p>
+                割线法使用割线信息近似二阶导数值，避免了计算二阶导数。试进一步使用割线信息近似一阶导数值，推导迭代公式。
+            </p>
+            <label for="observation-q4"></label>
+            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q4"></textarea>
+
+        </div>
+    </section>
+</div>
+
+<script type="module">
+    import { GradientDescent, NewtonsMethod, SecantMethod } from './scripts/algorithms.js';
+    import { PointSearchVisualizer } from './scripts/visualization.js';
+
+    const FunctionLibrary = {
+        quadratic: {
+            id: "quadratic",
+            name: "二次函数",
+            formula: "f(x) = x^2 - 4x + 4",
+            expression: "x^2 - 4*x + 4",
+            domain: [-5, 5]
+        },
+        sinusoid: {
+            id: "sinusoid",
+            name: "正弦函数",
+            formula: "f(x) = sin(x) + 0.1x^2",
+            expression: "sin(x) + 0.1*x^2",
+            domain: [-5, 5]
+        },
+        rosenbrock: {
+            id: "rosenbrock",
+            name: "Rosenbrock函数（一维）",
+            formula: "f(x) = 100(x-1)^2 + (1-x)^2",
+            expression: "100*(x-1)^2 + (1-x)^2",
+            domain: [-2, 3]
+        }
+    };
+
+    const AppState = {
+        currentAlgorithm: 'gd',
+        isPlaying: false,
+        speed: 1000,
+        functionType: 'quadratic',
+        x0: 1.0,
+        x_prev: 0.0,
+        alpha: 0.01,
+        n: 10,
+        timer: null,
+        solver: null,
+        visualizer: null,
+        status: '未运行'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initFunctionSelect();
+        initVisualizer();
+        setupEventListeners();
+        resetApp();
+    });
+
+    function initFunctionSelect() {
+        const select = document.getElementById('function-select');
+        select.innerHTML = '';
+        Object.values(FunctionLibrary).forEach(func => {
+            const option = document.createElement('option');
+            option.value = func.id;
+            option.textContent = `${func.name}：${func.formula}`;
+            select.appendChild(option);
+        });
+        
+        const customOption = document.createElement('option');
+        customOption.value = 'custom_trigger';
+        customOption.textContent = '--- 自定义函数 ---';
+        select.appendChild(customOption);
+    }
+
+    function initVisualizer() {
+        AppState.visualizer = new PointSearchVisualizer('function-canvas');
+    }
+
+    function setupEventListeners() {
+        document.getElementById('gd-btn').addEventListener('click', () => switchAlgorithm('gd'));
+        document.getElementById('newton-btn').addEventListener('click', () => switchAlgorithm('newton'));
+        document.getElementById('secant-btn').addEventListener('click', () => switchAlgorithm('secant'));
+
+        document.getElementById('play-btn').addEventListener('click', play);
+        document.getElementById('pause-btn').addEventListener('click', pause);
+        document.getElementById('step-btn').addEventListener('click', step);
+        document.getElementById('reset-btn').addEventListener('click', resetApp);
+
+        document.getElementById('initial-x0').addEventListener('input', (e) => {
+            AppState.x0 = parseFloat(e.target.value);
+            document.getElementById('x0-value').textContent = AppState.x0.toFixed(1);
+            resetApp(true);
+        });
+        document.getElementById('initial-x_prev').addEventListener('input', (e) => {
+            AppState.x_prev = parseFloat(e.target.value);
+            document.getElementById('x_prev-value').textContent = AppState.x_prev.toFixed(1);
+            resetApp(true);
+        });
+        document.getElementById('learning-rate').addEventListener('input', (e) => {
+            AppState.alpha = parseFloat(e.target.value);
+            document.getElementById('learning-rate-value').textContent = AppState.alpha.toFixed(3);
+            resetApp(true);
+        });
+        document.getElementById('iterations').addEventListener('input', (e) => {
+            AppState.n = parseInt(e.target.value);
+            document.getElementById('iterations-value').textContent = AppState.n;
+            resetApp(true);
+        });
+        document.getElementById('speed-control').addEventListener('input', (e) => {
+            AppState.speed = 2100 - parseInt(e.target.value);
+            const speedText = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
+            document.getElementById('speed-value').textContent = speedText;
+            if (AppState.isPlaying) {
+                pause();
+                play();
+            }
+        });
+
+        document.getElementById('pan-left-btn').addEventListener('click', () => AppState.visualizer.pan(-1));
+        document.getElementById('pan-right-btn').addEventListener('click', () => AppState.visualizer.pan(1));
+        document.getElementById('zoom-in-btn').addEventListener('click', () => AppState.visualizer.zoom(1.2));
+        document.getElementById('zoom-out-btn').addEventListener('click', () => AppState.visualizer.zoom(0.8));
+
+        document.getElementById('function-select').addEventListener('change', (e) => {
+            if (e.target.value === 'custom_trigger') {
+                document.getElementById('custom-func-modal').style.display = 'flex';
+                e.target.value = AppState.functionType;
+                return;
+            }
+            AppState.functionType = e.target.value;
+            resetApp();
+        });
+
+        document.getElementById('custom-func-btn').addEventListener('click', () => {
+            document.getElementById('custom-func-modal').style.display = 'flex';
+        });
+
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            document.getElementById('custom-func-modal').style.display = 'none';
+        });
+
+        document.getElementById('confirm-custom-func').addEventListener('click', () => {
+            const expr = document.getElementById('custom-expr-input').value.trim();
+            if (!expr) return;
+            try {
+                math.evaluate(expr, {x: 1});
+                const customId = 'custom_' + Date.now();
+                FunctionLibrary[customId] = {
+                    id: customId,
+                    name: "自定义函数",
+                    formula: "f(x) = " + expr,
+                    expression: expr,
+                    domain: [-5, 5]
+                };
+                const select = document.getElementById('function-select');
+                const option = document.createElement('option');
+                option.value = customId;
+                option.textContent = `自定义：f(x) = ${expr}`;
+                select.insertBefore(option, select.lastElementChild);
+                select.value = customId;
+                AppState.functionType = customId;
+                resetApp();
+                document.getElementById('custom-func-modal').style.display = 'none';
+            } catch (e) {
+                document.getElementById('expr-error').textContent = '错误: ' + e.message;
+            }
+        });
+    }
+
+    function switchAlgorithm(algo) {
+        AppState.currentAlgorithm = algo;
+        document.getElementById('gd-btn').classList.toggle('active', algo === 'gd');
+        document.getElementById('newton-btn').classList.toggle('active', algo === 'newton');
+        document.getElementById('secant-btn').classList.toggle('active', algo === 'secant');
+
+        document.getElementById('learning-rate-group').style.display = algo === 'gd' ? 'flex' : 'none';
+        document.getElementById('x_prev_group').style.display = algo === 'secant' ? 'flex' : 'none';
+
+        resetApp();
+    }
+
+    function resetApp(isDragging = false) {
+        pause(true);
+        const funcInfo = FunctionLibrary[AppState.functionType];
+        const expr = funcInfo.expression;
+        
+        if (AppState.currentAlgorithm === 'gd') {
+            AppState.solver = new GradientDescent(expr, AppState.x0, AppState.alpha, AppState.n);
+        } else if (AppState.currentAlgorithm === 'newton') {
+            AppState.solver = new NewtonsMethod(expr, AppState.x0, AppState.n);
+        } else if (AppState.currentAlgorithm === 'secant') {
+            AppState.solver = new SecantMethod(expr, AppState.x0, AppState.x_prev, AppState.n);
+        }
+
+        // 状态重置为未运行
+        AppState.status = '未运行';
+
+        // 注意：不再手动调用 updateHistory([], ...)，由 updateUI 内部的 data join 平滑处理
+
+        // 拖动时不重复绘制函数曲线，除非 autoZoom 触发
+        if (!isDragging) {
+            AppState.visualizer.updateHistory([], AppState.currentAlgorithm, false);
+            AppState.visualizer.drawFunction(expr, funcInfo.domain);
+            AppState.visualizer.autoZoom(AppState.solver.history);
+            updateUI();
+            AppState.visualizer.focusOnLatest();
+        } else {
+            // 拖动时：仅在超出边界时 autoZoom，否则只更新点的位置
+            AppState.visualizer.autoZoom(AppState.solver.history, { dragging: true });
+            updateUI(true); // 传入 isDragging 标志
+        }
+    }
+
+    function play() {
+        if (AppState.isPlaying || AppState.solver.isComplete) return;
+        AppState.isPlaying = true;
+        AppState.status = '播放中';
+        document.getElementById('play-btn').disabled = true;
+        document.getElementById('step-btn').disabled = true;
+        document.getElementById('pause-btn').disabled = false;
+        AppState.timer = setInterval(() => {
+            if (!step()) {
+                if (AppState.solver.isComplete) {
+                    // 正常播放结束
+                    AppState.isPlaying = false;
+                    clearInterval(AppState.timer);
+                    AppState.timer = null;
+                    AppState.status = '已完成';
+                    updateUI();
+                } else {
+                    pause();
+                }
+            }
+        }, AppState.speed);
+    }
+
+    function pause(suppressUIOrEvent = false) {
+        // 当作为事件处理器调用时，第一个参数是 Event 对象，不应被当作 suppressUI 处理
+        const suppressUI = (suppressUIOrEvent === true);
+        if (AppState.isPlaying) {
+            AppState.status = '已暂停';
+        }
+        AppState.isPlaying = false;
+        if (AppState.timer) {
+            clearInterval(AppState.timer);
+            AppState.timer = null;
+        }
+        if (!suppressUI) {
+            updateUI();
+        }
+    }
+
+    function step() {
+        if (AppState.solver.isComplete) {
+            updateUI();
+            return false;
+        }
+        const moved = AppState.solver.iterate();
+        if (moved) {
+            AppState.visualizer.autoZoom(AppState.solver.history);
+        }
+        AppState.status = AppState.solver.isComplete ? '已完成' : '已暂停';
+        updateUI();
+        return moved && !AppState.solver.isComplete;
+    }
+
+    function updateUI(isDragging = false) {
+        if (!AppState.solver) return;
+        // 拖动时使用无动画更新，避免滞后
+        AppState.visualizer.updateHistory(AppState.solver.history, AppState.currentAlgorithm, !isDragging);
+
+        const tableBody = document.getElementById('param-table-body');
+        const last = AppState.solver.history[AppState.solver.history.length - 1];
+        const data = [
+            ['当前迭代 k', AppState.solver.currentIteration],
+            ['当前点 x<sub>k</sub>', last.x.toFixed(6)],
+            ['函数值 f(x<sub>k</sub>)', last.y.toFixed(6)],
+            ["导数值 f'(x<sub>k</sub>)", last.df.toFixed(6)]
+        ];
+
+        if (AppState.currentAlgorithm === 'gd') {
+            data.push(['学习率 α', AppState.alpha]);
+        } else if (AppState.currentAlgorithm === 'newton') {
+            data.push(["二阶导 f''(x<sub>k</sub>)", last.ddf.toFixed(6)]);
+        } else if (AppState.currentAlgorithm === 'secant') {
+            const prev = AppState.solver.history[AppState.solver.history.length - 2];
+            if (prev) {
+                data.push(['上一点 x<sub>k-1</sub>', prev.x.toFixed(6)]);
+            }
+        }
+
+        data.push(['状态', AppState.status]);
+        tableBody.innerHTML = data.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+        const allComplete = AppState.solver.isComplete;
+        document.getElementById('play-btn').disabled = allComplete || AppState.isPlaying;
+        document.getElementById('step-btn').disabled = allComplete || AppState.isPlaying;
+        document.getElementById('pause-btn').disabled = allComplete || !AppState.isPlaying;
+    }
+</script>
+</body>
+</html>
