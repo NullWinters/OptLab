@@ -81,3 +81,20 @@ h2 {
         font-size: 0.9em;
     }
 }
+
+.back-btn {
+    display: inline-block;
+    margin-bottom: 30px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #ffb300, #ff8f00);
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
+}
