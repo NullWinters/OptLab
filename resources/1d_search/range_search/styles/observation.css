@@ -1,0 +1,292 @@
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.main-content .visualization-section {
+    grid-column: 1;
+}
+
+.main-content .algorithm-panel {
+    grid-column: 2;
+}
+
+/* 可视化区域 */
+.visualization-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: var(--shadow);
+}
+
+.viz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#function-canvas {
+    width: 100%;
+    height: 500px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+}
+
+.viz-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    text-align: center;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: #5d4037;
+}
+
+.control-group span {
+    font-size: 0.85em;
+    color: var(--primary-color);
+    font-weight: bold;
+    text-align: right;
+}
+
+select,
+input[type="range"] {
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* 算法控制面板 */
+.algorithm-panel {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: var(--shadow);
+}
+
+.panel-section {
+    margin-bottom: 30px;
+}
+
+.panel-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 1.3em;
+}
+
+.algorithm-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.algo-btn {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.algo-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.algo-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.control-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 模态框内部公式解析器样式 */
+.formula-preview {
+    background: #fdf5e6;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    font-family: 'Cambria Math', serif;
+    display: flex;
+    align-items: center;
+    min-height: 80px;
+    overflow-x: auto;
+    border: 1px inset #d7ccc8;
+}
+
+.placeholder-box {
+    display: inline-block;
+    min-width: 20px;
+    min-height: 24px;
+    border: 1px dashed #d7ccc8;
+    border-radius: 4px;
+    margin: 0 2px;
+    vertical-align: middle;
+    background-color: rgba(216, 67, 21, 0.02);
+    transition: all 0.2s;
+    position: relative;
+    padding: 0 2px;
+}
+
+.placeholder-box.active {
+    border-color: var(--primary-color);
+    background-color: rgba(216, 67, 21, 0.08);
+}
+
+.formula-display {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: nowrap;
+    min-height: 40px;
+    padding: 5px;
+}
+
+.formula-el {
+    display: inline-flex;
+    align-items: baseline;
+}
+
+.formula-power {
+    font-size: 0.75em;
+    position: relative;
+    top: -0.8em;
+    margin-left: 1px;
+}
+
+.formula-sub {
+    font-size: 0.75em;
+    position: relative;
+    top: 0.4em;
+    margin-left: 1px;
+}
+
+.formula-func {
+    display: inline-flex;
+    align-items: baseline;
+}
+
+.formula-log-container {
+    display: inline-flex;
+    align-items: baseline;
+}
+
+.cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.2em;
+    background-color: var(--primary-color);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.formula-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.control-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.formula-key {
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+    min-width: 45px;
+    color: var(--text-color);
+}
+
+.formula-key:hover {
+    background: var(--bg-color);
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+}
+
+.func-key { background: #fff3e0; }
+.script-key { background: #efebe9; }
+.delete-key { background: #ffebee; color: #c62828; }
+.clear-key { background: #f5f5f5; }
+
+/* 数学原理展示 */
+.math-principle {
+    background: #fff8e1;
+    border-left: 4px solid #ffc107;
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.math-principle h4 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.math-formula {
+    font-family: 'Cambria Math', serif;
+    font-size: 1.2em;
+    text-align: center;
+    margin: 10px 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+    .algorithm-panel {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .viz-controls {
+        flex-direction: column;
+    }
+    .control-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

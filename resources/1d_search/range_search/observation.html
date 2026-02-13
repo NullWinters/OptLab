@@ -12,25 +12,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
 
     <!-- 自定义样式 -->
-    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/utils.css">
+    <link rel="stylesheet" href="styles/observation.css">
 </head>
 
 <body>
 <div class="container">
-    <a href="index.html" class="back-btn">← 返回首页</a>
+    <a href="../index.html" class="back-btn">返回首页</a>
     <!-- 页面头部 -->
     <header class="header">
         <h1>区间收缩法教学实验</h1>
-        <p class="subtitle">观察与探索：黄金分割法、斐波那契搜索法与二分法算法过程演示</p>
+        <p class="subtitle">观察黄金分割法、斐波那契数列法与二分法的执行过程</p>
     </header>
 
     <!-- 导航栏 -->
     <nav class="navigation">
-        <button class="nav-btn active" onclick="window.location.href='/observe_and_explore.html'">
-            观察与探索
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">
+            算法介绍
         </button>
-        <button class="nav-btn" onclick="window.location.href='/compare_and_insight.html'">
-            对比与洞察
+        <button class="nav-btn active" onclick="window.location.href='observation.html'">
+            流程观察
+        </button>
+        <button class="nav-btn" onclick="window.location.href='comparison.html'">
+            性质对比
         </button>
     </nav>
 
@@ -160,16 +164,16 @@
                 <h3>算法控制</h3>
                 <div class="control-buttons">
                     <button class="control-btn btn-primary" id="play-btn">
-                        ▶ 播放
+                        播放
                     </button>
                     <button class="control-btn btn-secondary" id="pause-btn">
-                        ⏸ 暂停
+                        暂停
                     </button>
                     <button class="control-btn btn-primary" id="step-btn">
-                        ⏭ 单步
+                        单步
                     </button>
                     <button class="control-btn btn-accent" id="reset-btn">
-                        ↻ 重置
+                        重置
                     </button>
                 </div>
 

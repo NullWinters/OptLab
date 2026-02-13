@@ -1,35 +1,10 @@
-body {
-    font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #fffaf0;
-    color: #5d4037;
-    line-height: 1.6;
-}
+/* 基础布局和文字颜色继承自 utils.css */
 
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 40px 20px;
+    padding: 20px;
 }
-
-h1 {
-    color: #d84315;
-    text-align: center;
-    margin-bottom: 10px;
-    font-size: 2.8em;
-}
-
-.subtitle {
-    text-align: center;
-    color: #8d6e63;
-    font-size: 1.2em;
-    margin-bottom: 50px;
-    border-bottom: 2px solid #ffcc80;
-    padding-bottom: 20px;
-}
-
-
 
 .section {
     background: white;
@@ -37,6 +12,24 @@ h1 {
     padding: 40px;
     margin-bottom: 40px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.section h2 {
+    margin-bottom: 25px;
+}
+
+.section h3 {
+    margin-top: 30px;
+    margin-bottom: 15px;
+}
+
+.section p {
+    margin-bottom: 18px;
+    line-height: 1.8;
+}
+
+.section p:last-child {
+    margin-bottom: 0;
 }
 
 h2 {
@@ -48,10 +41,23 @@ h2 {
 
 .highlight {
     background-color: #fff8e1;
-    padding: 20px;
+    padding: 25px;
     border-radius: 10px;
     border-left: 4px solid #ffb300;
-    margin: 20px 0;
+    margin: 25px 0;
+}
+
+.highlight ol, .highlight ul {
+    padding-left: 30px;
+    margin-top: 15px;
+}
+
+.highlight li {
+    margin-bottom: 10px;
+}
+
+.highlight li:last-child {
+    margin-bottom: 0;
 }
 
 .no-link-style {
@@ -73,28 +79,7 @@ h2 {
         padding: 25px;
     }
 
-    h1 {
-        font-size: 2.2em;
-    }
-
     .comparison-table {
         font-size: 0.9em;
     }
-}
-
-.back-btn {
-    display: inline-block;
-    margin-bottom: 30px;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #ffb300, #ff8f00);
-    color: white;
-    text-decoration: none;
-    border-radius: 10px;
-    font-weight: bold;
-    transition: all 0.3s ease;
-}
-
-.back-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
 }

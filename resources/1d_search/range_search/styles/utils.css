@@ -98,16 +98,24 @@ body {
     box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
 }
 
-/* 通用控制按钮 */
+ /*通用控制按钮 */
 .control-btn {
-    padding: 10px 15px;
+    padding: 12px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
-    font-size: 14px;
 }
+/*.control-btn {*/
+/*    padding: 10px 15px;*/
+/*    border: none;*/
+/*    border-radius: 6px;*/
+/*    cursor: pointer;*/
+/*    font-weight: 600;*/
+/*    transition: all 0.3s ease;*/
+/*    font-size: 14px;*/
+/*}*/
 
 .btn-primary {
     background: var(--primary-color);
@@ -136,8 +144,8 @@ body {
     opacity: 0.6;
 }
 
-/* 思考记录区域 */
-.questions {
+/* 引导问题区域 */
+.guidance-questions {
     background: var(--card-bg);
     border-radius: 12px;
     padding: 25px;
@@ -145,9 +153,9 @@ body {
     margin-top: 30px;
 }
 
-.questions h2 {
-    margin-bottom: 30px; /* 设置你理想的间距值 */
-    color: var(--text-color); /* 保持视觉一致性 */
+.guidance-questions h2 {
+    margin-bottom: 30px;
+    color: var(--text-color);
 }
 
 .question-item {
@@ -163,26 +171,21 @@ body {
     margin-bottom: 10px;
 }
 
+.question-item p {
+    color: #6d4c41;
+    font-size: 0.95em;
+}
+
 .answer-input {
     width: 100%;
-    min-height: 100px;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    font-family: inherit;
-    font-size: 14px;
-    resize: vertical;
+    padding: 10px;
     margin-top: 10px;
-    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
 }
 
-.answer-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(216, 67, 21, 0.1);
-}
-
-/* 模态框通用样式 */
+/* 模态框样式 */
 .modal {
     position: fixed;
     z-index: 1000;
@@ -194,6 +197,37 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+/* 参数显示 */
+.parameter-display {
+    background: #fffaf0;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.param-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.param-table th,
+.param-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.param-table th {
+    background: #efebe9;
+    font-weight: 600;
+}
+
+.param-value {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: var(--primary-color);
 }
 
 .modal-content {
@@ -223,4 +257,9 @@ body {
 
 .close-modal:hover {
     color: var(--primary-color);
+}
+
+.modal-footer {
+    margin-top: 25px;
+    text-align: right;
 }

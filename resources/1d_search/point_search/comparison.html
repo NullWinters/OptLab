@@ -14,7 +14,7 @@
 </head>
 <body>
 <div class="container">
-    <a href="index.html" class="back-btn">返回首页</a>
+    <a href="../index.html" class="back-btn">返回首页</a>
     <!-- 页面首部-->
     <header class="header">
         <h1>点搜索教学实验</h1>
@@ -22,6 +22,9 @@
     </header>
     <!-- 实验导航栏 -->
     <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">
+            算法介绍
+        </button>
         <button class="nav-btn" onclick="window.location.href='observation.html'">
             流程观察
         </button>
@@ -118,10 +121,10 @@
             <div class="panel-section" style="margin: 15px 0 0 0; padding: 0; box-shadow: none; background: transparent;">
                 <h3>算法控制</h3>
                 <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
-                    <button class="control-btn btn-primary" id="play-btn">▶ 播放</button>
-                    <button class="control-btn btn-secondary" id="pause-btn">⏸ 暂停</button>
-                    <button class="control-btn btn-primary" id="step-btn">⏭ 单步</button>
-                    <button class="control-btn btn-accent" id="reset-btn">↻ 重置</button>
+                    <button class="control-btn btn-primary" id="play-btn">播放</button>
+                    <button class="control-btn btn-secondary" id="pause-btn">暂停</button>
+                    <button class="control-btn btn-primary" id="step-btn">单步</button>
+                    <button class="control-btn btn-accent" id="reset-btn">重置</button>
                 </div>
 
                 <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">

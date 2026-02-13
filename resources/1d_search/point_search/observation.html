@@ -13,14 +13,17 @@
 </head>
 <body>
 <div class="container">
-    <a href="index.html" class="back-btn">返回首页</a>
+    <a href="../index.html" class="back-btn">返回首页</a>
     <!-- 页面首部-->
     <header class="header">
         <h1>点搜索教学实验</h1>
         <p class="subtitle">观察梯度下降法、牛顿法与割线法的执行过程</p>
     </header>
     <!-- 实验导航栏 -->
-        <nav class="navigation">
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">
+            算法介绍
+        </button>
         <button class="nav-btn active" onclick="window.location.href='observation.html'">
             流程观察
         </button>
@@ -138,16 +141,16 @@
                 <h3>算法控制</h3>
                 <div class="control-buttons">
                     <button class="control-btn btn-primary" id="play-btn">
-                        ▶ 播放
+                        播放
                     </button>
                     <button class="control-btn btn-secondary" id="pause-btn">
-                        ⏸ 暂停
+                        暂停
                     </button>
                     <button class="control-btn btn-primary" id="step-btn">
-                        ⏭ 单步
+                        单步
                     </button>
                     <button class="control-btn btn-accent" id="reset-btn">
-                        ↻ 重置
+                        重置
                     </button>
                 </div>
 
