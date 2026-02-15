@@ -1,419 +1,220 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>一维搜索方法 · 最小二乘与利润最大化</title>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <title>一维搜索方法应用 · 最小二乘与利润优化</title>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <!-- 无额外CSS，仅使用浏览器默认样式 -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <link rel="stylesheet" href="main.css">
 </head>
 <body>
+<a href="../index.html" class="back-btn">返回首页</a>
 <h1>一维搜索方法应用实验：最小二乘拟合 + 定价利润优化</h1>
-<p>本实验包含两个经典优化问题：<strong>① 最小二乘法线性拟合</strong>（根据价格–需求数据估计需求函数）；<strong>② 基于需求函数的最大利润定价</strong>。右侧下拉框列出了六种一维搜索方法，<span style="background-color: #ffe0e0; padding:2px 4px;">当前均未实现算法</span>，结果展示为<strong>解析解</strong>（理论最优值）。后续可替换为实际搜索算法。</p>
-<hr>
 
-<!-- ========= 第一部分：最小二乘线性拟合 (数据集上传 + 参数估计) ========= -->
-<h2>第一部分：最小二乘法拟合需求函数 D(p) = a + b·p</h2>
-<div style="border:1px solid #aaa; padding:1em; margin-bottom:2em;">
-    <p><strong>优化问题描述</strong>：
-    <ul>
-        <li><strong>目标函数</strong>（最小化）：\( \min_{a,b} \sum_{i=1}^{n} (y_i - (a + b x_i))^2 \)  —— 残差平方和</li>
-        <li><strong>决策变量</strong>：截距 \(a\) (需求量基数) ，斜率 \(b\) (价格敏感度, 通常负值)</li>
-        <li><strong>约束条件</strong>：无约束（但经济意义期望 \(b \le 0\)）</li>
-        <li><strong>无偏估计说明</strong>：最小二乘法在高斯-马尔可夫假设下提供线性无偏估计，此处直接采用解析公式计算。</li>
-    </ul>
-
-    <h3>价格–需求数据集</h3>
-    <div>
-        <label>上传CSV文件（两列：价格,需求）: </label>
-        <input type="file" id="dataFile" accept=".csv,.txt,.text/csv"><br>
-        <small>文件格式示例：每行一对数值，如 “10,200” 。默认展示示例数据。</small>
-        <button id="loadDefaultBtn" style="margin-left:2em;">重置为默认示例数据</button>
-    </div>
-    <div id="columnSelector" style="margin: 1em 0; display: none;">
-        <label>价格列：<select id="priceColSelect"></select></label>
-        <label>需求列：<select id="demandColSelect"></select></label>
-        <button id="applyColSelection">应用</button>
-        <span style="color:#888;">（请先上传CSV文件）</span>
-    </div>
-    <h4>当前数据点：</h4>
-    <table border="1" cellpadding="5" style="border-collapse: collapse; margin-top:0.5em;">
-        <thead id="dataTableHeader"><tr><th>价格 (p)</th><th>需求 (D)</th></tr></thead>
-        <tbody id="dataTableBody"></tbody>
-    </table>
-    <p>样本数量: <span id="sampleCount">0</span></p>
-
-    <h4>最小二乘拟合结果：</h4>
-    <p id="fitResult">截距 a = <span id="interceptVal">--</span> , 斜率 b = <span id="slopeVal">--</span><br>
-        需求函数表达式: D(p) = <span id="funcDisplay">--</span></p>
-
-    <div style="background-color: #f8f8f8; padding:0.8em; border-radius:4px;">
-        <label for="lsMethodSelect">选择一维搜索方法求解 (a,b) —— 待实现: </label>
-        <select id="lsMethodSelect">
-            <option value="gd">梯度下降法</option>
-            <option value="newton">牛顿法</option>
-            <option value="secant">割线法</option>
-            <option value="golden">黄金分割法</option>
-            <option value="fib">斐波那契数列法</option>
-            <option value="bisect">二分法</option>
-        </select>
-        <span style="color:#a00; margin-left:1.5em;">⚠️ 该下拉框仅为占位，实际求解仍使用解析公式</span>
-    </div>
-    <p style="font-size:0.9em;">※ 解析解公式:
-        \( b = \frac{n\sum xy - \sum x \sum y}{n\sum x^2 - (\sum x)^2}, \quad a = \frac{\sum y - b\sum x}{n} \)</p>
-</div>
-
-<!-- ========= 第二部分：利润最大化 (利用拟合得到的 D(p) ) ========= -->
-<h2>第二部分：基于需求函数的最大利润定价</h2>
-<div style="border:1px solid #aaa; padding:1em;">
-    <p><strong>优化问题描述</strong>：
-    <ul>
-        <li><strong>原始目标</strong>（最大化利润）: \( \max_{p} \; \pi(p) = (p - c) \cdot D(p) \),  其中 \(D(p) = a + b p\) (由上部分拟合得到)</li>
-        <li><strong>最小值等价形式</strong>：\( \min_{p} \; -\pi(p) \)</li>
-        <li><strong>决策变量</strong>：产品定价 \( p \ge 0 \) (价格非负)</li>
-        <li><strong>约束条件</strong>：\( p \ge 0 \) ；同时可隐含 \( D(p) \ge 0 \) 但此处仅考虑价格非负。</li>
-    </ul>
-
-    <p><strong>单位成本 c = </strong><input type="number" id="costInput" value="10" step="0.1" min="0" style="width:80px;"> (可修改)</p>
-    <p><strong>当前利润函数</strong>：π(p) = (p - <span id="cDisplay">10</span>) · ( <span id="aDisplayForProfit">--</span> + <span id="bDisplayForProfit">--</span> · p )</p>
-
-    <h4>最优定价与最大利润（解析解）</h4>
-    <p>最优价格 p* = <span id="optPrice">--</span>  (满足一阶条件 \(D(p)+(p-c)dD/dp=0\))</p>
-    <p>最大利润 π* = <span id="maxProfit">--</span></p>
-
-    <div style="background-color: #f8f8f8; padding:0.8em; border-radius:4px; margin-top:1em;">
-        <label for="profitMethodSelect">选择一维搜索方法求解 p* —— 待实现: </label>
-        <select id="profitMethodSelect">
-            <option value="gd">梯度下降法</option>
-            <option value="newton">牛顿法</option>
-            <option value="secant">割线法</option>
-            <option value="golden">黄金分割法</option>
-            <option value="fib">斐波那契数列法</option>
-            <option value="bisect">二分法</option>
-        </select>
-        <span style="color:#a00; margin-left:1.5em;">⚠️ 占位下拉框，当前显示解析解</span>
-    </div>
-    <p style="font-size:0.9em;">※ 解析解公式（基于线性需求）：\( p^* = \frac{b c - a}{2b} \)  (当 \(b \neq 0\))，并考虑 \(p^* \ge 0\) 约束。</p>
+<div class="description">
+    <p>本实验包含两个经典优化问题：<strong>① 最小二乘法线性拟合</strong>（根据价格–需求数据估计需求函数）；<strong>②
+        基于需求函数的最大利润定价</strong>。</p>
+    <p>
+        你可以选择不同的一维搜索方法来观察算法如何收敛到最优解。</p>
 </div>
 
 <hr>
-<footer>实验说明：所有一维搜索算法仅以下拉框形式展示，未实际编码。页面实时计算最小二乘解析解及利润最优解析解。可上传自定义数据体验。</footer>
 
-<script>
-    (function() {
-        // ---------- 全局状态 ----------
-        let prices = [];
-        let demands = [];
-        let rawData = [];            // 二维数组，存储所有行（包含标题行）
-        let columnNames = [];        // 列名数组，取自第一行
-        let selectedPriceCol = null; // 当前选择的价格列索引
-        let selectedDemandCol = null;// 当前选择的需求列索引
-        let a = 0, b = 0;               // 拟合参数 D = a + b*p
+<section class="experiment-section">
+    <div class="card" style="grid-column: 1 / -1;">
+        <h2>需求函数拟合 \( D(p) = \beta p + \alpha \)</h2>
+        <div class="derivation-box"
+             style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <strong>推导过程:</strong><br>
+            1. 无偏估计: \( E(y) = \beta E(x) + \alpha \implies \bar{y} = \beta \bar{x} + \alpha \)<br>
+            2. 消除变量 \( \alpha \): \( \alpha = \bar{y} - \beta \bar{x} \)<br>
+            3. 优化目标: \( \min L = \sum (y_i - (\beta x_i + \alpha))^2 = \beta^2 \sum (x_i - \bar{x})^2 - 2\beta \sum
+            (y_i - \bar{y})(x_i - \bar{x}) + \text{常数} \)
+        </div>
+        <div class="btn-group">
+            <input type="file" id="dataFile" accept=".csv,.txt,.text/csv" style="display: none;">
+            <button class="btn btn-primary" onclick="document.getElementById('dataFile').click()">上传数据集</button>
+            <button class="btn btn-outline" id="loadDefaultBtn">重置示例数据</button>
+        </div>
+        <div id="columnSelector"
+             style="display: none; margin-bottom: 15px; background: #fffde7; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+            <label>价格列：<select id="priceColSelect"></select></label>
+            <label style="margin-left: 10px;">需求列：<select id="demandColSelect"></select></label>
+            <button class="btn btn-primary" id="applyColSelection" style="padding: 2px 10px; margin-left: 10px;">应用
+            </button>
+        </div>
+        <div class="data-table-container">
+            <table>
+                <thead>
+                <tr>
+                    <th>价格 (p)</th>
+                    <th>需求 (D)</th>
+                </tr>
+                </thead>
+                <tbody id="dataTableBody"></tbody>
+            </table>
+        </div>
+        <p>样本数量: <span id="sampleCount" class="value-display">0</span></p>
+    </div>
 
-        // DOM 元素
-        const dataFile = document.getElementById('dataFile');
-        const loadDefaultBtn = document.getElementById('loadDefaultBtn');
-        const dataTableBody = document.getElementById('dataTableBody');
-        const sampleCountSpan = document.getElementById('sampleCount');
-        const interceptValSpan = document.getElementById('interceptVal');
-        const slopeValSpan = document.getElementById('slopeVal');
-        const funcDisplaySpan = document.getElementById('funcDisplay');
-        const aDisplayForProfit = document.getElementById('aDisplayForProfit');
-        const bDisplayForProfit = document.getElementById('bDisplayForProfit');
-        const cDisplaySpan = document.getElementById('cDisplay');
-        const costInput = document.getElementById('costInput');
-        const optPriceSpan = document.getElementById('optPrice');
-        const maxProfitSpan = document.getElementById('maxProfit');
+    <!-- 拟合可视化布局 -->
+    <div class="visualization-container">
+        <div class="canvas-column">
+            <div class="card">
+                <h3>可视化搜索过程 (目标函数 \( L(\beta) \))</h3>
+                <div id="lsCanvas" class="canvas-container"></div>
+                <div id="lsSliders" class="sliders-panel">
+                    <!-- 动态参数滑动条将在此插入 -->
+                </div>
+            </div>
+        </div>
+        <div class="control-column">
+            <div class="card">
+                <h3>算法控制</h3>
+                <div class="control-group">
+                    <label>选择搜索方法：</label>
+                    <select id="lsMethodSelect">
+                        <option value="golden">黄金分割法</option>
+                        <option value="fib">斐波那契数列法</option>
+                        <option value="bisect">二分法</option>
+                        <option value="gd">梯度下降法</option>
+                        <option value="newton">牛顿法</option>
+                        <option value="secant">割线法</option>
+                    </select>
+                </div>
+                <div class="playback-controls">
+                    <button class="btn btn-primary" id="lsPlayBtn">播放</button>
+                    <button class="btn btn-secondary" id="lsPauseBtn" disabled>暂停</button>
+                    <button class="btn btn-outline" id="lsStepBtn">单步</button>
+                    <button class="btn btn-outline" id="lsResetBtn" disabled>重置</button>
+                </div>
+                <div class="speed-control">
+                    <label>播放速度：</label>
+                    <input type="range" id="lsSpeedSlider" min="100" max="2000" step="100" value="1000">
+                </div>
+                <div class="zoom-controls">
+                    <button class="btn btn-small" id="lsZoomIn">放大</button>
+                    <button class="btn btn-small" id="lsZoomOut">缩小</button>
+                    <button class="btn btn-small" id="lsPanLeft">向左</button>
+                    <button class="btn btn-small" id="lsPanRight">向右</button>
+                </div>
+                <div class="status-display">
+                    <div class="status-item">状态: <span id="lsStepInfo" class="value-display">未开始</span></div>
+                    <div class="status-item">搜索解 \(\beta^*\): <span id="lsSearchRes" class="value-display"
+                                                                       style="color: var(--danger-color);">--</span>
+                    </div>
+                    <div class="status-item">对应 \(\alpha\): <span id="lsInterceptRes" class="value-display">--</span>
+                    </div>
+                </div>
+                <div class="result-box">
+                    <strong>拟合函数:</strong><br>
+                    <span id="funcDisplay" class="value-display">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-        // 下拉框 (仅用于展示，无功能)
-        const lsMethodSelect = document.getElementById('lsMethodSelect');
-        const profitMethodSelect = document.getElementById('profitMethodSelect');
+<hr>
 
-        // ---------- 辅助函数：解析CSV文本，更新prices, demands ----------
-        function parseCSVToMatrix(text) {
-            const lines = text.split(/\r?\n/);
-            const rows = [];
-            let headers = [];
-            let startIndex = 0;
+<section id="profitSection" class="experiment-section" style="display: none;">
+    <div class="card" style="grid-column: 1 / -1;">
+        <h2>定价与利润最大化 (负利润最小化)</h2>
+        <div class="control-group" style="margin-bottom: 15px;">
+            <label>单位成本 \( c \):</label>
+            <input type="number" id="costInput" value="10" step="0.1" min="0"
+                   style="width: 100px; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px;">
+        </div>
+        <div class="derivation-box" style="background: #fff3e0; padding: 15px; border-radius: 8px;">
+            <strong>利润函数:</strong><br>
+            \( \pi(p) = (p - \) <span id="cDisplay">10</span> \( ) \cdot ( \) <span id="aDisplayForProfit">--</span>
+            <span id="signDisplayForProfit">--</span> <span id="bDisplayForProfit">--</span> \( \cdot p ) \)
+        </div>
+    </div>
 
-            if (lines.length > 0) {
-                const firstLine = lines[0].trim();
-                if (firstLine) {
-                    const parts = firstLine.split(',').map(s => s.trim());
-                    const allNumeric = parts.every(p => !isNaN(parseFloat(p)) && isFinite(parseFloat(p)));
-                    if (!allNumeric) {
-                        headers = parts;               // 第一行为标题行
-                        startIndex = 1;
-                    } else {
-                        headers = parts.map((_, idx) => `Column${idx+1}`); // 生成默认列名
-                        const numericRow = parts.map(p => parseFloat(p));
-                        if (numericRow.every(v => !isNaN(v))) rows.push(numericRow);
-                        startIndex = 1;
-                    }
-                }
-            }
+    <!-- 利润可视化布局 -->
+    <div class="visualization-container">
+        <div class="canvas-column">
+            <div class="card">
+                <h3>可视化搜索过程 (目标函数 \( -\pi(p) \))</h3>
+                <div id="profitCanvas" class="canvas-container"></div>
+                <div id="profitSliders" class="sliders-panel">
+                    <!-- 动态参数滑动条将在此插入 -->
+                </div>
+            </div>
+        </div>
+        <div class="control-column">
+            <div class="card">
+                <h3>算法控制</h3>
+                <div class="control-group">
+                    <label>选择搜索方法：</label>
+                    <select id="profitMethodSelect">
+                        <option value="golden">黄金分割法</option>
+                        <option value="fib">斐波那契数列法</option>
+                        <option value="bisect">二分法</option>
+                        <option value="gd">梯度下降法</option>
+                        <option value="newton">牛顿法</option>
+                        <option value="secant">割线法</option>
+                    </select>
+                </div>
+                <div class="playback-controls">
+                    <button class="btn btn-primary" id="profitPlayBtn">播放</button>
+                    <button class="btn btn-secondary" id="profitPauseBtn" disabled>暂停</button>
+                    <button class="btn btn-outline" id="profitStepBtn">单步</button>
+                    <button class="btn btn-outline" id="profitResetBtn" disabled>重置</button>
+                </div>
+                <div class="speed-control">
+                    <label>播放速度：</label>
+                    <input type="range" id="profitSpeedSlider" min="100" max="2000" step="100" value="1000">
+                </div>
+                <div class="zoom-controls">
+                    <button class="btn btn-small" id="profitZoomIn">放大</button>
+                    <button class="btn btn-small" id="profitZoomOut">缩小</button>
+                    <button class="btn btn-small" id="profitPanLeft">向左</button>
+                    <button class="btn btn-small" id="profitPanRight">向右</button>
+                </div>
+                <div class="status-display">
+                    <div class="status-item">状态: <span id="profitStepInfo" class="value-display">未开始</span></div>
+                    <div class="status-item">搜索解 \( p^* \): <span id="profitSearchRes" class="value-display"
+                                                                     style="color: var(--danger-color);">--</span></div>
+                    <div class="status-item">对应利润: <span id="profitRes" class="value-display">--</span></div>
+                </div>
+            </div>
+            <div class="card">
+                <h4>实验提示</h4>
+                <p style="font-size: 0.9em; color: #666;">
+                    目标是最大化利润 \(\pi(p)\)，等价于最小化 \(-\pi(p)\)。可视化图中展示的是 \(-\pi(p)\)
+                    曲线，极小值点即为最优定价。价格的最小取值限制为 0。
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
 
-            for (let i = startIndex; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line === '') continue;
-                const parts = line.split(',').map(s => s.trim());
-                const numericRow = parts.map(p => parseFloat(p));
-                if (numericRow.every(v => !isNaN(v))) {
-                    rows.push(numericRow);
-                }
-            }
-            return { headers, rows };
-        }
-        function populateColumnSelects(headers) {
-            const priceSelect = document.getElementById('priceColSelect');
-            const demandSelect = document.getElementById('demandColSelect');
-            priceSelect.innerHTML = '';
-            demandSelect.innerHTML = '';
-            headers.forEach((name, index) => {
-                priceSelect.add(new Option(name, index));
-                demandSelect.add(new Option(name, index));
-            });
-        }
-        function updateDataFromSelectedColumns() {
-            if (selectedPriceCol === null || selectedDemandCol === null) return;
-            const priceIdx = parseInt(selectedPriceCol, 10);
-            const demandIdx = parseInt(selectedDemandCol, 10);
-            const newPrices = [], newDemands = [];
+<!-- 观察记录区 -->
+<section class="guidance-questions">
+    <h2>请观察算法运行并思考</h2>
 
-            for (let i = 1; i < rawData.length; i++) {
-                const row = rawData[i];
-                const p = parseFloat(row[priceIdx]);
-                const d = parseFloat(row[demandIdx]);
-                if (!isNaN(p) && !isNaN(d) && isFinite(p) && isFinite(d)) {
-                    newPrices.push(p);
-                    newDemands.push(d);
-                }
-            }
+    <div class="question-item">
+        <h4>问题 1：牛顿法原理</h4>
+        <p>为什么牛顿法可以一次迭代就找到极值点？查阅牛顿法原理并回答。</p>
+        <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+    </div>
 
-            if (newPrices.length < 2) {
-                alert('根据所选列，有效数据点不足2个，请重新选择列。');
-                return;
-            }
+    <div class="question-item">
+        <h4>问题 2：稳定性比较</h4>
+        <p>尝试上传不同的数据集，对比不同算法的收敛速度和精度。</p>
+        <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+    </div>
 
-            prices = newPrices;
-            demands = newDemands;
-            renderDataTableWithColumns(priceIdx, demandIdx);
-            computeAndDisplayFit();
-            updateProfitPart();
-        }
-        function renderDataTableWithColumns(priceIdx, demandIdx) {
-            if (!rawData || rawData.length < 2) return;
-            const headers = rawData[0];
-            const priceName = headers[priceIdx] || `Column${priceIdx+1}`;
-            const demandName = headers[demandIdx] || `Column${demandIdx+1}`;
+</section>
 
-            document.getElementById('dataTableHeader').innerHTML =
-                `<tr><th>${priceName} (价格)</th><th>${demandName} (需求)</th></tr>`;
+<footer>
+    一维搜索方法应用实验 · OptLab 教学资源
+</footer>
 
-            let html = '';
-            for (let i = 1; i < rawData.length; i++) {
-                const row = rawData[i];
-                const p = parseFloat(row[priceIdx]);
-                const d = parseFloat(row[demandIdx]);
-                if (!isNaN(p) && !isNaN(d)) {
-                    html += `<tr><td>${p.toFixed(4)}</td><td>${d.toFixed(4)}</td></tr>`;
-                }
-            }
-            dataTableBody.innerHTML = html;
-            sampleCountSpan.textContent = (rawData.length - 1); // 显示总数据行数
-        }
-        // 更新表格、拟合和利润显示
-        function updateAllFromData() {
-            renderDataTable();
-            computeAndDisplayFit();
-            updateProfitPart();
-        }
-
-        // 渲染数据表格
-        function renderDataTable() {
-            if (selectedPriceCol !== null && selectedDemandCol !== null && rawData.length > 0) {
-                renderDataTableWithColumns(selectedPriceCol, selectedDemandCol);
-            } else {
-                // 降级显示默认的 prices/demands
-                let html = '';
-                const n = Math.min(prices.length, demands.length);
-                for (let i = 0; i < n; i++) {
-                    html += `<tr><td>${prices[i].toFixed(4)}</td><td>${demands[i].toFixed(4)}</td></tr>`;
-                }
-                dataTableBody.innerHTML = html;
-                sampleCountSpan.textContent = n;
-            }
-        }
-
-        // 计算最小二乘解析解 (a, b)
-        function computeLSQ(xArr, yArr) {
-            const n = xArr.length;
-            if (n === 0) return { a: NaN, b: NaN };
-            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-            for (let i = 0; i < n; i++) {
-                const x = xArr[i];
-                const y = yArr[i];
-                sumX += x;
-                sumY += y;
-                sumXY += x * y;
-                sumX2 += x * x;
-            }
-            const denominator = n * sumX2 - sumX * sumX;
-            if (Math.abs(denominator) < 1e-12) {
-                // 完全共线情况，斜率无穷或未定义，返回NaN
-                return { a: NaN, b: NaN };
-            }
-            const bVal = (n * sumXY - sumX * sumY) / denominator;
-            const aVal = (sumY - bVal * sumX) / n;
-            return { a: aVal, b: bVal };
-        }
-
-        // 计算拟合结果并更新显示
-        function computeAndDisplayFit() {
-            if (prices.length < 2 || demands.length < 2) {
-                interceptValSpan.textContent = '--';
-                slopeValSpan.textContent = '--';
-                funcDisplaySpan.textContent = '数据不足，无法拟合';
-                a = b = NaN;
-                return;
-            }
-            const { a: aVal, b: bVal } = computeLSQ(prices, demands);
-            a = aVal; b = bVal;
-
-            if (isNaN(a) || isNaN(b)) {
-                interceptValSpan.textContent = 'NaN';
-                slopeValSpan.textContent = 'NaN';
-                funcDisplaySpan.textContent = '无法拟合（可能常数价格）';
-            } else {
-                interceptValSpan.textContent = a.toFixed(4);
-                slopeValSpan.textContent = b.toFixed(4);
-                funcDisplaySpan.textContent = `D(p) = ${a.toFixed(4)} ${b >= 0 ? '+' : '-'} ${Math.abs(b).toFixed(4)}·p`;
-            }
-            // 同时更新利润部分的需求函数显示
-            aDisplayForProfit.textContent = isNaN(a) ? '--' : a.toFixed(4);
-            bDisplayForProfit.textContent = isNaN(b) ? '--' : b.toFixed(4);
-        }
-
-        // 根据当前 a,b,c 计算最优价格和最大利润 (解析解)
-        function computeOptimalPrice() {
-            if (prices.length < 2 || isNaN(a) || isNaN(b) || Math.abs(b) < 1e-12) {
-                return { pOpt: null, profitMax: null };
-            }
-            const c = parseFloat(costInput.value);
-            if (isNaN(c)) return { pOpt: null, profitMax: null };
-
-            // 解析公式 p* = (b*c - a) / (2*b)  注意 b 可为负
-            const pOpt = (b * c - a) / (2 * b);
-
-            // 考虑价格非负约束 p>=0
-            let pFinal = pOpt;
-            if (pFinal < 0) pFinal = 0;
-
-            // 计算最大利润 π = (p-c)*(a + b*p)
-            const demandAtOpt = a + b * pFinal;
-            const profit = (pFinal - c) * demandAtOpt;
-
-            return { pOpt: pFinal, profitMax: profit };
-        }
-
-        // 更新利润部分的UI (成本显示, 最优价格, 最大利润)
-        function updateProfitPart() {
-            const c = parseFloat(costInput.value);
-            cDisplaySpan.textContent = isNaN(c) ? '?' : c.toString();
-
-            if (prices.length < 2 || isNaN(a) || isNaN(b) || Math.abs(b) < 1e-12) {
-                optPriceSpan.textContent = '-- (需求函数无效或b≈0)';
-                maxProfitSpan.textContent = '--';
-                return;
-            }
-
-            const { pOpt, profitMax } = computeOptimalPrice();
-            if (pOpt === null || profitMax === null) {
-                optPriceSpan.textContent = '无法计算';
-                maxProfitSpan.textContent = '无法计算';
-            } else {
-                optPriceSpan.textContent = pOpt.toFixed(4);
-                maxProfitSpan.textContent = profitMax.toFixed(4);
-            }
-        }
-
-        // ---------- 事件处理 ----------
-        // 加载默认示例数据
-        function loadDefaultData() {
-            prices = [10, 20, 30, 40, 50];
-            demands = [200, 150, 110, 80, 60];
-            rawData = [];
-            columnNames = [];
-            selectedPriceCol = null;
-            selectedDemandCol = null;
-            document.getElementById('columnSelector').style.display = 'none';
-            document.getElementById('dataTableHeader').innerHTML = '<tr><th>价格 (p)</th><th>需求 (D)</th></tr>';
-            renderDataTable();      // 使用降级显示
-            computeAndDisplayFit();
-            updateProfitPart();
-        }
-
-        // 文件上传
-        dataFile.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const content = ev.target.result;
-                const { headers, rows } = parseCSVToMatrix(content);
-                if (rows.length < 2) {
-                    alert('至少需要2行有效数据行。保持原有数据不变。');
-                    return;
-                }
-                rawData = [headers, ...rows];   // 存储完整数据（含标题行）
-                columnNames = headers;
-                populateColumnSelects(columnNames);
-                document.getElementById('columnSelector').style.display = 'block';
-
-                // 默认选中前两列（如果有）
-                selectedPriceCol = 0;
-                selectedDemandCol = (columnNames.length >= 2) ? 1 : 0;
-                document.getElementById('priceColSelect').value = selectedPriceCol;
-                document.getElementById('demandColSelect').value = selectedDemandCol;
-
-                updateDataFromSelectedColumns();
-            };
-            reader.readAsText(file);
-            dataFile.value = ''; // 允许重复上传同一文件
-        });
-
-        document.getElementById('applyColSelection').addEventListener('click', function() {
-            const priceIdx = parseInt(document.getElementById('priceColSelect').value, 10);
-            const demandIdx = parseInt(document.getElementById('demandColSelect').value, 10);
-            if (priceIdx === demandIdx) {
-                alert('价格列和需求列不能是同一列！');
-                return;
-            }
-            selectedPriceCol = priceIdx;
-            selectedDemandCol = demandIdx;
-            updateDataFromSelectedColumns();
-        });
-
-        loadDefaultBtn.addEventListener('click', function() {
-            loadDefaultData();
-        });
-
-        costInput.addEventListener('input', function() {
-            updateProfitPart();
-        });
-
-        // 初始化默认数据
-        loadDefaultData();
-
-        // 可选: 当下拉框改变时仅作提示（表明是占位）
-        lsMethodSelect.addEventListener('change', function() {
-            console.log('最小二乘方法选择：', lsMethodSelect.value, '（待实现）');
-        });
-        profitMethodSelect.addEventListener('change', function() {
-            console.log('利润搜索方法选择：', profitMethodSelect.value, '（待实现）');
-        });
-    })();
-</script>
+<script src="main.js"></script>
 </body>
 </html>
