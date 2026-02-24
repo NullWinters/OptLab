@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课程列表 - OptLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #fffaf0;
+            color: #5d4037;
+        }
+        .text-amber-primary { color: #d84315; }
+        .bg-amber-primary { background-color: #d84315; }
+        .border-amber-primary { border-color: #d84315; }
+        .hover-amber-primary:hover { background-color: #bf360c; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
+        <div class="text-2xl font-bold text-amber-primary flex items-center">
+            <a href="/" class="flex items-center"><i class="fas fa-flask mr-2"></i> OptLab</a>
+        </div>
+        <div class="space-x-8 hidden md:flex">
+            <a href="/" class="hover:text-amber-primary transition">首页</a>
+            <a href="/courses/" class="text-amber-primary font-bold transition">课程</a>
+            <a href="/lab" class="hover:text-amber-primary transition">实验中心</a>
+        </div>
+    </nav>
+
+    <main class="flex-grow max-w-5xl mx-auto w-full py-12 px-6">
+        <h1 class="text-4xl font-bold mb-4 text-center">课程中心</h1>
+        <p class="text-gray-600 text-center mb-16 text-lg">系统学习最优化算法，从理论基础到工程实践</p>
+
+        <div class="space-y-12">
+            <!-- 模块 1: 一维搜索方法 -->
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-amber-100 hover:border-amber-300 transition-colors duration-300">
+                <div class="md:w-1/3 bg-amber-50 flex items-center justify-center p-8">
+                    <!-- 占位预览图 -->
+                    <div class="w-full h-48 bg-white rounded-2xl shadow-inner flex items-center justify-center text-amber-200">
+                        <i class="fas fa-chart-line text-6xl"></i>
+                    </div>
+                </div>
+                <div class="md:w-2/3 p-8">
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-2xl font-bold text-amber-900">一维搜索方法</h2>
+                        <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded uppercase">已上线</span>
+                    </div>
+                    <p class="text-gray-600 mb-6">探索单变量函数的极小值搜索技术，是最优化算法的基础组件。</p>
+                    <div class="mb-8">
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">包含实验</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">区间收缩法</span>
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">点搜索</span>
+                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">应用实验</span>
+                        </div>
+                    </div>
+                    <a href="/courses/line-search/" class="inline-block bg-amber-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-amber-700 transition shadow-md">
+                        进入实验 <i class="fas fa-arrow-right ml-2 text-sm"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 模块 2: 线性规划与单纯形法 -->
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-gray-100 hover:border-amber-100 transition-colors duration-300">
+                <div class="md:w-1/3 bg-orange-50 flex items-center justify-center p-8">
+                    <div class="w-full h-48 bg-white rounded-2xl shadow-inner flex items-center justify-center text-orange-200">
+                        <i class="fas fa-draw-polygon text-6xl"></i>
+                    </div>
+                </div>
+                <div class="md:w-2/3 p-8 text-gray-400">
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-2xl font-bold text-gray-700">线性规划与单纯形法</h2>
+                        <span class="bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded uppercase">建设中</span>
+                    </div>
+                    <p class="mb-6">研究线性约束条件下的线性目标函数极值问题，涵盖单纯形表与对偶理论。</p>
+                    <div class="mb-8 opacity-50">
+                        <h3 class="text-sm font-bold uppercase tracking-wider mb-3">包含实验</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">二维几何解释</span>
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">单纯形表</span>
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">对偶可视化</span>
+                        </div>
+                    </div>
+                    <a href="/courses/linear-programming/" class="inline-block border-2 border-gray-200 text-gray-400 px-6 py-3 rounded-xl font-bold hover:border-amber-primary hover:text-amber-primary transition">
+                        查看详情
+                    </a>
+                </div>
+            </div>
+
+            <!-- 模块 3: 梯度下降法 -->
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden flex flex-col md:flex-row border border-gray-100 hover:border-amber-100 transition-colors duration-300">
+                <div class="md:w-1/3 bg-red-50 flex items-center justify-center p-8">
+                    <div class="w-full h-48 bg-white rounded-2xl shadow-inner flex items-center justify-center text-red-200">
+                        <i class="fas fa-angle-double-down text-6xl"></i>
+                    </div>
+                </div>
+                <div class="md:w-2/3 p-8 text-gray-400">
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-2xl font-bold text-gray-700">梯度下降法</h2>
+                        <span class="bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded uppercase">建设中</span>
+                    </div>
+                    <p class="mb-6">机器学习中最核心的优化算法，学习如何高效寻找多维空间中的局部极小值。</p>
+                    <div class="mb-8 opacity-50">
+                        <h3 class="text-sm font-bold uppercase tracking-wider mb-3">包含实验</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">固定学习率</span>
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">自适应学习率</span>
+                            <span class="bg-gray-100 px-3 py-1 rounded-full text-sm">动量法</span>
+                        </div>
+                    </div>
+                    <a href="/courses/gradient-descent/" class="inline-block border-2 border-gray-200 text-gray-400 px-6 py-3 rounded-xl font-bold hover:border-amber-primary hover:text-amber-primary transition">
+                        查看详情
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-100 py-12 px-6 mt-20">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+        </div>
+    </footer>
+</body>
+</html>

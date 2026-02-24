@@ -1,0 +1,10 @@
+/* 全局自定义样式，尽量与 templates/courses/line-search 的暖色系保持一致 */
+:root{
+  --amber-600:#d97706;
+  --amber-700:#b45309;
+  --deep-orange-700:#d84315; /* 参考 line-search 页面 */
+}
+
+.text-amber-primary{color:var(--deep-orange-700);}
+.bg-amber-primary{background-color:var(--deep-orange-700);}
+.border-amber-primary{border-color:var(--deep-orange-700);}

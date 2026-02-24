@@ -29,6 +29,12 @@
     box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
 }
 
+/* 让返回按钮与卡片左侧对齐的容器 */
+.back-row {
+    max-width: 1400px;
+    margin: 0 auto 10px;
+}
+
 * {
     margin: 0;
     padding: 0;

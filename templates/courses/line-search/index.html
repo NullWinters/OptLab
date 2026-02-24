@@ -203,11 +203,31 @@
             }
             h1 { font-size: 2.4em; }
         }
+
+        /* 返回按钮样式 */
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #ffb300, #ff8f00);
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
+        <a href="/courses/" class="back-btn">返回</a>
         <h1>一维搜索算法</h1>
         <p class="description">探索无约束优化的基本问题，通过数值计算在复杂的一维空间中定位函数的极小值。本实验提供从基础区间缩减到利用导数迭代的完整观察体验。</p>
 

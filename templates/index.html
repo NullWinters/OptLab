@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptLab - 最优化实验室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #fffaf0;
+            color: #5d4037;
+        }
+        .text-amber-primary { color: #d84315; }
+        .bg-amber-primary { background-color: #d84315; }
+        .border-amber-primary { border-color: #d84315; }
+        .hover-amber-primary:hover { background-color: #bf360c; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
+        <div class="text-2xl font-bold text-amber-primary flex items-center">
+            <i class="fas fa-flask mr-2"></i> OptLab
+        </div>
+        <div class="space-x-8 hidden md:flex">
+            <a href="/" class="hover:text-amber-primary transition">首页</a>
+            <a href="/courses/" class="hover:text-amber-primary transition">课程</a>
+            <a href="/lab" class="hover:text-amber-primary transition">实验中心</a>
+        </div>
+    </nav>
+
+    <!-- 主视觉区 -->
+    <header class="flex-grow flex items-center justify-center py-20 px-6">
+        <div class="max-w-4xl text-center">
+            <h1 class="text-5xl md:text-7xl font-extrabold text-amber-primary mb-6">
+                最优化实验室
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-600 mb-10 leading-relaxed">
+                通过交互式可视化理解最优化理论。覆盖无约束优化、线性规划及非线性有约束优化，助你掌握算法精髓。
+            </p>
+            <div class="flex flex-col md:flex-row justify-center gap-4">
+                <a href="/courses/" class="bg-amber-primary text-white px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
+                    浏览课程
+                </a>
+                <a href="/lab" class="bg-white text-amber-primary border-2 border-amber-primary px-8 py-4 rounded-full font-bold text-lg shadow-md hover:bg-amber-50 transition transform hover:-translate-y-1">
+                    实验中心
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 项目背景 -->
+    <section class="bg-white py-20 px-6">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-16">项目背景</h2>
+            <div class="grid md:grid-cols-3 gap-12 text-center">
+                <div>
+                    <div class="w-16 h-16 bg-amber-100 text-amber-primary rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">直观教学</h3>
+                    <p class="text-gray-600">打破枯燥的数学公式，通过动态图表直观展示算法每一步的迭代过程，降低学习曲线。</p>
+                </div>
+                <div>
+                    <div class="w-16 h-16 bg-amber-100 text-amber-primary rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+                        <i class="fas fa-vial"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">交互实验</h3>
+                    <p class="text-gray-600">提供可调节的参数与多种测试函数，让学生在动手实验中理解收敛性、步长及梯度等关键概念。</p>
+                </div>
+                <div>
+                    <div class="w-16 h-16 bg-amber-100 text-amber-primary rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-4">多领域覆盖</h3>
+                    <p class="text-gray-600">从基础的一维搜索到复杂的非线性约束优化，涵盖理工科与商科常用的经典最优化算法。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 算法体系导航 -->
+    <section class="py-20 px-6 max-w-7xl mx-auto w-full">
+        <h2 class="text-3xl font-bold text-center mb-16 text-amber-primary">三大算法体系</h2>
+        <div class="grid md:grid-cols-3 gap-8">
+            <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 hover:shadow-xl transition">
+                <div class="text-4xl text-amber-500 mb-6"><i class="fas fa-mountain"></i></div>
+                <h3 class="text-2xl font-bold mb-4">无约束优化</h3>
+                <p class="text-gray-600 mb-6">研究目标函数在整个空间内的极值问题，包含线搜索与梯度法等核心算法。</p>
+                <span class="text-sm font-medium text-amber-primary bg-amber-50 px-3 py-1 rounded-full">MVP 重点</span>
+            </div>
+            <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 hover:shadow-xl transition">
+                <div class="text-4xl text-amber-500 mb-6"><i class="fas fa-draw-polygon"></i></div>
+                <h3 class="text-2xl font-bold mb-4">线性规划</h3>
+                <p class="text-gray-600 mb-6">解决线性约束下的线性目标函数优化问题，经典的单纯形法与对偶理论。</p>
+                <span class="text-sm font-medium text-gray-400 bg-gray-50 px-3 py-1 rounded-full">建设中</span>
+            </div>
+            <div class="bg-white p-8 rounded-3xl shadow-md border border-gray-100 hover:shadow-xl transition">
+                <div class="text-4xl text-amber-500 mb-6"><i class="fas fa-wave-square"></i></div>
+                <h3 class="text-2xl font-bold mb-4">非线性有约束优化</h3>
+                <p class="text-gray-600 mb-6">更具挑战性的通用模型，处理复杂的非线性约束，是高级优化理论的基石。</p>
+                <span class="text-sm font-medium text-gray-400 bg-gray-50 px-3 py-1 rounded-full">待开发</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-gray-100 py-12 px-6 mt-auto">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
