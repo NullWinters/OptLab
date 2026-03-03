@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from routers.agent import router as agent_router
 import os
 
 app = FastAPI()
+app.include_router(agent_router)
 
 # 挂载静态文件目录
 if not os.path.exists("static"):

@@ -11,6 +11,7 @@ async def chat(request: AssistantRequest):
     try:
         result = await ask_assistant(
             message=request.message,
+            page_id=request.page_id,
             guidebook=request.guidebook,
             buttons=[b.model_dump() for b in request.buttons],
         )

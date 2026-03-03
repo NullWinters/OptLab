@@ -386,34 +386,35 @@ DEEPSEEK_TEMPERATURE=0.7
 
 ### AI 助手提示词体系
 
-AI 助手的提示词由三部分组成，分别位于前端和后端：
+AI 助手的提示词由四部分组成：
 
 ```
 ┌─ 前端 (observation.html <script>) ─────────────────────────────────┐
 │                                                                     │
-│  GUIDEBOOK (指导书)          BUTTON_REGISTRY (按钮注册表)            │
+│  GUIDEBOOK (页面指导书)       BUTTON_REGISTRY (按钮注册表)           │
 │  ┌──────────────────┐        ┌──────────────────────────────┐      │
 │  │ 页面用途说明      │        │ { id, description, type }    │      │
 │  │ 布局描述          │        │ { id, description, type }    │      │
 │  │ 操作流程 1-9 步   │        │ ...                          │      │
 │  └────────┬─────────┘        └──────────────┬───────────────┘      │
-│           │                                  │                      │
+│           │       page_id                    │                      │
 │           └──────────┬───────────────────────┘                      │
 │                      ▼                                              │
 │              POST /api/assistant/chat                                │
-│              { message, guidebook, buttons }                        │
+│              { message, page_id, guidebook, buttons }               │
 └─────────────────────────┬───────────────────────────────────────────┘
                           ▼
 ┌─ 后端 (core/agent.py → ask_assistant) ─────────────────────────────┐
 │                                                                     │
-│  system_prompt (系统提示词模板)                                      │
+│  _load_docs(page_id) ← 根据 page_id 读取 docs/ 下的文档            │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │ 角色设定：你是一个流程观察页面的操作助手...                    │   │
-│  │ {guidebook}                     ← 前端传入的指导书            │   │
-│  │ {buttons_desc}                  ← 前端传入的按钮列表          │   │
-│  │ 回答要求：text + highlight_ids                                │   │
-│  │ 约束：ID 必须来自按钮列表、顺序代表操作步骤...                 │   │
+│  │ docs/实验指导书/区间收缩法-流程观察.txt   ← 实验步骤说明      │   │
+│  │ docs/公式/黄金分割法.txt                  ← 算法公式          │   │
+│  │ docs/公式/斐波那契数列法.txt                                  │   │
+│  │ docs/公式/二分法.txt                                          │   │
 │  └─────────────────────────────────────────────────────────────┘   │
+│                          ▼                                          │
+│  system_prompt = 角色设定 + guidebook + buttons + docs              │
 │                          ▼                                          │
 │  llm.with_structured_output(AssistantSchema)                        │
 │                          ▼                                          │
@@ -425,16 +426,50 @@ AI 助手的提示词由三部分组成，分别位于前端和后端：
 
 | 部分 | 位置 | 作用 |
 |------|------|------|
-| **指导书** (GUIDEBOOK) | 前端 JS `observation.html` | 描述页面用途、布局和操作流程，让 AI 理解页面上下文 |
+| **页面指导书** (GUIDEBOOK) | 前端 JS `observation.html` | 描述页面 UI 布局和操作流程，让 AI 理解页面上下文 |
 | **按钮注册表** (BUTTON_REGISTRY) | 前端 JS `observation.html` | 列出所有可交互控件的 `id`、`description`、`type`，AI 从中选取 ID 返回 |
-| **系统提示词模板** | 后端 `core/agent.py` | 将指导书和按钮列表组装为完整的 system prompt，约束 AI 的输出格式 |
+| **实验文档** (docs/) | 后端 `docs/实验指导书/` + `docs/公式/` | 实验步骤说明和算法公式，由后端根据 `page_id` 自动加载 |
+| **系统提示词模板** | 后端 `core/agent.py` | 将以上三部分组装为完整的 system prompt，约束 AI 的输出格式 |
 | **响应 Schema** | 后端 `schemas/agent.py` | Pydantic 模型 `AssistantSchema`，强制 AI 输出 `text` + `highlight_ids` |
+
+#### page_id 与文档映射
+
+在 `core/agent.py` 的 `_DOCS_MAP` 中定义映射关系：
+
+| page_id | 实验指导书 | 算法公式 |
+|---------|-----------|---------|
+| `range_search_observation` | `区间收缩法-流程观察.txt` | 黄金分割法、斐波那契数列法、二分法 |
+| `point_search_observation` | `点搜索-流程观察.txt` | 梯度下降法、牛顿法、割线法 |
+
+新增实验页面时，只需在 `_DOCS_MAP` 中添加对应的条目，并在 `docs/` 下放置文档文件即可。
 
 #### 为新页面添加 AI 助手
 
 以为 `point_search/observation.html` 添加 AI 助手为例：
 
-**1. 定义按钮注册表** — 在页面 `<script>` 中列出该页面所有可交互控件：
+**1. 准备文档** — 在 `docs/` 下添加实验指导书和算法公式文件：
+
+```
+docs/实验指导书/点搜索-流程观察.txt
+docs/公式/梯度下降法.txt
+docs/公式/牛顿法.txt
+docs/公式/割线法.txt
+```
+
+**2. 注册文档映射** — 在 `core/agent.py` 的 `_DOCS_MAP` 中添加条目：
+
+```python
+"point_search_observation": {
+    "guide": "docs/实验指导书/点搜索-流程观察.txt",
+    "formulas": [
+        "docs/公式/梯度下降法.txt",
+        "docs/公式/牛顿法.txt",
+        "docs/公式/割线法.txt",
+    ],
+},
+```
+
+**3. 定义按钮注册表** — 在页面 `<script>` 中列出该页面所有可交互控件：
 
 ```javascript
 const BUTTON_REGISTRY = [
@@ -444,19 +479,15 @@ const BUTTON_REGISTRY = [
 ];
 ```
 
-**2. 编写指导书** — 描述该页面的用途和操作流程：
+**4. 编写页面指导书** — 描述该页面的 UI 布局和操作流程：
 
 ```javascript
-const GUIDEBOOK =
-    '这是点搜索教学实验的流程观察页面...\n' +
-    '使用流程：\n' +
-    '1. 选择测试函数...\n' +
-    '2. 选择算法...\n';
+const GUIDEBOOK = '这是点搜索教学实验的流程观察页面...\n';
 ```
 
-**3. 复制侧边栏 HTML 和 JS** — 从 `range_search/observation.html` 复制 AI 助手的 HTML 结构（浮动按钮 + 侧边栏 + 高亮遮罩）和末尾的 `<script>` 块，替换其中的 `BUTTON_REGISTRY` 和 `GUIDEBOOK`。
+**5. 复制侧边栏 HTML 和 JS** — 从 `range_search/observation.html` 复制 AI 助手的 HTML 结构（浮动按钮 + 侧边栏 + 高亮遮罩）和末尾的 `<script>` 块，替换其中的 `BUTTON_REGISTRY`、`GUIDEBOOK` 和 `page_id`。
 
-**4. 引入 CSS** — 确保页面加载了包含 `.ai-sidebar` 等样式的 CSS 文件。
+**6. 引入 CSS** — 确保页面加载了包含 `.ai-sidebar` 等样式的 CSS 文件。
 
 > `type` 字段目前默认为 `"normal"`，预留用于未来区分控件类型（如 `"slider"`、`"modal"` 等）以实现差异化交互引导。
 
