@@ -729,11 +729,13 @@
     toggleBtn.addEventListener('click', function () {
         const isOpen = sidebar.classList.toggle('open');
         toggleBtn.classList.toggle('active', isOpen);
+        document.body.classList.toggle('ai-sidebar-open', isOpen);
     });
 
     closeBtn.addEventListener('click', function () {
         sidebar.classList.remove('open');
         toggleBtn.classList.remove('active');
+        document.body.classList.remove('ai-sidebar-open');
     });
 
     // 发送消息
@@ -829,6 +831,7 @@
                 highlightCurrentButton();
             } else {
                 clearHighlights();
+                addMessage('演示结束', 'system');
             }
         };
         btn.addEventListener('click', btn._aiClickHandler);
