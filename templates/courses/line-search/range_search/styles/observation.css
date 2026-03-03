@@ -292,6 +292,18 @@ input[type="range"] {
 }
 
 /* ========== AI 助手侧边栏 ========== */
+body {
+    transition: padding-right 0.3s ease;
+}
+
+body.ai-sidebar-open {
+    padding-right: 380px;
+}
+
+body.ai-sidebar-open .ai-toggle-btn {
+    right: 410px;
+}
+
 .ai-toggle-btn {
     position: fixed;
     bottom: 30px;
@@ -411,6 +423,16 @@ input[type="range"] {
 .ai-error {
     background: #ffebee !important;
     color: #c62828 !important;
+}
+
+.ai-system {
+    align-self: center;
+    background: #efebe9;
+    color: #8d6e63;
+    font-size: 13px;
+    padding: 4px 16px;
+    border-radius: 12px;
+    max-width: none;
 }
 
 .ai-chat-input {

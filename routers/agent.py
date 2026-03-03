@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from schemas.agent import AssistantRequest
-from core.assistant import ask_assistant
+from core.agent import ask_assistant
 
 router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
