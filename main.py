@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from routers.agent import router as agent_router
 import os
 
 app = FastAPI()
+app.include_router(agent_router)
 
 # 挂载静态文件目录
 if not os.path.exists("static"):
@@ -48,7 +50,10 @@ async def read_line_search_assets(subpath: str):
     if not os.path.abspath(file_path).startswith(os.path.abspath(base_dir)):
         return {"error": "Invalid path"}, 400
     if os.path.exists(file_path) and os.path.isfile(file_path):
-        return FileResponse(file_path)
+        resp = FileResponse(file_path)
+        # 开发阶段禁用缓存，确保浏览器始终获取最新文件
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        return resp
     # HTML 资源未找到时回退到占位页；其他类型直接 404
     placeholder_path = "templates/courses/placeholder.html"
     if subpath.endswith(".html") and os.path.exists(placeholder_path):
