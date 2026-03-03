@@ -1,10 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单纯形法 - OptLab</title>
+    <link rel="stylesheet" href="main.css">
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- MathJax -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
+<div class="container">
+    <a href="../index.html" class="back-btn">返回</a>
 
+    <header class="header">
+        <h1>单纯形法</h1>
+    </header>
+
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='../introduction/main.html'">
+            算法介绍
+        </button>
+        <button class="nav-btn active">
+            单纯形法
+        </button>
+    </nav>
+
+    <div class="main-layout">
+        <!-- 左侧输入与控制面板 -->
+        <aside class="input-panel">
+            <div class="panel-section">
+                <h3>问题规模设定</h3>
+                <div class="input-inline">
+                    <div class="input-group">
+                        <label for="num-vars">变量数 (n):</label>
+                        <input type="number" id="num-vars" min="1" max="15" value="2" step="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="num-constraints">约束数 (m):</label>
+                        <input type="number" id="num-constraints" min="1" max="15" value="3" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>求解类型</h3>
+                <div class="radio-group">
+                    <label><input type="radio" name="solve-type" value="max" checked> 最大化 (Maximize)</label>
+                    <label><input type="radio" name="solve-type" value="min"> 最小化 (Minimize)</label>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>系数输入表格</h3>
+                <div id="coeff-table-container">
+                    <!-- 动态生成系数表格 -->
+                </div>
+            </div>
+
+            <div class="panel-actions">
+                <button id="reset-btn" class="action-btn secondary">重置</button>
+                <button id="check-btn" class="action-btn secondary">检查输入</button>
+                <button id="solve-btn" class="action-btn primary">求解</button>
+            </div>
+        </aside>
+
+        <!-- 右侧结果展示区 -->
+        <main class="result-area">
+            <div id="visualization-2d" class="viz-container hidden">
+                <h3>二维可视化 (n=2)</h3>
+                <div id="lp-viz"></div>
+                <p class="viz-caption">展示可行域与当前基解位置</p>
+            </div>
+            
+            <div id="iteration-results" class="results-container">
+                <div class="placeholder-text">
+                    请在左侧输入参数并点击“求解”开始实验。
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="main.js"></script>
 </body>
 </html>
