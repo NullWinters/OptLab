@@ -2,10 +2,6 @@
 name = "OptLab"
 version = "0.1.0"
 description = "Optimization Lab on Web"
-authors = [
-    {name = "nullwinters", email = "nullwinters@gmail.com"}
-]
-license = {text = "MIT"}
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
