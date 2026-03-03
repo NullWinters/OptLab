@@ -14,6 +14,7 @@ class ButtonInfo(BaseModel):
 
 class AssistantRequest(BaseModel):
     message: str = Field(..., description="User's question")
+    page_id: str = Field(..., description="Page identifier for loading server-side docs")
     guidebook: str = Field(..., description="Page guidebook text")
     buttons: List[ButtonInfo] = Field(..., description="Available buttons on the page")
 
