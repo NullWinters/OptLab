@@ -7,6 +7,13 @@
     <title>线性规划与基本解 - 介绍</title>
     <link rel="stylesheet" href="main.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
@@ -25,8 +32,8 @@
         <button class="nav-btn active" onclick="window.location.href='main.html'">
             算法介绍
         </button>
-        <button class="nav-btn" disabled>
-            单纯形法（开发中）
+        <button class="nav-btn" onclick="window.location.href='../simplex/main.html'">
+            单纯形法
         </button>
     </nav>
 
@@ -189,15 +196,6 @@
         <p>
             可见，最优解正是在某个基本可行解处取得。单纯形法的思想就是从一个基本可行解出发，沿着可行域的棱边转移到相邻的、使目标值更优的基本可行解，直至找到最优。
         </p>
-    </div>
-
-    <!-- 7. 小结与预告 -->
-    <div class="section">
-        <h2>小结与预告</h2>
-        <p>
-            通过以上介绍，我们了解了线性规划的基本形式、基本解的概念及其核心地位。基本可行解既是代数上的特殊解，也是几何上的极点，而线性规划基本定理保证了最优解一定可以在基本可行解中找到。下一章我们将深入探讨单纯形法——一种系统地从一个基本可行解转移到另一个更优基本可行解的高效算法。
-        </p>
-        <p>希望本页能为你理解线性规划打下坚实基础。</p>
     </div>
 </div>
 
