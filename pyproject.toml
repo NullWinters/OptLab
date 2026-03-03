@@ -2,6 +2,10 @@
 name = "OptLab"
 version = "0.1.0"
 description = "Optimization Lab on Web"
+authors = [
+    {name = "nullwinters", email = "nullwinters@gmail.com"}
+]
+license = {text = "MIT"}
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
@@ -13,3 +17,8 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.47",
     "uvicorn>=0.40.0",
 ]
+
+# 添加 setuptools 配置以明确包发现规则
+[tool.setuptools.packages.find]
+include = ["core*", "demo*", "models*", "routers*", "schemas*", "settings*", "repository*"]
+exclude = ["static", "templates"]
