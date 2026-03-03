@@ -346,13 +346,123 @@ source .venv/bin/activate  # Linux/macOS
 # 3. 安装依赖
 pip install -e .
 
-# 4. 运行开发服务器
-uvicorn main:app --reload
+# 4. 配置环境变量（见下方说明）
+
+# 5. 运行开发服务器
+uvicorn main:app --reload --port 8001
 ```
+
+### 配置 AI 助手
+
+项目使用 DeepSeek 大模型为流程观察页面提供 AI 操作引导。
+
+**第一步：获取 API Key**
+
+前往 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 注册并创建 API Key。
+
+**第二步：编辑 `.env` 文件**
+
+项目根目录下的 `.env` 文件包含所有可配置项：
+
+```env
+# DeepSeek API 配置
+# 从 https://platform.deepseek.com/api_keys 获取（必填）
+DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
+
+# 模型名称（可选，默认 deepseek-chat）
+DEEPSEEK_MODEL=deepseek-chat
+
+# 模型温度（可选，默认 0.7，范围 0-2）
+DEEPSEEK_TEMPERATURE=0.7
+```
+
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `DEEPSEEK_API_KEY` | ✅ | DeepSeek API 密钥 |
+| `DEEPSEEK_MODEL` | ❌ | 模型名称，默认 `deepseek-chat` |
+| `DEEPSEEK_TEMPERATURE` | ❌ | 生成温度，值越低回答越确定，默认 `0.7` |
+
+> ⚠️ `.env` 已被 `.gitignore` 忽略，API Key 不会提交到仓库。
+
+### AI 助手提示词体系
+
+AI 助手的提示词由三部分组成，分别位于前端和后端：
+
+```
+┌─ 前端 (observation.html <script>) ─────────────────────────────────┐
+│                                                                     │
+│  GUIDEBOOK (指导书)          BUTTON_REGISTRY (按钮注册表)            │
+│  ┌──────────────────┐        ┌──────────────────────────────┐      │
+│  │ 页面用途说明      │        │ { id, description, type }    │      │
+│  │ 布局描述          │        │ { id, description, type }    │      │
+│  │ 操作流程 1-9 步   │        │ ...                          │      │
+│  └────────┬─────────┘        └──────────────┬───────────────┘      │
+│           │                                  │                      │
+│           └──────────┬───────────────────────┘                      │
+│                      ▼                                              │
+│              POST /api/assistant/chat                                │
+│              { message, guidebook, buttons }                        │
+└─────────────────────────┬───────────────────────────────────────────┘
+                          ▼
+┌─ 后端 (core/agent.py → ask_assistant) ─────────────────────────────┐
+│                                                                     │
+│  system_prompt (系统提示词模板)                                      │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ 角色设定：你是一个流程观察页面的操作助手...                    │   │
+│  │ {guidebook}                     ← 前端传入的指导书            │   │
+│  │ {buttons_desc}                  ← 前端传入的按钮列表          │   │
+│  │ 回答要求：text + highlight_ids                                │   │
+│  │ 约束：ID 必须来自按钮列表、顺序代表操作步骤...                 │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                          ▼                                          │
+│  llm.with_structured_output(AssistantSchema)                        │
+│                          ▼                                          │
+│  返回 JSON: { text: "...", highlight_ids: ["btn-a", "btn-b"] }     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### 各部分说明
+
+| 部分 | 位置 | 作用 |
+|------|------|------|
+| **指导书** (GUIDEBOOK) | 前端 JS `observation.html` | 描述页面用途、布局和操作流程，让 AI 理解页面上下文 |
+| **按钮注册表** (BUTTON_REGISTRY) | 前端 JS `observation.html` | 列出所有可交互控件的 `id`、`description`、`type`，AI 从中选取 ID 返回 |
+| **系统提示词模板** | 后端 `core/agent.py` | 将指导书和按钮列表组装为完整的 system prompt，约束 AI 的输出格式 |
+| **响应 Schema** | 后端 `schemas/agent.py` | Pydantic 模型 `AssistantSchema`，强制 AI 输出 `text` + `highlight_ids` |
+
+#### 为新页面添加 AI 助手
+
+以为 `point_search/observation.html` 添加 AI 助手为例：
+
+**1. 定义按钮注册表** — 在页面 `<script>` 中列出该页面所有可交互控件：
+
+```javascript
+const BUTTON_REGISTRY = [
+    { id: "gradient-btn", description: "梯度下降法按钮", type: "normal" },
+    { id: "newton-btn",   description: "牛顿法按钮",     type: "normal" },
+    // ... 该页面的所有控件
+];
+```
+
+**2. 编写指导书** — 描述该页面的用途和操作流程：
+
+```javascript
+const GUIDEBOOK =
+    '这是点搜索教学实验的流程观察页面...\n' +
+    '使用流程：\n' +
+    '1. 选择测试函数...\n' +
+    '2. 选择算法...\n';
+```
+
+**3. 复制侧边栏 HTML 和 JS** — 从 `range_search/observation.html` 复制 AI 助手的 HTML 结构（浮动按钮 + 侧边栏 + 高亮遮罩）和末尾的 `<script>` 块，替换其中的 `BUTTON_REGISTRY` 和 `GUIDEBOOK`。
+
+**4. 引入 CSS** — 确保页面加载了包含 `.ai-sidebar` 等样式的 CSS 文件。
+
+> `type` 字段目前默认为 `"normal"`，预留用于未来区分控件类型（如 `"slider"`、`"modal"` 等）以实现差异化交互引导。
 
 ### 访问
 
-打开浏览器访问 http://localhost:8000
+打开浏览器访问 http://localhost:8001
 
 ---
 
@@ -368,10 +478,11 @@ uvicorn main:app --reload
 
 ### Phase 2：AI 助教
 
-- [ ] LangChain Agent 集成
+- [x] LangChain Agent 集成
 - [ ] WebSocket 实时对话
-- [ ] Tool: 查看实验指导书
-- [ ] Tool: 高亮网页组件
+- [x] 侧边栏对话交互
+- [x] 指导书 + 按钮注册表提示词体系
+- [x] 高亮网页组件（光栅滤镜引导）
 - [ ] Tool: 查询实验数据
 
 ### Phase 3：实验中心
