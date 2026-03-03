@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>线性规划与基本解 - 介绍</title>
+    <link rel="stylesheet" href="main.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+<div class="container">
+    <a href="../index.html" class="back-btn">返回</a>
+
+    <!-- 页面头部 -->
+    <header class="header">
+        <h1>线性规划与单纯形法</h1>
+        <p class="subtitle">从基本解到最优解</p>
+    </header>
+
+    <!-- 导航栏 -->
+    <nav class="navigation">
+        <button class="nav-btn active" onclick="window.location.href='main.html'">
+            算法介绍
+        </button>
+        <button class="nav-btn" disabled>
+            流程观察 (开发中)
+        </button>
+        <button class="nav-btn" disabled>
+            性质对比 (开发中)
+        </button>
+    </nav>
+
+    <!-- 引言 -->
+    <div class="section intro">
+        <blockquote>
+            线性规划是优化领域中最为基础且应用广泛的分支，它研究在一组线性约束条件下，如何使线性目标函数取得极值。无论是生产计划、资源分配，还是交通运输、通信系统设计，都能看到线性规划的身影。本页将带你走进线性规划的世界，聚焦一个核心概念——<strong>基本解</strong>，并揭示它为何是求解线性规划问题的钥匙。
+        </blockquote>
+    </div>
+
+    <!-- 2. 什么是线性规划？ -->
+    <div class="section">
+        <h2>什么是线性规划？</h2>
+        <p>线性规划问题的标准形式可写为：</p>
+        <div class="math-block">
+            \[
+            \begin{array}{ll}
+            \text{minimize} & c^T x \\
+            \text{subject to} & Ax = b \\
+            & x \geq 0
+            \end{array}
+            \]
+        </div>
+        <p>
+            其中 \(x \in \mathbb{R}^n\) 是决策变量，\(c \in \mathbb{R}^n\) 是成本系数，\(A \in \mathbb{R}^{m\times n}\) 是约束矩阵，\(b \in \mathbb{R}^m\) 是右端项。我们通常假设 \(m < n\) 且 \(\text{rank} A = m\)，\(b \geq 0\)。
+        </p>
+        <p>
+            任何其他形式（如最大化、不等式约束）均可通过引入松弛变量或剩余变量转化为上述标准型。因此，掌握标准型的求解方法是理解线性规划的关键。
+        </p>
+    </div>
+
+    <!-- 3. 基本解 -->
+    <div class="section">
+        <h2>基本解：从无穷多解中抓住有限个候选</h2>
+        <p>
+            对于方程组 \(Ax = b\)，由于变量个数多于方程个数，通常有无穷多组解。但若我们从 \(A\) 的 \(n\) 个列向量中选出 \(m\) 个线性无关的列构成基矩阵 \(B\)，则令其余 \(n-m\) 个变量（称为非基变量）为零，可唯一解出基变量 \(x_B = B^{-1}b\)，从而得到一个<strong>基本解</strong>：
+        </p>
+        <div class="math-block">
+            \[
+            x = \begin{bmatrix} x_B \\ 0 \end{bmatrix}
+            \]
+        </div>
+        <p>
+            如果这个基本解还满足 \(x \geq 0\)，则称之为<strong>基本可行解</strong>。基本可行解中若某些基变量为零，则称为退化的基本可行解。
+        </p>
+        <div class="highlight">
+            <strong>关键事实</strong>：基本解的个数最多为 \(\binom{n}{m}\)，虽然可能很大，但它是有限多个。这为后续的搜索算法奠定了基础。
+        </div>
+    </div>
+
+    <!-- 4. 线性规划基本定理 -->
+    <div class="section">
+        <h2>线性规划基本定理</h2>
+        <div class="highlight">
+            <ol>
+                <li>如果线性规划存在可行解，则一定存在基本可行解；</li>
+                <li>如果线性规划存在最优可行解，则一定存在最优基本可行解。</li>
+            </ol>
+        </div>
+        <p>
+            这意味着，我们无需在无穷多的可行点中盲目搜索，而只需将注意力集中在有限个基本可行解上。最优解（如果存在）必定出现在某个基本可行解处。这一定理极大地简化了求解过程，也为单纯形法的诞生提供了理论依据。
+        </p>
+    </div>
+
+    <!-- 5. 几何视角 -->
+    <div class="section">
+        <h2>几何视角：基本可行解就是可行域的极点</h2>
+        <div class="layout-split">
+            <div class="text-content">
+                <p>
+                    将约束条件 \(Ax = b, x \geq 0\) 看作 \(\mathbb{R}^n\) 中的一个凸集 \(\Omega\)（称为可行域）。几何上，\(\Omega\) 是一个凸多面体。它的极点（即不能表示为集合中其他两点凸组合的点）恰好与基本可行解一一对应。
+                </p>
+                <p>
+                    换言之，基本可行解就是可行域的“角落”。线性规划的目标函数是线性的，因此其最优值必然在某个角落（极点）达到。
+                </p>
+                <p>
+                    在二维空间中（如右图所示）：可行域是一个多边形，目标函数的等值线平行移动，最后离开可行域的点必是多边形的一个顶点。
+                </p>
+            </div>
+            <div class="viz-container">
+                <div id="lp-viz"></div>
+                <p class="viz-caption">图：二维可行域与目标函数等值线示意图</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 一个简单例子 -->
+    <div class="section">
+        <h2>一个简单例子：从基本可行解到最优解</h2>
+        <p>生产计划问题：</p>
+        <div class="math-block">
+            \[
+            \begin{array}{ll}
+            \text{maximize} & 3x_1 + 5x_2 \\
+            \text{subject to} & x_1 + 5x_2 \leq 40 \\
+            & 2x_1 + x_2 \leq 20 \\
+            & x_1 + x_2 \leq 12 \\
+            & x_1, x_2 \geq 0
+            \end{array}
+            \]
+        </div>
+        <p>引入松弛变量后化为标准型，可得到多个基本可行解，如：</p>
+        <ul>
+            <li>\( (0,0,40,20,12) \) 目标值 0；</li>
+            <li>\( (10,0,30,0,2) \) 目标值 30；</li>
+            <li>\( (8,4,12,0,0) \) 目标值 44；</li>
+            <li><strong>\( (5,7,0,3,0) \) 目标值 50（最优）。</strong></li>
+        </ul>
+        <p>
+            可见，最优解正是在某个基本可行解处取得。单纯形法的思想就是从一个基本可行解出发，沿着可行域的棱边转移到相邻的、使目标值更优的基本可行解，直至找到最优。
+        </p>
+    </div>
+
+    <!-- 7. 小结与预告 -->
+    <div class="section">
+        <h2>小结与预告</h2>
+        <p>
+            通过以上介绍，我们了解了线性规划的基本形式、基本解的概念及其核心地位。基本可行解既是代数上的特殊解，也是几何上的极点，而线性规划基本定理保证了最优解一定可以在基本可行解中找到。下一章我们将深入探讨单纯形法——一种系统地从一个基本可行解转移到另一个更优基本可行解的高效算法。
+        </p>
+        <p>希望本页能为你理解线性规划打下坚实基础。</p>
+    </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+
+</html>
