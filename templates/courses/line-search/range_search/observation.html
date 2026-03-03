@@ -237,6 +237,29 @@
     </section>
 </div>
 
+<!-- AI 助手浮动按钮 -->
+<button id="ai-assistant-toggle" class="ai-toggle-btn">AI 助手</button>
+
+<!-- AI 助手侧边栏 -->
+<div id="ai-assistant-sidebar" class="ai-sidebar">
+    <div class="ai-sidebar-header">
+        <h3>AI 操作助手</h3>
+        <button id="ai-sidebar-close" class="ai-close-btn">&times;</button>
+    </div>
+    <div id="ai-chat-messages" class="ai-chat-messages">
+        <div class="ai-message ai-bot">
+            <p>你好！我是页面操作助手，可以帮助你了解如何使用这个流程观察页面的各项功能。请问有什么需要帮助的？</p>
+        </div>
+    </div>
+    <div class="ai-chat-input">
+        <input type="text" id="ai-input" placeholder="请输入你的问题..." />
+        <button id="ai-send-btn" class="control-btn btn-primary">发送</button>
+    </div>
+</div>
+
+<!-- 光栅高亮滤镜遮罩 -->
+<div id="ai-highlight-overlay" class="ai-highlight-overlay" style="display: none;"></div>
+
 <script type="module">
     import {FunctionLibrary, calculateFunction} from './scripts/function-utils.js';
     import {GoldenSectionSearch} from './scripts/golden-section.js';
@@ -644,6 +667,208 @@
 
     }
 
+</script>
+
+<script>
+(function () {
+    // 页面按钮注册表（指导书数据）
+    const BUTTON_REGISTRY = [
+        { id: "function-select", description: "测试函数选择下拉框，用于选择不同的测试函数", type: "normal" },
+        { id: "custom-func-btn", description: "自定义函数按钮，点击打开自定义函数输入框", type: "normal" },
+        { id: "confirm-custom-func", description: "确认应用自定义函数按钮（在自定义函数弹窗内）", type: "normal" },
+        { id: "initial-a", description: "初始区间左端点 a 的滑块，拖动可调整搜索区间的左边界", type: "normal" },
+        { id: "initial-b", description: "初始区间右端点 b 的滑块，拖动可调整搜索区间的右边界", type: "normal" },
+        { id: "precision", description: "精度 ε 的滑块，设置算法收敛精度（黄金分割法和二分法使用）", type: "normal" },
+        { id: "iterations", description: "迭代次数 N 的滑块，设置斐波那契数列法的最大迭代次数", type: "normal" },
+        { id: "pan-left-btn", description: "向左平移按钮，将可视化视图向左移动", type: "normal" },
+        { id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal" },
+        { id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal" },
+        { id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal" },
+        { id: "golden-section-btn", description: "黄金分割法按钮，选择黄金分割法算法进行实验", type: "normal" },
+        { id: "fibonacci-btn", description: "斐波那契数列法按钮，选择斐波那契数列法算法进行实验", type: "normal" },
+        { id: "bisection-btn", description: "二分法按钮，选择二分法算法进行实验", type: "normal" },
+        { id: "play-btn", description: "播放按钮，开始自动逐步运行所选算法", type: "normal" },
+        { id: "pause-btn", description: "暂停按钮，暂停算法的自动运行", type: "normal" },
+        { id: "step-btn", description: "单步按钮，手动执行算法的下一个子步骤", type: "normal" },
+        { id: "reset-btn", description: "重置按钮，将算法状态恢复到初始状态", type: "normal" },
+        { id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal" }
+    ];
+
+    // 页面指导书
+    const GUIDEBOOK =
+        '这是一个区间收缩法教学实验的流程观察页面。页面用于观察黄金分割法、斐波那契数列法与二分法的执行过程。\n\n' +
+        '页面布局：\n' +
+        '- 左侧为算法可视化展示区域，包含函数图像、区间标记和试探点显示\n' +
+        '- 右侧为算法控制面板，包含算法选择、控制按钮和参数显示\n' +
+        '- 下方为观察思考区，提供引导性问题帮助学生记录观察\n\n' +
+        '使用流程：\n' +
+        '1. 在顶部函数选择区选择一个测试函数，或点击"自定义函数"按钮输入自己的函数表达式\n' +
+        '2. 通过滑块调整初始区间的左端点 a 和右端点 b\n' +
+        '3. 根据需要调整精度参数 ε 或迭代次数 N\n' +
+        '4. 在右侧算法控制面板选择一种算法（黄金分割法、斐波那契数列法或二分法）\n' +
+        '5. 点击"播放"按钮自动运行算法，或点击"单步"按钮逐步观察算法的每一个子步骤\n' +
+        '6. 运行过程中可以点击"暂停"按钮停止自动运行，也可以点击"重置"按钮恢复初始状态\n' +
+        '7. 使用"向左"、"向右"、"放大"、"缩小"按钮调整可视化视图范围\n' +
+        '8. 在右侧参数状态表格中实时查看当前迭代次数、区间端点、区间长度和运行状态\n' +
+        '9. 切换算法时，选择斐波那契数列法会显示迭代次数滑块，选择其他算法显示精度滑块';
+
+    // 高亮状态
+    let highlightIds = [];
+    let currentHighlightIndex = -1;
+
+    // DOM 引用
+    const sidebar = document.getElementById('ai-assistant-sidebar');
+    const toggleBtn = document.getElementById('ai-assistant-toggle');
+    const closeBtn = document.getElementById('ai-sidebar-close');
+    const chatMessages = document.getElementById('ai-chat-messages');
+    const inputField = document.getElementById('ai-input');
+    const sendBtn = document.getElementById('ai-send-btn');
+    const highlightOverlay = document.getElementById('ai-highlight-overlay');
+
+    // 侧边栏开关
+    toggleBtn.addEventListener('click', function () {
+        const isOpen = sidebar.classList.toggle('open');
+        toggleBtn.classList.toggle('active', isOpen);
+    });
+
+    closeBtn.addEventListener('click', function () {
+        sidebar.classList.remove('open');
+        toggleBtn.classList.remove('active');
+    });
+
+    // 发送消息
+    function sendMessage() {
+        var message = inputField.value.trim();
+        if (!message) return;
+
+        addMessage(message, 'user');
+        inputField.value = '';
+        clearHighlights();
+
+        var loadingEl = addMessage('思考中...', 'bot loading');
+
+        fetch('/api/assistant/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                guidebook: GUIDEBOOK,
+                buttons: BUTTON_REGISTRY
+            })
+        })
+        .then(function (res) {
+            if (!res.ok) {
+                return res.json().then(function (body) {
+                    throw new Error(body.detail || '请求失败 (' + res.status + ')');
+                });
+            }
+            return res.json();
+        })
+        .then(function (data) {
+            loadingEl.remove();
+            addMessage(data.text, 'bot');
+
+            if (data.highlight_ids && data.highlight_ids.length > 0) {
+                highlightIds = data.highlight_ids;
+                currentHighlightIndex = 0;
+                highlightCurrentButton();
+            }
+        })
+        .catch(function (err) {
+            loadingEl.remove();
+            addMessage('抱歉，请求出错：' + err.message, 'bot error');
+        });
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    inputField.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // 添加聊天消息
+    function addMessage(text, type) {
+        var div = document.createElement('div');
+        var baseClass = type.split(' ')[0];
+        div.className = 'ai-message ai-' + baseClass;
+        if (type.indexOf('loading') !== -1) div.classList.add('ai-loading');
+        if (type.indexOf('error') !== -1) div.classList.add('ai-error');
+        div.innerHTML = '<p>' + text + '</p>';
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return div;
+    }
+
+    // ========== 高亮系统 ==========
+    function highlightCurrentButton() {
+        if (currentHighlightIndex < 0 || currentHighlightIndex >= highlightIds.length) {
+            clearHighlights();
+            return;
+        }
+
+        var btnId = highlightIds[currentHighlightIndex];
+        var btn = document.getElementById(btnId);
+        if (!btn) {
+            currentHighlightIndex++;
+            highlightCurrentButton();
+            return;
+        }
+
+        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        setTimeout(function () {
+            positionOverlay(btn);
+            highlightOverlay.style.display = 'block';
+        }, 350);
+
+        // 为当前按钮绑定点击事件，点击后跳转到下一个
+        btn._aiClickHandler = function () {
+            btn.removeEventListener('click', btn._aiClickHandler);
+            delete btn._aiClickHandler;
+            currentHighlightIndex++;
+            if (currentHighlightIndex < highlightIds.length) {
+                highlightCurrentButton();
+            } else {
+                clearHighlights();
+            }
+        };
+        btn.addEventListener('click', btn._aiClickHandler);
+    }
+
+    function positionOverlay(el) {
+        var rect = el.getBoundingClientRect();
+        var pad = 4;
+        highlightOverlay.style.left = (rect.left - pad) + 'px';
+        highlightOverlay.style.top = (rect.top - pad) + 'px';
+        highlightOverlay.style.width = (rect.width + pad * 2) + 'px';
+        highlightOverlay.style.height = (rect.height + pad * 2) + 'px';
+    }
+
+    function clearHighlights() {
+        highlightOverlay.style.display = 'none';
+        highlightIds.forEach(function (id) {
+            var btn = document.getElementById(id);
+            if (btn && btn._aiClickHandler) {
+                btn.removeEventListener('click', btn._aiClickHandler);
+                delete btn._aiClickHandler;
+            }
+        });
+        highlightIds = [];
+        currentHighlightIndex = -1;
+    }
+
+    // 滚动和窗口变化时重新定位高亮遮罩
+    function repositionOverlay() {
+        if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {
+            var btn = document.getElementById(highlightIds[currentHighlightIndex]);
+            if (btn && highlightOverlay.style.display !== 'none') {
+                positionOverlay(btn);
+            }
+        }
+    }
+
+    window.addEventListener('scroll', repositionOverlay, true);
+    window.addEventListener('resize', repositionOverlay);
+})();
 </script>
 </body>
 
