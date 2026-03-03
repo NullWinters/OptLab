@@ -2,19 +2,13 @@
 name = "OptLab"
 version = "0.1.0"
 description = "Optimization Lab on Web"
-authors = [
-    {name = "nullwinters", email = "nullwinters@gmail.com"}
-]
-license = {text = "MIT"}
 requires-python = ">=3.13"
-readme = "readme.md"
 dependencies = [
     "alembic>=1.18.4",
     "dotenv>=0.9.9",
     "fastapi[standard]>=0.128.0",
     "langchain>=1.2.10",
     "langchain-deepseek>=1.0.1",
-    "langchain-fireworks>=1.1.0",
     "pwdlib[argon2]>=0.3.0",
     "sqlalchemy[asyncio]>=2.0.47",
     "uvicorn>=0.40.0",
