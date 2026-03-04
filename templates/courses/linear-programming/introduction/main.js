@@ -141,17 +141,30 @@ function initObservationViz() {
     ];
 
     const vertices = [
-        { x: 0, y: 0, basic: [3, 4, 5], nonBasic: [1, 2] },
-        { x: 10, y: 0, basic: [1, 3, 5], nonBasic: [2, 4] },
-        { x: 8, y: 4, basic: [1, 2, 3], nonBasic: [4, 5] },
-        { x: 5, y: 7, basic: [1, 2, 4], nonBasic: [3, 5] }
+        { x: 0, y: 0, basic: [3, 4, 5], nonBasic: [1, 2], sigma: { 1: 3, 2: 5 } },
+        { x: 10, y: 0, basic: [1, 3, 5], nonBasic: [2, 4], sigma: { 2: 3.5, 4: -1.5 } },
+        { x: 8, y: 4, basic: [1, 2, 3], nonBasic: [4, 5], sigma: { 4: 2, 5: -7 } },
+        { x: 5, y: 7, basic: [1, 2, 4], nonBasic: [3, 5], sigma: { 3: -1.5, 5: -2.5 } },
+        { x: 0, y: 8, basic: [2, 4, 5], nonBasic: [1, 3], sigma: { 1: 2, 3: -1 } }
     ];
+
+    // 顶点相邻矩阵，定义在某个顶点下，选择某个非基变量入基后会移动到哪个顶点
+    // 结构: { currentIndex: { enteringVarIndex: nextIndex } }
+    const vertexAdjacency = {
+        0: { 1: 1, 2: 4 }, // (0,0): x1入基 -> (10,0); x2入基 -> (0,8)
+        1: { 2: 2, 4: 0 }, // (10,0): x2入基 -> (8,4); x4入基 -> (0,0)
+        2: { 4: 3, 5: 1 }, // (8,4): x4入基 -> (5,7); x5入基 -> (10,0)
+        3: { 3: 2, 5: 4 }, // (5,7): x3入基 -> (8,4); x5入基 -> (0,8)
+        4: { 1: 3, 3: 0 }  // (0,8): x1入基 -> (5,7); x3入基 -> (0,0)
+    };
 
     let currentStateIndex = 0;
     let isAnimating = false;
 
     const container = d3.select("#observation-viz");
     if (container.empty()) return;
+
+    // 移除 initObservationViz 中原来的动态生成逻辑（已移至 updateUI）
     
     const width = container.node().getBoundingClientRect().width || 400;
     const height = 400;
@@ -234,8 +247,8 @@ function initObservationViz() {
 
         updateObjLine(x1, x2);
 
-        document.getElementById("coord-val").innerText = `(${x1.toFixed(1)}, ${x2.toFixed(1)})`;
-        document.getElementById("obj-val").innerText = `f = ${f.toFixed(1)}`;
+        document.getElementById("coord-val").innerHTML = `\\((${x1.toFixed(1)}, ${x2.toFixed(1)})\\)`;
+        document.getElementById("obj-val").innerHTML = `\\(f = ${f.toFixed(1)}\\)`;
 
         const x3 = 40 - (x1 + 5 * x2);
         const x4 = 20 - (2 * x1 + x2);
@@ -265,50 +278,62 @@ function initObservationViz() {
             }
         });
 
+        // 动态生成入基变量按钮
+        const actionButtonsContainer = document.getElementById("action-buttons");
+        if (actionButtonsContainer) {
+            actionButtonsContainer.innerHTML = state.nonBasic.map(vIdx => `
+                <button class="action-btn" data-var="x${vIdx}" onclick="iterate('x${vIdx}')">x${vIdx} 入基</button>
+            `).join("");
+        }
+
         const actionBtns = document.querySelectorAll(".action-btn");
         actionBtns.forEach(btn => {
-            const varName = btn.getAttribute("data-var");
-            const varIdx = varName === 'x1' ? 1 : 2;
-            const isNonBasic = state.nonBasic.includes(varIdx);
-            btn.disabled = !isNonBasic || (currentStateIndex === vertices.length - 1);
+            btn.disabled = isAnimating;
         });
 
-        if (currentStateIndex === vertices.length - 1) {
-            document.getElementById("algebraic-steps").innerHTML = "<b>已达到最优解。</b>\n检验数均非正，算法终止。";
+        if (currentStateIndex === 3) {
+            const stepsDiv = document.getElementById("algebraic-steps");
+            const currentSteps = stepsDiv.innerHTML;
+            if (!currentSteps.includes("已达到最优解")) {
+                stepsDiv.innerHTML += "<br><b>已达到最优解 (5, 7)。</b><br>检验数均非正，目标函数 $f = 50$。";
+            }
         }
+
+        if (window.MathJax) MathJax.typesetPromise();
     }
 
-    function iterate(enteringVar) {
+    window.iterate = function(enteringVar) {
         if (isAnimating) return;
-        let nextIndex = -1;
-        let stepInfo = "";
-
-        if (currentStateIndex === 0) {
-            if (enteringVar === "x1") {
-                nextIndex = 1;
-                stepInfo = "<b>第一步：从原点出发</b>\n选择 $x_1$ 为入基变量。沿 $x_1$ 轴移动。\n比值测试：\nC1: 40/1 = 40\nC2: 20/2 = 10 (最小)\nC3: 12/1 = 12\n确定 $x_4$ 为离基变量。移动步长 $\\varepsilon = 10$。";
+        const enteringIdx = parseInt(enteringVar.substring(1));
+        const nextIndex = vertexAdjacency[currentStateIndex]?.[enteringIdx];
+        
+        if (nextIndex !== undefined) {
+            const currentV = vertices[currentStateIndex];
+            const nextV = vertices[nextIndex];
+            
+            // 找出离基变量 (在 currentV.basic 中但不在 nextV.basic 中的)
+            const leavingIdx = currentV.basic.find(b => !nextV.basic.includes(b));
+            
+            let stepInfo = `<b>从 (${currentV.x}, ${currentV.y}) 移动到 (${nextV.x}, ${nextV.y})</b><br>`;
+            stepInfo += `选择 $x_${enteringIdx}$ 为入基变量，确定 $x_${leavingIdx}$ 为离基变量。<br>`;
+            
+            const prevF = 3 * currentV.x + 5 * currentV.y;
+            const nextF = 3 * nextV.x + 5 * nextV.y;
+            if (nextF > prevF) {
+                stepInfo += `目标函数值从 ${prevF} 增加到 ${nextF}。`;
+            } else if (nextF < prevF) {
+                stepInfo += `目标函数值从 ${prevF} 减少到 ${nextF}。`;
+            } else {
+                stepInfo += `目标函数值保持为 ${nextF}。`;
             }
-        } else if (currentStateIndex === 1) {
-            if (enteringVar === "x2") {
-                nextIndex = 2;
-                stepInfo = "<b>第二步：从 (10,0) 出发</b>\n选择 $x_2$ 为入基变量。沿约束 C2 的边界移动。\n比值测试：\nC1: (40-10)/5 = 6\nC3: (12-10)/1 = 2 (最小)\n确定 $x_5$ 为离基变量。移动到 (8,4)。";
-            }
-        } else if (currentStateIndex === 2) {
-            nextIndex = 3;
-            stepInfo = "<b>第三步：从 (8,4) 出发</b>\n选择 $x_4$ 入基（离开约束C2）。沿约束 C3 边界移动。\n到达交点 (5,7)，此时 $x_3$ 变为0并离基。\n目标值达到 50。";
-        }
 
-        if (nextIndex !== -1) {
             currentStateIndex = nextIndex;
             document.getElementById("algebraic-steps").innerHTML = stepInfo;
-            if (window.MathJax) MathJax.typesetPromise();
             updateUI();
         }
     }
 
-    document.querySelectorAll(".action-btn").forEach(btn => {
-        btn.onclick = function() { iterate(this.getAttribute("data-var")); };
-    });
+    // 动态生成按钮的逻辑已在 updateUI 中处理
 
     document.getElementById("reset-btn").onclick = function() {
         currentStateIndex = 0;
@@ -320,16 +345,45 @@ function initObservationViz() {
         if (isAnimating) return;
         isAnimating = true;
         this.disabled = true;
-        currentStateIndex = 0;
+        
+        // 如果已在最优解，先重置回起点
+        if (currentStateIndex === 3) {
+            currentStateIndex = 0;
+            document.getElementById("algebraic-steps").innerText = "自动演示重置...";
+            updateUI();
+            await new Promise(r => setTimeout(r, 1000));
+        }
+        
+        document.getElementById("algebraic-steps").innerText = "自动演示开始...";
         updateUI();
-        await new Promise(r => setTimeout(r, 1000));
-        iterate("x1");
-        await new Promise(r => setTimeout(r, 2000));
-        iterate("x2");
-        await new Promise(r => setTimeout(r, 2000));
-        iterate("x4");
+        
+        while (currentStateIndex !== 3) {
+            const state = vertices[currentStateIndex];
+            // 找到最佳入基变量 (sigma 最大的正数)
+            let bestVarIdx = -1;
+            let maxSigma = 0;
+            for (let vIdx in state.sigma) {
+                if (state.sigma[vIdx] > maxSigma) {
+                    maxSigma = state.sigma[vIdx];
+                    bestVarIdx = vIdx;
+                }
+            }
+
+            if (bestVarIdx === -1) break; // 已无更优方向
+
+            // 执行迭代，但手动通过 window.iterate 调用以利用其逻辑
+            // 由于 iterate 中有 isAnimating 检查，我们需要暂时放开
+            isAnimating = false;
+            window.iterate(`x${bestVarIdx}`);
+            isAnimating = true;
+            updateUI();
+            
+            await new Promise(r => setTimeout(r, 2000));
+        }
+
         isAnimating = false;
         this.disabled = false;
+        updateUI();
     };
 
     updateUI();
