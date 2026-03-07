@@ -30,71 +30,70 @@ body {
 .header {
     text-align: center;
     margin-bottom: 30px;
-    padding: 20px;
-    background-color: var(--header-bg);
-    border-radius: 20px;
-    box-shadow: 0 4px 15px rgba(216, 67, 21, 0.05);
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
 }
 
 .header h1 {
     color: var(--primary-color);
-    font-size: 2.2em;
+    font-size: 2.5em;
     margin-bottom: 10px;
     margin-top: 0;
 }
 
-.subtitle {
-    color: var(--text-color);
+.header .subtitle {
+    color: #8d6e63;
     font-size: 1.1em;
-    opacity: 0.8;
     margin: 0;
 }
 
 /* 返回按钮 */
 .back-btn {
     display: inline-block;
-    margin-bottom: 20px;
-    padding: 8px 16px;
-    background-color: var(--accent-color);
+    margin-bottom: 30px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #ffb300, #ff8f00);
     color: white;
     text-decoration: none;
+    border-radius: 10px;
     font-weight: bold;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(255, 111, 0, 0.2);
-    transition: all 0.2s;
+    transition: all 0.3s ease;
 }
 
 .back-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(255, 111, 0, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(255, 140, 0, 0.3);
 }
 
 /* 导航栏 */
 .navigation {
     display: flex;
     justify-content: center;
-    gap: 15px;
+    gap: 20px;
     margin-bottom: 30px;
 }
 
 .nav-btn {
-    padding: 8px 20px;
-    border: 2px solid var(--primary-color);
-    background: transparent;
-    color: var(--primary-color);
-    border-radius: 30px;
+    padding: 10px 20px;
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
     cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s;
+    font-weight: 600;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transform: translateY(-2px);
 }
 
 .nav-btn.active {
-    background-color: var(--primary-color);
+    background: var(--primary-color);
     color: white;
-}
-
-.nav-btn:hover:not(.active) {
-    background-color: var(--highlight-bg);
+    border-color: var(--primary-color);
 }
 
 /* 布局 */
