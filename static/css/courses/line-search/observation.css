@@ -124,31 +124,6 @@ input[type="range"] {
     margin-bottom: 20px;
 }
 
-/* 参数显示表格 */
-.param-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.param-table th,
-.param-table td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.param-table th {
-    background: #efebe9;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.param-table td {
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-    color: var(--primary-color);
-}
-
 /* 画布缩放控制 */
 .pan-zoom-group {
     margin-top: 10px;
@@ -192,12 +167,6 @@ input[type="range"] {
     margin-left: 20px;
     margin-top: 5px;
     color: #8d6e63;
-}
-
-.modal-footer {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
 }
 
 /* 响应式 */

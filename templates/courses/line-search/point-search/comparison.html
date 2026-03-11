@@ -1,18 +1,61 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>点搜索</title>
-    <link rel="stylesheet" href="styles/comparison.css">
-    <link rel="stylesheet" href="styles/utils.css">
-
+{% extends 'base.html' %}
+{% block title %}点搜索 - 性质对比{% endblock %}
+{% block head %}
     <!-- D3.js 可视化库 -->
-    <script src="/static/js/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <!-- Math.js 科学计算库 -->
-    <script src="/static/js/math.js"></script>
-</head>
-<body>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+    <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
+    <link rel="stylesheet" href="/static/css/courses/line-search/comparison.css">
+    <style>
+        /* 三算法状态面板布局 */
+        .triple-status-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .algorithm-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-sizing: border-box;
+            transition: transform 0.3s ease;
+        }
+
+        .algorithm-panel:hover {
+            transform: translateY(-5px);
+        }
+
+        .algorithm-panel h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .gd-panel { border-top: 5px solid #d84315; }
+        .newton-panel { border-top: 5px solid #f9a825; }
+        .secant-panel { border-top: 5px solid #6d4c41; }
+
+        /* 响应式适配 */
+        @media (max-width: 1200px) {
+            .triple-status-panel {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .triple-status-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+{% endblock %}
+{% block content %}
 <div class="container">
     <a href="../index.html" class="back-btn">返回</a>
     <!-- 页面首部-->
@@ -206,10 +249,40 @@
         </div>
     </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'point_search_comparison',
+        BUTTON_REGISTRY: [
+            { id: "function-select", description: "测试函数选择下拉框", type: "normal" },
+            { id: "custom-func-btn", description: "自定义函数按钮", type: "normal" },
+            { id: "initial-point0-slider", description: "初始点x0滑动条", type: "normal" },
+            { id: "initial-point-1-slider", description: "初始点x-1滑动条", type: "normal" },
+            { id: "iterations", description: "迭代次数滑动条", type: "normal" },
+            { id: "learning-rate", description: "学习率滑动条", type: "normal" },
+            { id: "play-btn", description: "播放按钮", type: "normal" },
+            { id: "pause-btn", description: "暂停按钮", type: "normal" },
+            { id: "step-btn", description: "单步按钮", type: "normal" },
+            { id: "reset-btn", description: "重置按钮", type: "normal" }
+        ],
+        GUIDEBOOK: `这是点搜索性质对比页面。
+        页面布局：
+        - 顶部为算法状态汇总面板，实时显示梯度下降、牛顿、割线三种算法的参数。
+        - 左侧为全局控制面板，可调节测试函数、初始点、学习率等参数。
+        - 右侧为三个算法的可视化画布，纵向排列，方便直观对比它们的收敛轨迹。
+        
+        使用流程：
+        1. 在左侧面板调节参数，所有画布会同步更新初始状态。
+        2. 点击“播放”或“单步”，三种算法会同时开始运行。
+        3. 观察不同算法在相同函数和初始值下的收敛速度、稳定性差异。`
+    };
+</script>
 
 <script type="module">
-    import { GradientDescent, NewtonsMethod, SecantMethod } from './scripts/algorithms.js';
-    import { PointSearchVisualizer } from './scripts/visualization.js';
+    import { GradientDescent, NewtonsMethod, SecantMethod } from '/static/js/courses/line-search/point-search/algorithms.js';
+    import { PointSearchVisualizer } from '/static/js/courses/line-search/point-search/visualization.js';
 
     const FunctionLibrary = {
         quadratic: {
@@ -567,8 +640,4 @@
         tbody.innerHTML = data.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
     }
 </script>
-</body>
-<footer>
-    点搜索性质对比 · OptLab 教学资源
-</footer>
-</html>
+{% endblock %}

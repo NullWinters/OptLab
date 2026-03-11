@@ -80,8 +80,12 @@ body {
     transition: all 0.15s ease-in-out;
 }
 
-.nav-links a:hover {
+.nav-links a:hover, .nav-links a.active {
     color: var(--amber-primary);
+}
+
+.nav-links a.active {
+    font-weight: 700;
 }
 
 /* Hero Section */

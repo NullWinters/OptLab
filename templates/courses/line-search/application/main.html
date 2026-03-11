@@ -1,17 +1,19 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>一维搜索方法应用 · 最小二乘与利润优化</title>
-    <script id="MathJax-script" async src="/static/js/tex-mml-chtml.js"></script>
-    <script src="/static/js/d3.v7.min.js"></script>
-    <script src="/static/js/math.js"></script>
-    <link rel="stylesheet" href="main.css">
-</head>
-<body>
-<div class="back-row"><a href="../index.html" class="back-btn">返回</a></div>
-<h1>一维搜索方法应用实验：最小二乘拟合 + 定价利润优化</h1>
+{% extends 'base.html' %}
+
+{% block title %}一维搜索方法应用 · 最小二乘与利润优化{% endblock %}
+
+{% block head %}
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+    <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
+    <link rel="stylesheet" href="/static/css/courses/line-search/application/main.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="../index.html" class="back-btn">返回</a>
+    <h1>一维搜索方法应用实验：最小二乘拟合 + 定价利润优化</h1>
 
 <div class="description">
     <p>本实验包含两个经典优化问题：<strong>① 最小二乘法线性拟合</strong>（根据价格–需求数据估计需求函数）；<strong>②
@@ -211,10 +213,28 @@
 
 </section>
 
-<footer>
-    一维搜索方法应用实验 · OptLab 教学资源
-</footer>
+</div>
+{% endblock %}
 
-<script src="main.js"></script>
-</body>
-</html>
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'line_search_application',
+        BUTTON_REGISTRY: [
+            { id: "dataFile", description: "上传数据集按钮", type: "normal" },
+            { id: "loadDefaultBtn", description: "重置示例数据按钮", type: "normal" },
+            { id: "lsMethodSelect", description: "拟合阶段搜索方法选择", type: "normal" },
+            { id: "lsPlayBtn", description: "拟合阶段播放按钮", type: "normal" },
+            { id: "costInput", description: "单位成本输入框", type: "normal" },
+            { id: "profitMethodSelect", description: "利润优化阶段搜索方法选择", type: "normal" },
+            { id: "profitPlayBtn", description: "利润优化阶段播放按钮", type: "normal" }
+        ],
+        GUIDEBOOK: `这是一维搜索方法应用实验页面。
+        实验流程：
+        1. 拟合阶段：上传价格-需求数据，或使用默认数据。选择算法（如黄金分割法），观察算法如何拟合需求曲线 D(p) = βp + α。
+        2. 定价阶段：设定单位成本 c。算法会根据拟合出的需求函数，寻找使利润 π(p) = (p - c)D(p) 最大化的最优定价 p*。
+        你可以对比不同算法在处理这两个实际问题时的表现。`
+    };
+</script>
+<script src="/static/js/courses/line-search/application/main.js"></script>
+{% endblock %}
