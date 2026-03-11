@@ -368,3 +368,10 @@ body {
 .hidden {
     display: none;
 }
+
+footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a1887f;
+    font-size: 14px;
+}

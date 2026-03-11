@@ -5,6 +5,7 @@
     padding: 20px;
     box-shadow: var(--shadow);
     margin: 20px 0;
+    box-sizing: border-box;
 }
 
 .panel-section h3 {
@@ -144,6 +145,7 @@ input[type="range"] {
     border-radius: 12px;
     padding: 16px;
     box-shadow: var(--shadow);
+    box-sizing: border-box;
 }
 
 .algorithm-panel h3 {
@@ -172,6 +174,7 @@ input[type="range"] {
     border-radius: 12px;
     padding: 20px;
     box-shadow: var(--shadow);
+    box-sizing: border-box;
 }
 
 .canvas-column {
@@ -198,9 +201,18 @@ input[type="range"] {
 
 /* 响应式优化 */
 @media (max-width: 992px) {
+    .triple-status-panel {
+        grid-template-columns: 1fr;
+    }
     .control-buttons { grid-template-columns: repeat(2, 1fr); }
-    .global-controls { width: 100%; }
-    .comparison-main-layout { flex-direction: column; }
+    .global-controls { 
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .comparison-main-layout { 
+        flex-direction: column;
+        align-items: stretch;
+    }
     #function-canvas-gd,
     #function-canvas-newton,
     #function-canvas-secant { height: 280px; }

@@ -18,6 +18,41 @@ export class OptimizationVisualizer {
         this.currentDomain = [-5, 5];
 
         this.initSvg();
+
+        // 监听 resize 事件
+        window.addEventListener('resize', () => this.handleResize());
+    }
+
+    handleResize() {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+
+        const newWidth = container.clientWidth;
+        if (newWidth === 0 || newWidth === this.width) return;
+
+        this.width = newWidth;
+        this.plotWidth = this.width - this.margin.left - this.margin.right;
+
+        // 更新 SVG 视图和比例尺范围
+        this.svg
+            .attr('width', this.width)
+            .attr('viewBox', `0 0 ${this.width} ${this.height}`);
+
+        this.xScale.range([0, this.plotWidth]);
+
+        // 更新固定的 UI 元素位置
+        this.labelLayer.select('text:nth-child(1)') // x 轴标签
+            .attr('x', this.plotWidth / 2);
+
+        // 重绘函数和坐标轴
+        if (this.currentFunc) {
+            this.drawFunction();
+        }
+
+        // 如果设置了回调，通知重绘子类特有内容
+        if (this.onResize) {
+            this.onResize();
+        }
     }
 
     initSvg() {
@@ -99,7 +134,7 @@ export class OptimizationVisualizer {
         });
 
         // 限制 Y 轴范围，避免无穷大导致绘制失败
-        const yLimit = 1000;
+        const yLimit = 65535;
         minY = Math.max(minY, -yLimit);
         maxY = Math.min(maxY, yLimit);
 

@@ -172,6 +172,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         if (!this.convXScale) {
             this.convXScale = d3.scaleLinear().domain([0, maxIter]).range([0, this.plotWidth]);
         } else {
+            this.convXScale.range([0, this.plotWidth]);
             const dom = this.convXScale.domain();
             const newMax = Math.max(dom[1], maxIter);
             this.convXScale.domain([dom[0], newMax]);
@@ -182,6 +183,13 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             this.convYScale = d3.scaleLog().domain([1e-7, maxLen]).range([this.plotHeight, 0]).base(10);
         } else {
             this.convYScale = d3.scaleLinear().domain([0, maxLen]).range([this.plotHeight, 0]);
+        }
+
+        // 更新位置依赖 (响应 resize)
+        if (this.convRoot) {
+            this.convLegendG.attr('transform', `translate(${this.plotWidth - 120}, 20)`);
+            this.convXLabel.attr('x', this.plotWidth / 2);
+            this.convXAxisG.attr('transform', `translate(0, ${this.plotHeight})`);
         }
 
         const duration = 400;

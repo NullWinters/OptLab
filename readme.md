@@ -279,10 +279,6 @@ OptLab/
 ├── main.py                 # FastAPI 应用入口
 ├── pyproject.toml          # 项目依赖
 ├── static/                 # 静态资源
-│   ├── css/
-│   │   └── style.css
-│   └── js/
-│       └── main.js
 |
 ├── core/                 # 核心逻辑
 │   ├── __init__.py

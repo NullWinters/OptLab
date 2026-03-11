@@ -4,79 +4,72 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>一维搜索方法 - OptLab</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #D84315;
-            --secondary-color: #FF8F00;
-            --bg-color: #FFFAF0;
-        }
-        body { background-color: var(--bg-color); color: #5d4037; }
-        .card { transition: all 0.3s ease; }
-        .card:hover { transform: translateY(-5px); }
-    </style>
+    <link rel="stylesheet" href="/static/css/sub-courses.css">
+    <link rel="stylesheet" href="/static/css/all.min.css">
 </head>
-<body class="min-h-screen p-6 md:p-12">
-    <div class="max-w-6xl mx-auto">
-        <a href="/courses/" class="inline-block bg-orange-600 text-white font-bold px-4 py-2 rounded-xl shadow-sm mb-8 hover:translate-x-1 transition-all">
+<body>
+    <div class="container max-w-6xl">
+        <a href="/courses/" class="btn-back">
             返回课程页
         </a>
 
-        <header class="mb-12 text-center md:text-left">
-            <h1 class="text-4xl md:text-5xl font-black text-amber-900 mb-4">一维搜索实验</h1>
-            <p class="text-lg text-amber-800 opacity-80">探索无约束优化的基本问题，掌握单变量极值搜索的各种策略。</p>
+        <header class="header">
+            <h1>一维搜索方法</h1>
+            <p>探索无约束优化的基本问题，掌握单变量极值搜索的各种策略。</p>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="card-grid cols-3">
             <!-- 区间收缩法卡片 -->
-            <div class="card bg-white p-8 rounded-3xl shadow-lg border border-amber-100 flex flex-col justify-between">
+            <div class="card">
                 <div>
-                    <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                    <div class="card-icon bg-amber-100">
                         <i class="fas fa-arrows-alt-h"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-amber-900 mb-3">区间收缩法</h2>
-                    <p class="text-gray-600 mb-8 leading-relaxed">
+                    <h2>区间收缩法</h2>
+                    <p>
                         通过不断缩小包含极小值的区间来逼近最优解，包含黄金分割法、斐波那契数列法及二分法。
                     </p>
                 </div>
-                <a href="range_search/introduction.html" class="block w-full text-center py-4 bg-amber-50 text-amber-700 font-bold rounded-xl border-2 border-amber-200 hover:bg-amber-100 transition">
+                <a href="range_search/introduction.html" class="btn-start">
                     开始学习
                 </a>
             </div>
 
             <!-- 点搜索卡片 -->
-            <div class="card bg-white p-8 rounded-3xl shadow-lg border border-amber-100 flex flex-col justify-between">
+            <div class="card">
                 <div>
-                    <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                    <div class="card-icon bg-orange-100">
                         <i class="fas fa-bullseye"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-amber-900 mb-3">点搜索</h2>
-                    <p class="text-gray-600 mb-8 leading-relaxed">
+                    <h2>点搜索</h2>
+                    <p>
                         利用导数信息指导搜索方向，包含梯度下降法、牛顿法及割线法等经典迭代算法。
                     </p>
                 </div>
-                <a href="point_search/introduction.html" class="block w-full text-center py-4 bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-200 hover:bg-orange-700 transition">
+                <a href="point_search/introduction.html" class="btn-start">
                     开始学习
                 </a>
             </div>
 
             <!-- 应用实践卡片 -->
-            <div class="card bg-white p-8 rounded-3xl shadow-lg border border-amber-100 flex flex-col justify-between">
+            <div class="card">
                 <div>
-                    <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6">
+                    <div class="card-icon bg-amber-100">
                         <i class="fas fa-flask"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-amber-900 mb-3">应用实践</h2>
-                    <p class="text-gray-600 mb-8 leading-relaxed">
-                        将一维搜索算法应用于实际问题，如最小二乘分析与最优定价策略，体验算法的工程价值。
+                    <h2>应用实践</h2>
+                    <p>
+                        将一维搜索算法应用于实际问题，以最小二乘分析与最优定价策略为例，体验算法的工程价值。
                     </p>
                 </div>
-                <a href="application/main.html" class="block w-full text-center py-4 bg-amber-50 text-amber-700 font-bold rounded-xl border-2 border-amber-200 hover:bg-amber-100 transition">
+                <a href="application/main.html" class="btn-start">
                     进入实验
                 </a>
             </div>
         </div>
     </div>
 </body>
+<footer class="footer">
+    一维搜索方法 · OptLab 教学资源
+</footer>
 </html>
