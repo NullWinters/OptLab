@@ -4,22 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 - 未找到 - OptLab</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/placeholder.css">
+    <link rel="stylesheet" href="/static/css/all.min.css">
     <style>
-        body { background-color: #fffaf0; color: #5d4037; }
+        .icon-gray { color: #9ca3af; }
+        .bg-gray-600 { background-color: #4b5563; }
+        .bg-gray-600:hover { background-color: #374151; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-    <div class="max-w-md w-full bg-white p-12 rounded-3xl shadow-xl border border-gray-100">
-        <div class="text-6xl text-gray-400 mb-8">
+<body>
+    <div class="placeholder-card" style="border-color: #f3f4f6;">
+        <div class="icon-box icon-gray">
             <i class="fas fa-map-marked-alt"></i>
         </div>
-        <h1 class="text-3xl font-bold mb-4 text-gray-900">找不到实验模块</h1>
-        <p class="text-gray-600 mb-10 leading-relaxed">
+        <h1 style="color: #111827;">找不到实验模块</h1>
+        <p>
             抱歉，您访问的课程或实验目前无法找到。
         </p>
-        <a href="/courses/" class="inline-block bg-gray-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-700 transition shadow-md">
+        <a href="/courses/" class="btn-placeholder btn-primary bg-gray-600">
             查看所有课程
         </a>
     </div>

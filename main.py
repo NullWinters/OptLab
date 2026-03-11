@@ -17,6 +17,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def read_index():
     return FileResponse("templates/index.html")
 
+@app.get("/favicon.ico")
+async def read_favicon():
+    return FileResponse("static/favicon.ico")
+
 # 实验中心占位页
 @app.get("/lab")
 async def read_lab():

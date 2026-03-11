@@ -1,0 +1,329 @@
+* {
+    box-sizing: border-box;
+}
+
+::before, ::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --amber-primary: #d84315;
+    --amber-secondary: #bf360c;
+    --amber-50: #fffbeb;
+    --amber-100: #fef3c7;
+    --amber-200: #fde68a;
+    --amber-300: #fcd34d;
+    --amber-700: #b45309;
+    --amber-900: #78350f;
+    --orange-50: #fff7ed;
+    --orange-200: #fed7aa;
+    --red-50: #fef2f2;
+    --red-200: #fecaca;
+    --green-100: #dcfce7;
+    --green-700: #15803d;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+}
+
+body {
+    background-color: #fffaf0;
+    color: #5d4037;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    box-sizing: border-box;
+}
+
+.max-w-7xl { max-width: 80rem; }
+.max-w-5xl { max-width: 64rem; }
+
+/* Navigation */
+.nav-bar {
+    padding: 1.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--amber-primary);
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.nav-logo i {
+    margin-right: 0.5rem;
+}
+
+.nav-links {
+    display: none;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .nav-links {
+        display: flex;
+    }
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s ease-in-out;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: var(--amber-primary);
+}
+
+.nav-links a.active {
+    font-weight: 700;
+}
+
+/* Main Content */
+.main-content {
+    flex-grow: 1;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+}
+
+.page-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.page-subtitle {
+    font-size: 1.125rem;
+    color: var(--gray-600);
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.course-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
+/* Course Card */
+.course-card {
+    background-color: #fff;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--amber-100);
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+@media (min-width: 768px) {
+    .course-card {
+        flex-direction: row;
+    }
+}
+
+.course-card:hover {
+    border-color: var(--amber-300);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.course-image-container {
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (min-width: 768px) {
+    .course-image-container {
+        width: 33.333333%;
+    }
+}
+
+.course-placeholder-img {
+    width: 100%;
+    height: 12rem;
+    background-color: #fff;
+    border-radius: 1rem;
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.course-placeholder-img i {
+    font-size: 3.75rem;
+}
+
+/* Card Themes */
+.theme-amber .course-image-container { background-color: var(--amber-50); }
+.theme-amber .course-placeholder-img { color: var(--amber-200); }
+
+.theme-orange .course-image-container { background-color: var(--orange-50); }
+.theme-orange .course-placeholder-img { color: var(--orange-200); }
+
+.theme-red .course-image-container { background-color: var(--red-50); }
+.theme-red .course-placeholder-img { color: var(--red-200); }
+
+.course-content {
+    padding: 2rem;
+}
+
+@media (min-width: 768px) {
+    .course-content {
+        width: 66.666667%;
+    }
+}
+
+.course-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.course-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--amber-900);
+}
+
+.theme-red .course-title {
+    color: var(--gray-700);
+}
+
+.course-status {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+}
+
+.status-online {
+    background-color: var(--green-100);
+    color: var(--green-700);
+}
+
+.status-building {
+    background-color: var(--gray-100);
+    color: var(--gray-500);
+}
+
+.course-desc {
+    color: var(--gray-600);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.course-experiments {
+    margin-bottom: 2rem;
+}
+
+.course-experiments h3 {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag {
+    background-color: var(--gray-100);
+    color: var(--gray-700);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+}
+
+.course-footer {
+    opacity: 1;
+}
+
+.disabled .course-footer {
+    opacity: 0.5;
+}
+
+.btn-course {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.btn-course-primary {
+    background-color: var(--amber-primary);
+    color: #fff;
+}
+
+.btn-course-primary:hover {
+    background-color: var(--amber-secondary);
+}
+
+.btn-course-outline {
+    border: 2px solid var(--gray-200);
+    color: var(--gray-400);
+}
+
+.btn-course-outline:hover {
+    border-color: var(--amber-primary);
+    color: var(--amber-primary);
+}
+
+.btn-course i {
+    font-size: 0.875rem;
+    margin-left: 0.5rem;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--gray-100);
+    padding: 3rem 1.5rem;
+    margin-top: 5rem;
+}
+
+.footer-content {
+    max-width: 80rem;
+    margin: 0 auto;
+    text-align: center;
+    color: var(--gray-500);
+    font-size: 0.875rem;
+}
+
+/* Utility classes from style tag in HTML */
+.text-amber-primary { color: var(--amber-primary); }
+.bg-amber-primary { background-color: var(--amber-primary); }
+.border-amber-primary { border-color: var(--amber-primary); }
+.hover-amber-primary:hover { background-color: var(--amber-secondary); }

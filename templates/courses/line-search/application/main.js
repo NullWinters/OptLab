@@ -247,7 +247,7 @@ class SecantMethod {
             this.margin = { top: 40, right: 40, bottom: 50, left: 70 };
             this.container = document.getElementById(containerId);
             this.width = this.container.clientWidth;
-            this.height = 350; // 固定高度
+            this.height = this.container.clientHeight || 350; // 动态高度
             
             this.plotWidth = this.width - this.margin.left - this.margin.right;
             this.plotHeight = this.height - this.margin.top - this.margin.bottom;
@@ -280,6 +280,44 @@ class SecantMethod {
             };
             
             this.initSvg();
+            window.addEventListener('resize', () => this.handleResize());
+        }
+
+        handleResize() {
+            const container = document.getElementById(this.containerId);
+            if (!container) return;
+
+            const newWidth = container.clientWidth;
+            const newHeight = container.clientHeight || 350;
+            
+            if (newWidth === 0 || (newWidth === this.width && newHeight === this.height)) return;
+
+            this.width = newWidth;
+            this.height = newHeight;
+            this.plotWidth = this.width - this.margin.left - this.margin.right;
+            this.plotHeight = this.height - this.margin.top - this.margin.bottom;
+
+            this.svg
+                .attr("width", this.width)
+                .attr("height", this.height)
+                .attr("viewBox", `0 0 ${this.width} ${this.height}`);
+
+            this.xScale.range([0, this.plotWidth]);
+            this.yScale.range([this.plotHeight, 0]);
+
+            this.xAxisG.attr("transform", `translate(0, ${this.plotHeight})`);
+            
+            // 更新轴标签位置
+            if (this.xLabel) {
+                this.xLabel.attr("x", this.plotWidth).attr("y", this.plotHeight + 35);
+            }
+
+            if (this.lastArgs) {
+                const prevDuration = this.duration;
+                this.duration = 0;
+                this.update(this.lastArgs.func, this.lastArgs.domain, this.lastArgs.history, this.lastArgs.type, this.lastArgs.algo, this.lastArgs.subStep);
+                this.duration = prevDuration;
+            }
         }
 
         initSvg() {
@@ -317,7 +355,7 @@ class SecantMethod {
                 .attr("stroke-width", 2.5);
                 
             // 轴标签
-            this.plot.append("text")
+            this.xLabel = this.plot.append("text")
                 .attr("x", this.plotWidth)
                 .attr("y", this.plotHeight + 35)
                 .attr("text-anchor", "end")
@@ -390,7 +428,9 @@ class SecantMethod {
             // 检测并修复隐藏容器导致的尺寸为0问题
             if (this.width <= 0 && this.container.clientWidth > 0) {
                 this.width = this.container.clientWidth;
+                this.height = this.container.clientHeight || 350;
                 this.plotWidth = this.width - this.margin.left - this.margin.right;
+                this.plotHeight = this.height - this.margin.top - this.margin.bottom;
                 this.initSvg();
             }
             

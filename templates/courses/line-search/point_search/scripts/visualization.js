@@ -12,8 +12,10 @@ export class PointSearchVisualizer {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
         this.margin = options.margin || {top: 40, right: 40, bottom: 60, left: 60};
-        this.width = options.width || document.getElementById(containerId).clientWidth;
-        this.height = options.height || 400;
+        
+        const container = document.getElementById(containerId);
+        this.width = options.width || container.clientWidth;
+        this.height = options.height || container.clientHeight || 400;
 
         this.plotWidth = this.width - this.margin.left - this.margin.right;
         this.plotHeight = this.height - this.margin.top - this.margin.bottom;
@@ -28,6 +30,46 @@ export class PointSearchVisualizer {
         this.initialized = false;
 
         this.initSvg();
+
+        // 监听 resize 事件
+        window.addEventListener('resize', () => this.handleResize());
+    }
+
+    handleResize() {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+
+        const newWidth = container.clientWidth;
+        const newHeight = container.clientHeight || 400;
+        
+        if (newWidth === 0 || (newWidth === this.width && newHeight === this.height)) return;
+
+        this.width = newWidth;
+        this.height = newHeight;
+        this.plotWidth = this.width - this.margin.left - this.margin.right;
+        this.plotHeight = this.height - this.margin.top - this.margin.bottom;
+
+        // 更新 SVG 视图和比例尺范围
+        this.svg
+            .attr('width', this.width)
+            .attr('height', this.height)
+            .attr('viewBox', `0 0 ${this.width} ${this.height}`);
+
+        this.xScale.range([0, this.plotWidth]);
+        this.yScale.range([this.plotHeight, 0]);
+
+        // 更新坐标轴位置
+        this.xAxisG.attr('transform', `translate(0,${this.plotHeight})`);
+
+        // 重绘内容 (resize 时不使用动画)
+        if (this.currentExpr) {
+            this.drawFunction(null, null, 0);
+        }
+
+        // 如果设置了回调，通知外部（如同步其他 UI 元素）
+        if (this.onResize) {
+            this.onResize();
+        }
     }
 
     initSvg() {
@@ -66,9 +108,11 @@ export class PointSearchVisualizer {
         this.pointsLayer = this.plot.append('g').attr('class', 'points-layer');
     }
 
-    drawFunction(expr, domain) {
+    drawFunction(expr, domain, duration = null) {
         if (expr) this.currentExpr = expr;
         if (domain) this.currentDomain = domain;
+
+        const t = (duration !== null) ? duration : this.duration;
 
         const xValues = d3.range(this.currentDomain[0], this.currentDomain[1], (this.currentDomain[1] - this.currentDomain[0]) / 200);
         const data = xValues.map(x => {
@@ -86,7 +130,7 @@ export class PointSearchVisualizer {
         this.yScale.domain([yExtent[0] - yPadding, yExtent[1] + yPadding]);
 
         // 平滑更新坐标轴与网格
-        this.updateAxes(this.duration);
+        this.updateAxes(t);
 
         const line = d3.line()
             .x(d => this.xScale(d.x))
@@ -95,7 +139,7 @@ export class PointSearchVisualizer {
         // 平滑更新曲线
         if (this.initialized) {
             this.functionPath.datum(data)
-                .transition().duration(this.duration)
+                .transition().duration(t)
                 .attr('d', line);
         } else {
             this.functionPath.datum(data).attr('d', line);
@@ -103,18 +147,19 @@ export class PointSearchVisualizer {
         }
 
         // 缩放/平移后同步更新历史点位置
-        this.repositionHistory(true);
+        this.repositionHistory(t);
     }
 
-    updateAxes(duration = this.duration) {
-        this.xAxisG.transition().duration(duration).call(d3.axisBottom(this.xScale));
-        this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
+    updateAxes(duration = null) {
+        const t = (duration !== null) ? duration : this.duration;
+        this.xAxisG.transition().duration(t).call(d3.axisBottom(this.xScale));
+        this.yAxisG.transition().duration(t).call(d3.axisLeft(this.yScale));
         
         // Grid lines with transition
-        this.gridX.transition().duration(duration)
+        this.gridX.transition().duration(t)
             .attr('transform', `translate(0,${this.plotHeight})`)
             .call(d3.axisBottom(this.xScale).tickSize(-this.plotHeight).tickFormat(''));
-        this.gridY.transition().duration(duration)
+        this.gridY.transition().duration(t)
             .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
         
         this.gridLayer.selectAll(".tick line").attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
@@ -312,12 +357,12 @@ export class PointSearchVisualizer {
     }
 
     // 在缩放/平移或更新历史时，根据当前比例尺与状态，平滑更新已绘制的迭代点、连线与样式
-    repositionHistory(animated = true) {
+    repositionHistory(durationOrAnimated = true) {
         if (!this.currentHistory || this.currentHistory.length === 0) return;
         
         const history = this.currentHistory;
         const algo = this.currentAlgorithm;
-        const t = animated ? this.duration : 0;
+        const t = (typeof durationOrAnimated === 'number') ? durationOrAnimated : (durationOrAnimated ? this.duration : 0);
 
         // 1. 更新连线
         const lineGen = d3.line()

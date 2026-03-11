@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="styles/utils.css">
 
     <!-- D3.js 可视化库 -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="/static/js/d3.v7.min.js"></script>
     <!-- Math.js 科学计算库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <script src="/static/js/math.js"></script>
 </head>
 <body>
 <div class="container">
@@ -34,7 +34,7 @@
     </nav>
     <!-- 布局：顶部三列状态栏 + 左侧全局控制 + 右侧三画布 -->
     <!-- 顶部：三算法状态栏 -->
-    <div class="triple-status-panel" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="triple-status-panel">
         <div class="algorithm-panel gd-panel">
             <h3>梯度下降法</h3>
             <div class="parameter-display">
@@ -80,7 +80,7 @@
     </div>
 
     <!-- 主区：左侧全局控制 + 右侧三画布 -->
-    <div class="comparison-main-layout" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 30px;">
+    <div class="comparison-main-layout">
         <div class="global-controls">
             <h3>全局控制</h3>
             <div class="control-group">
@@ -568,4 +568,7 @@
     }
 </script>
 </body>
+<footer>
+    点搜索性质对比 · OptLab 教学资源
+</footer>
 </html>

@@ -16,6 +16,7 @@
     border-radius: 12px;
     padding: 25px;
     box-shadow: var(--shadow);
+    box-sizing: border-box;
 }
 
 .golden-panel {
@@ -48,6 +49,9 @@
     gap: 15px;
     text-align: center;
     height: fit-content;
+    width: 320px;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 
 .control-group {
@@ -85,6 +89,8 @@ input[type="range"] {
     box-shadow: var(--shadow);
     margin-bottom: 30px;
     flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 #comparison-canvas {
@@ -99,6 +105,7 @@ input[type="range"] {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
 .viz-tab {
@@ -213,10 +220,12 @@ input[type="range"] {
 
     .comparison-main-layout {
         flex-direction: column;
+        align-items: stretch;
     }
 
     .global-controls {
         width: 100% !important;
+        order: 3;
     }
 
     .golden-panel {
@@ -227,9 +236,6 @@ input[type="range"] {
         order: 2;
     }
 
-    .global-controls {
-        order: 3;
-    }
 }
 
 .viz-header h2{

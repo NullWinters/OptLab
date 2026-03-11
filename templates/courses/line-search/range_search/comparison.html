@@ -7,9 +7,9 @@
     <title>区间收缩法</title>
 
     <!-- D3.js 可视化库 -->
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="/static/js/d3.v7.min.js"></script>
     <!-- Math.js 科学计算库 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <script src="/static/js/math.js"></script>
 
     <!-- 自定义样式 -->
     <link rel="stylesheet" href="styles/utils.css">
@@ -39,7 +39,7 @@
     </nav>
 
     <!-- 三算法控制面板 -->
-    <div class="dual-control-panel triple-control-panel" style="grid-template-columns: 1fr 1fr 1fr;">
+    <div class="dual-control-panel triple-control-panel">
         <!-- 黄金分割法控制 -->
         <div class="algorithm-panel golden-panel">
             <h3>黄金分割法</h3>
@@ -81,7 +81,7 @@
             </div>
         </div>
         <!-- 二分法控制 -->
-        <div class="algorithm-panel bisection-panel" style="border-top: 5px solid #6d4c41 !important;">
+        <div class="algorithm-panel bisection-panel">
             <h3>二分法</h3>
             <div class="control-group">
                 <label for="bis-epsilon">精度 ε :</label>
@@ -99,10 +99,9 @@
     </div>
 
     <!-- 对比可视化区域布局 -->
-    <div class="comparison-main-layout"
-         style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 30px;">
+    <div class="comparison-main-layout">
         <!-- 全局控制面板 (移至侧边) -->
-        <div class="global-controls" style="width: 320px; flex-shrink: 0;">
+        <div class="global-controls">
             <h3>全局控制</h3>
             <div class="control-group">
                 <label for="function-select">测试函数:</label>
@@ -156,7 +155,7 @@
             </div>
         </div>
 
-        <section class="comparison-visualization-section" style="flex: 1; min-width: 0;">
+        <section class="comparison-visualization-section">
             <div class="viz-header">
                 <h2>性能可视化对比</h2>
                 <div class="viz-tabs">
@@ -322,6 +321,9 @@
 
     function initVisualizer() {
         AppState.visualizer = new ComparisonVisualizer('comparison-canvas');
+        AppState.visualizer.onResize = () => {
+            updateVisualization();
+        };
     }
 
     function handleEvents() {
@@ -751,5 +753,7 @@
     }
 </script>
 </body>
-
+<footer>
+    区间收缩法性质对比 · OptLab 教学资源
+</footer>
 </html>
