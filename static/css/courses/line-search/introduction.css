@@ -1,11 +1,3 @@
-/* 基础布局和文字颜色继承自 utils.css */
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-}
-
 .section {
     background: white;
     border-radius: 20px;
@@ -33,8 +25,8 @@
 }
 
 h2 {
-    color: #d84315;
-    border-left: 5px solid #ffb300;
+    color: var(--primary-color);
+    border-left: 5px solid var(--secondary-color);
     padding-left: 15px;
     margin-top: 0;
 }
@@ -43,7 +35,7 @@ h2 {
     background-color: #fff8e1;
     padding: 25px;
     border-radius: 10px;
-    border-left: 4px solid #ffb300;
+    border-left: 4px solid var(--secondary-color);
     margin: 25px 0;
 }
 
@@ -71,10 +63,6 @@ h2 {
 }
 
 @media (max-width: 768px) {
-    .container {
-        padding: 20px 15px;
-    }
-
     .section {
         padding: 25px;
     }

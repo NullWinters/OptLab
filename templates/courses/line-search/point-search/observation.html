@@ -1,17 +1,14 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>点搜索</title>
-    <link rel="stylesheet" href="styles/observation.css">
-    <link rel="stylesheet" href="styles/utils.css">
+{% extends 'base.html' %}
+{% block title %}点搜索 - 流程观察{% endblock %}
+{% block head %}
     <!-- D3.js 可视化库 -->
-    <script src="/static/js/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <!-- Math.js 科学计算库 -->
-    <script src="/static/js/math.js"></script>
-</head>
-<body>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+    <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
+    <link rel="stylesheet" href="/static/css/courses/line-search/observation.css">
+{% endblock %}
+{% block content %}
 <div class="container">
     <a href="../index.html" class="back-btn">返回</a>
     <!-- 页面首部-->
@@ -215,10 +212,44 @@
         </div>
     </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'point_search_observation',
+        BUTTON_REGISTRY: [
+            { id: "function-select", description: "测试函数选择下拉框", type: "normal" },
+            { id: "custom-func-btn", description: "自定义函数按钮", type: "normal" },
+            { id: "initial-x0", description: "初始点x0滑动条", type: "normal" },
+            { id: "initial-x_prev", description: "初始点x-1滑动条（割线法专用）", type: "normal" },
+            { id: "learning-rate", description: "学习率滑动条（梯度下降法专用）", type: "normal" },
+            { id: "iterations", description: "迭代次数滑动条", type: "normal" },
+            { id: "gd-btn", description: "梯度下降法切换按钮", type: "normal" },
+            { id: "newton-btn", description: "牛顿法切换按钮", type: "normal" },
+            { id: "secant-btn", description: "割线法切换按钮", type: "normal" },
+            { id: "play-btn", description: "自动播放按钮", type: "normal" },
+            { id: "step-btn", description: "单步迭代按钮", type: "normal" },
+            { id: "reset-btn", description: "重置实验按钮", type: "normal" }
+        ],
+        GUIDEBOOK: `这是点搜索流程观察页面。
+        页面布局：
+        - 顶部为导航栏
+        - 左侧为函数可视化画布和参数调节区（初始点、学习率、迭代次数）
+        - 右侧为算法选择和实时参数状态显示
+        - 底部为思考练习区
+        
+        使用流程：
+        1. 在右侧选择想要观察的算法（梯度下降、牛顿、割线）。
+        2. 在左侧调节初始参数，或点击“自定义函数”输入新函数。
+        3. 点击“单步”或“播放”观察点在函数曲线上的移动过程。
+        4. 观察右侧实时更新的迭代k、函数值f(x)和导数值。`
+    };
+</script>
 
 <script type="module">
-    import { GradientDescent, NewtonsMethod, SecantMethod } from './scripts/algorithms.js';
-    import { PointSearchVisualizer } from './scripts/visualization.js';
+    import { GradientDescent, NewtonsMethod, SecantMethod } from '/static/js/courses/line-search/point-search/algorithms.js';
+    import { PointSearchVisualizer } from '/static/js/courses/line-search/point-search/visualization.js';
 
     const FunctionLibrary = {
         quadratic: {
@@ -508,8 +539,4 @@
         document.getElementById('pause-btn').disabled = allComplete || !AppState.isPlaying;
     }
 </script>
-</body>
-<footer>
-    点搜索流程观察 · OptLab 教学资源
-</footer>
-</html>
+{% endblock %}

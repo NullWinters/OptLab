@@ -43,6 +43,8 @@ body {
 
 .max-w-6xl { max-width: 72rem; }
 .max-w-4xl { max-width: 56rem; }
+.max-w-7xl { max-width: 80rem; }
+.max-w-5xl { max-width: 64rem; }
 
 .btn-back {
     display: inline-block;
@@ -180,3 +182,50 @@ body {
     color: #a1887f;
     font-size: 0.875rem;
 }
+
+/* Navigation */
+.nav-bar {
+    padding: 1.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--amber-primary);
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.nav-logo i {
+    margin-right: 0.5rem;
+}
+
+.nav-links {
+    display: none;
+    gap: 2rem;
+}
+
+@media (min-width: 768px) {
+    .nav-links {
+        display: flex;
+    }
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s ease-in-out;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: var(--amber-primary);
+}
+
+.nav-links a.active {
+    font-weight: 700;
+}
+

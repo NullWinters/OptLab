@@ -4,121 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>课程列表 - OptLab</title>
-    <link rel="stylesheet" href="/static/css/courses.css">
-    <link rel="stylesheet" href="/static/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/base/courses.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- 导航栏 -->
-    <nav class="nav-bar container max-w-7xl">
-        <div class="nav-logo">
-            <a href="/"><i class="fas fa-flask"></i> OptLab</a>
-        </div>
+<!-- 导航栏 -->
+<div class="container max-w-7xl">
+    <nav class="nav-bar">
+        <a href="/" class="nav-logo">
+            <i class="fas fa-flask"></i> OptLab
+        </a>
         <div class="nav-links">
             <a href="/">首页</a>
             <a href="/courses/" class="active">课程中心</a>
-            <a href="/lab">实验中心</a>
         </div>
     </nav>
+</div>
 
-    <main class="main-content container max-w-5xl">
-        <h1 class="page-title">课程中心</h1>
-        <p class="page-subtitle">系统学习最优化算法，从理论基础到工程实践</p>
+<main class="main-content container max-w-5xl">
+    <h1 class="page-title">课程中心</h1>
+    <p class="page-subtitle">系统学习最优化算法，从理论基础到工程实践</p>
 
-        <div class="course-list">
-            <!-- 模块 1: 一维搜索方法 -->
-            <div class="course-card theme-amber">
-                <div class="course-image-container">
-                    <!-- 占位预览图 -->
-                    <div class="course-placeholder-img">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                </div>
-                <div class="course-content">
-                    <div class="course-header">
-                        <h2 class="course-title">一维搜索方法</h2>
-                        <span class="course-status status-online">已上线</span>
-                    </div>
-                    <p class="course-desc">探索单变量函数的极小值搜索技术，是最优化算法的基础组件。</p>
-                    <div class="course-experiments">
-                        <h3>包含实验</h3>
-                        <div class="tag-list">
-                            <span class="tag">区间收缩法</span>
-                            <span class="tag">点搜索</span>
-                            <span class="tag">应用实验</span>
-                        </div>
-                    </div>
-                    <div class="course-footer">
-                        <a href="/courses/line-search/" class="btn-course btn-course-primary">
-                            进入实验 <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
+    <div class="course-list">
+        <!-- 模块 1: 一维搜索方法 -->
+        <div class="course-card theme-amber">
+            <div class="course-image-container">
+                <!-- 占位预览图 -->
+                <div class="course-placeholder-img">
+                    <i class="fas fa-chart-line"></i>
                 </div>
             </div>
-
-            <!-- 模块 2: 线性规划与单纯形法 -->
-            <div class="course-card theme-orange">
-                <div class="course-image-container">
-                    <div class="course-placeholder-img">
-                        <i class="fas fa-draw-polygon"></i>
+            <div class="course-content">
+                <div class="course-header">
+                    <h2 class="course-title">一维搜索方法</h2>
+                    <span class="course-status status-online">已上线</span>
+                </div>
+                <p class="course-desc">探索单变量函数的极小值搜索技术，是最优化算法的基础组件。</p>
+                <div class="course-experiments">
+                    <h3>包含实验</h3>
+                    <div class="tag-list">
+                        <span class="tag">区间收缩法</span>
+                        <span class="tag">点搜索</span>
+                        <span class="tag">应用实验</span>
                     </div>
                 </div>
-                <div class="course-content">
-                    <div class="course-header">
-                        <h2 class="course-title">线性规划与单纯形法</h2>
-                        <span class="course-status status-online">已上线</span>
-                    </div>
-                    <p class="course-desc">研究线性约束条件下的线性目标函数极值问题，涵盖基本可行解原理与单纯形法。</p>
-                    <div class="course-experiments">
-                        <h3>包含实验</h3>
-                        <div class="tag-list">
-                            <span class="tag">基本可行解引入</span>
-                            <span class="tag">单纯形表</span>
-                        </div>
-                    </div>
-                    <div class="course-footer">
-                        <a href="/courses/linear-programming/" class="btn-course btn-course-primary">
-                            进入实验 <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 模块 3: 支持向量机与SMO -->
-            <div class="course-card theme-red disabled">
-                <div class="course-image-container">
-                    <div class="course-placeholder-img">
-                        <i class="fas fa-project-diagram"></i>
-                    </div>
-                </div>
-                <div class="course-content">
-                    <div class="course-header">
-                        <h2 class="course-title">支持向量机与SMO</h2>
-                        <span class="course-status status-building">建设中</span>
-                    </div>
-                    <p class="course-desc">探索经典的分类算法 SVM 及其背后的二次规划问题，学习如何利用 SMO 算法高效求解。</p>
-                    <div class="course-experiments">
-                        <h3>包含实验</h3>
-                        <div class="tag-list">
-                            <span class="tag">SVM</span>
-                            <span class="tag">核技巧</span>
-                            <span class="tag">SMO</span>
-                        </div>
-                    </div>
-                    <div class="course-footer">
-                        <a href="/courses/svm-smo/" class="btn-course btn-course-outline">
-                            查看详情
-                        </a>
-                    </div>
+                <div class="course-footer">
+                    <a href="/courses/line-search/" class="btn-course btn-course-primary">
+                        进入实验 <i class="fas fa-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>
-    </main>
 
-    <!-- 页脚 -->
-    <footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+        <!-- 模块 2: 线性规划与单纯形法 -->
+        <div class="course-card theme-orange">
+            <div class="course-image-container">
+                <div class="course-placeholder-img">
+                    <i class="fas fa-draw-polygon"></i>
+                </div>
+            </div>
+            <div class="course-content">
+                <div class="course-header">
+                    <h2 class="course-title">线性规划与单纯形法</h2>
+                    <span class="course-status status-online">已上线</span>
+                </div>
+                <p class="course-desc">研究线性约束条件下的线性目标函数极值问题，涵盖基本可行解原理与单纯形法。</p>
+                <div class="course-experiments">
+                    <h3>包含实验</h3>
+                    <div class="tag-list">
+                        <span class="tag">基本可行解引入</span>
+                        <span class="tag">单纯形表</span>
+                    </div>
+                </div>
+                <div class="course-footer">
+                    <a href="/courses/linear-programming/" class="btn-course btn-course-primary">
+                        进入实验 <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
         </div>
-    </footer>
+
+        <!-- 模块 3: 支持向量机与SMO -->
+        <div class="course-card theme-red disabled">
+            <div class="course-image-container">
+                <div class="course-placeholder-img">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+            </div>
+            <div class="course-content">
+                <div class="course-header">
+                    <h2 class="course-title">支持向量机与SMO</h2>
+                    <span class="course-status status-building">建设中</span>
+                </div>
+                <p class="course-desc">探索经典的分类算法 SVM 及其背后的二次规划问题，学习如何利用 SMO 算法高效求解。</p>
+                <div class="course-experiments">
+                    <h3>包含实验</h3>
+                    <div class="tag-list">
+                        <span class="tag">SVM</span>
+                        <span class="tag">核技巧</span>
+                        <span class="tag">SMO</span>
+                    </div>
+                </div>
+                <div class="course-footer">
+                    <a href="/courses/svm-smo/" class="btn-course btn-course-outline">
+                        查看详情
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+    </div>
+</footer>
 </body>
 </html>
