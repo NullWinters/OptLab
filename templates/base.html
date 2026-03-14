@@ -9,7 +9,9 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    {% block content %}{% endblock %}
+    <div id="app-content">
+        {% block content %}{% endblock %}
+    </div>
 
     {% include 'components/_ai_sidebar.html' %}
 

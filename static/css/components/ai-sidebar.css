@@ -1,14 +1,18 @@
 /* ========== AI 助手侧边栏 ========== */
-body {
-    transition: padding-right 0.3s ease;
+:root {
+    --ai-sidebar-width: 380px;
 }
 
-body.ai-sidebar-open {
-    padding-right: 380px;
+#app-content {
+    transition: margin-right 0.3s ease;
+}
+
+body.ai-sidebar-open #app-content {
+    margin-right: var(--ai-sidebar-width);
 }
 
 body.ai-sidebar-open .ai-toggle-btn {
-    right: 410px;
+    right: calc(var(--ai-sidebar-width) + 30px);
 }
 
 .ai-toggle-btn {
@@ -41,8 +45,8 @@ body.ai-sidebar-open .ai-toggle-btn {
 .ai-sidebar {
     position: fixed;
     top: 0;
-    right: -400px;
-    width: 380px;
+    right: calc(-1 * var(--ai-sidebar-width) - 20px);
+    width: var(--ai-sidebar-width);
     height: 100vh;
     background: #fff;
     box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
