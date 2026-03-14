@@ -1,9 +1,6 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SVM 核技巧可视化 - OptLab</title>
+{% extends 'base.html' %}
+{% block title %}SVM 核技巧可视化 - OptLab{% endblock %}
+{% block head %}
     <style>
         :root {
             --bg: #fff8ef;
@@ -32,6 +29,24 @@
             grid-template-columns: 360px 1fr;
             gap: 20px;
             min-height: 100vh;
+        }
+
+        .page-back {
+            grid-column: 1 / -1;
+            justify-self: start;
+            display: inline-block;
+            background-color: #ea580c;
+            color: white;
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .page-back:hover {
+            transform: translateX(0.25rem);
         }
 
         .panel {
@@ -75,14 +90,14 @@
             margin: 8px 0 4px;
         }
 
-        input[type="file"],
-        select,
-        input[type="range"],
-        button {
+        .panel input[type="file"],
+        .panel select,
+        .panel input[type="range"],
+        .panel button {
             width: 100%;
         }
 
-        select, input[type="file"], input[type="range"] {
+        .panel select, .panel input[type="file"], .panel input[type="range"] {
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 8px;
@@ -90,7 +105,7 @@
             color: var(--text);
         }
 
-        button {
+        .panel button {
             border: none;
             border-radius: 10px;
             padding: 10px 12px;
@@ -102,7 +117,7 @@
             transition: 0.2s;
         }
 
-        button:hover { background: var(--primary-dark); }
+        .panel button:hover { background: var(--primary-dark); }
 
         .scene-wrap {
             background: var(--panel);
@@ -150,9 +165,11 @@
             .scene-wrap { min-height: 65vh; }
         }
     </style>
-</head>
-<body>
+{% endblock %}
+{% block content %}
 <div class="page">
+    <a href="/courses/svm-smo/" class="page-back">返回课程页</a>
+
     <aside class="panel">
         <h1>演示核技巧（函数变换）</h1>
         <p class="hint">上传 CSV 后手动选择 x/y/标签列。通过多项式核或高斯核把二维点映射到 z 轴，观察从线性不可分到线性可分的变化。</p>
@@ -186,16 +203,20 @@
                 <option value="rbf">高斯核 (RBF)</option>
             </select>
 
-            <label for="poly-degree">多项式次数 d</label>
-            <div class="inline">
-                <input id="poly-degree" type="range" min="2" max="6" value="3" />
-                <span class="value" id="poly-degree-val">3</span>
+            <div id="poly-param-group">
+                <label for="poly-degree">多项式次数 d</label>
+                <div class="inline">
+                    <input id="poly-degree" type="range" min="2" max="6" value="3" />
+                    <span class="value" id="poly-degree-val">3</span>
+                </div>
             </div>
 
-            <label for="rbf-gamma">高斯核 γ</label>
-            <div class="inline">
-                <input id="rbf-gamma" type="range" min="0.2" max="3" step="0.1" value="1.2" />
-                <span class="value" id="rbf-gamma-val">1.2</span>
+            <div id="rbf-param-group">
+                <label for="rbf-gamma">高斯核 γ</label>
+                <div class="inline">
+                    <input id="rbf-gamma" type="range" min="0.2" max="3" step="0.1" value="1.2" />
+                    <span class="value" id="rbf-gamma-val">1.2</span>
+                </div>
             </div>
 
             <button id="animate-btn">升维动画</button>
@@ -229,12 +250,36 @@
     <section class="scene-wrap">
         <div class="scene-head">
             <span>Three.js 主引擎 · 暖色亮色主题</span>
-            <a href="/courses/svm-smo/" style="color:#b9531d;text-decoration:none;">返回 SVM 目录</a>
+            <span style="color:#8f6a4f;">左键拖动旋转 · 滚轮缩放</span>
         </div>
         <div id="scene"></div>
     </section>
 </div>
-
+{% endblock %}
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'svm_smo_kernel_trick',
+        BUTTON_REGISTRY: [
+            { id: 'csv-file', description: '上传CSV文件输入框', type: 'normal' },
+            { id: 'preset-dataset', description: '预设数据集下拉框', type: 'normal' },
+            { id: 'load-preset-btn', description: '加载预设数据集按钮', type: 'normal' },
+            { id: 'x-col', description: 'x坐标列选择框', type: 'normal' },
+            { id: 'y-col', description: 'y坐标列选择框', type: 'normal' },
+            { id: 'label-col', description: '标签列选择框', type: 'normal' },
+            { id: 'load-btn', description: '加载并可视化按钮', type: 'normal' },
+            { id: 'kernel-type', description: '核函数类型选择框', type: 'normal' },
+            { id: 'poly-degree', description: '多项式核次数滑块', type: 'normal' },
+            { id: 'rbf-gamma', description: '高斯核gamma滑块', type: 'normal' },
+            { id: 'animate-btn', description: '升维动画按钮', type: 'normal' },
+            { id: 'default-mode-btn', description: '默认参数模式按钮', type: 'normal' },
+            { id: 'plane-z', description: '超平面沿Z轴平移滑块', type: 'normal' },
+            { id: 'plane-yaw', description: '超平面Yaw旋转滑块', type: 'normal' },
+            { id: 'plane-pitch', description: '超平面Pitch旋转滑块', type: 'normal' }
+        ],
+        GUIDEBOOK: '这是支持向量机核技巧三维可视化页面。页面左侧是参数面板，右侧是Three.js三维场景。用户先上传CSV或加载预设数据，再选择x/y/标签列并可视化。之后可选择多项式核或高斯核并播放升维动画，观察二维数据映射到三维后的可分性变化。超平面可平移和旋转，并实时显示按颜色标签计算的划分准确率。'
+    };
+</script>
 <script src="/static/vendor/three/three.min.js"></script>
 <script>
     if (typeof THREE === 'undefined') {
@@ -794,6 +839,14 @@
         $('rbf-gamma-val').textContent = e.target.value;
     });
 
+    function updateKernelParamVisibility() {
+        const kernel = $('kernel-type').value;
+        $('poly-param-group').style.display = kernel === 'poly' ? 'block' : 'none';
+        $('rbf-param-group').style.display = kernel === 'rbf' ? 'block' : 'none';
+    }
+
+    $('kernel-type').addEventListener('change', updateKernelParamVisibility);
+
     // ---------- Default preset ----------
     function applyDefaultMode() {
         $('kernel-type').value = 'poly';
@@ -801,11 +854,13 @@
         $('rbf-gamma').value = '1.2';
         $('poly-degree-val').textContent = '3';
         $('rbf-gamma-val').textContent = '1.2';
+        updateKernelParamVisibility();
 
         $('plane-z').value = '0';
         $('plane-yaw').value = '0';
         $('plane-pitch').value = '0';
         updatePlane();
+    updateKernelParamVisibility();
     }
 
     $('default-mode-btn').addEventListener('click', () => {
@@ -857,5 +912,4 @@
     applyDefaultMode();
     visualizeFromSelection(false);
 </script>
-</body>
-</html>
+{% endblock %}
