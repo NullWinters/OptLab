@@ -48,8 +48,8 @@ async def read_course_content(request: Request, course_name: str, subpath: str =
     if not subpath:
         subpath = "index.html"
     
-    # 构造模板相对路径 (Jinja2Templates 会自动相对于 templates 目录查找)
-    template_path = os.path.join("courses", course_name, subpath)
+    # 构造模板相对路径：Jinja2 只接受正斜杠分隔符
+    template_path = f"courses/{course_name}/{subpath}".replace("\\", "/")
     
     # 路径安全性校验 (相对于 templates 目录)
     full_path = os.path.abspath(os.path.join("templates", template_path))
