@@ -37,6 +37,18 @@ _DOCS_MAP = {
             "docs/公式/割线法.txt",
         ],
     },
+    "svm_smo_index": {
+        "guide": "docs/实验指导书/SVM-SMO-课程主页.txt",
+        "formulas": [
+            "docs/公式/SVM基础概念.txt",
+        ],
+    },
+    "svm_smo_kernel_trick": {
+        "guide": "docs/实验指导书/SVM-核技巧-三维可视化.txt",
+        "formulas": [
+            "docs/公式/SVM核技巧.txt",
+        ],
+    },
 }
 
 
