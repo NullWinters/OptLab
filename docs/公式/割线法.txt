@@ -1,7 +1,16 @@
-输入：f, x_0, x_(-1), N
-输出：x
+\textbf{输入}：目标函数 $f$，初始点 $x_0$、$x_{-1}$，最大迭代次数 $N$
 
-(1)k=0, 计算f'(x)
-(2)若k=N 或 f'(x_k)=0，输出x=x_k
-(3)x_(k+1)=x_k-(x_k-x_(k-1))*f'(x_k)/(f'(x_k)-f'(x_(k-1)))
-(4)k=k+1, 转(2)
+\textbf{输出}：近似极小值点 $x$
+
+\begin{enumerate}
+    \item 令 $k = 0$
+    \item 计算当前点及前一点的导数 $f'(x_k)$ 和 $f'(x_{k-1})$
+    \begin{itemize}
+        \item 若 $k = N$ 或 $f'(x_k) = 0$，输出 $x = x_k$，算法结束
+    \end{itemize}
+    \item 更新迭代点：
+    \begin{itemize}
+        \item $x_{k+1} = x_k - \dfrac{(x_k - x_{k-1}) \cdot f'(x_k)}{f'(x_k) - f'(x_{k-1})}$
+    \end{itemize}
+    \item 令 $k = k + 1$，转步骤 2
+\end{enumerate}

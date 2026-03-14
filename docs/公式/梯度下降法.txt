@@ -1,7 +1,16 @@
-输入：f, x_0, α, N
-输出：x
+\textbf{输入}：目标函数 $f$，初始点 $x_0$，学习率 $\alpha$，最大迭代次数 $N$
 
-(1)k=0, 计算f'(x)
-(2)若k=N, 输出x=x_k
-(3)x_(k+1)=x_k-α*f'(x_k)
-(4)k=k+1, 转(2)
+\textbf{输出}：近似极小值点 $x$
+
+\begin{enumerate}
+    \item 令 $k = 0$
+    \item 计算当前点的导数 $f'(x_k)$
+    \begin{itemize}
+        \item 若 $k = N$，输出 $x = x_k$，算法结束
+    \end{itemize}
+    \item 更新迭代点：
+    \begin{itemize}
+        \item $x_{k+1} = x_k - \alpha \cdot f'(x_k)$
+    \end{itemize}
+    \item 令 $k = k + 1$，转步骤 2
+\end{enumerate}
