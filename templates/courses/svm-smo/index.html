@@ -1,10 +1,13 @@
-{% extends 'base.html' %}
-{% block title %}支持向量机与SMO - OptLab{% endblock %}
-{% block head %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支持向量机与SMO - OptLab</title>
     <link rel="stylesheet" href="/static/css/base/sub-courses.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-{% endblock %}
-{% block content %}
+</head>
+<body>
 <div class="container max-w-6xl">
     <a href="/courses/" class="btn-back">
         返回课程页
@@ -53,15 +56,5 @@
 <footer class="footer">
     支持向量机与 SMO · OptLab 教学资源
 </footer>
-{% endblock %}
-{% block scripts %}
-<script>
-    window.AI_CONFIG = {
-        PAGE_ID: 'svm_smo_index',
-        BUTTON_REGISTRY: [
-            { id: 'enter-kernel-trick-btn', description: '进入核技巧三维可视化实验按钮', type: 'normal' }
-        ],
-        GUIDEBOOK: '这是支持向量机与SMO课程目录页面。用户可以点击“核技巧三维可视化”进入核心实验。其余模块为即将上线。'
-    };
-</script>
-{% endblock %}
+</body>
+</html>

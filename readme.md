@@ -154,18 +154,8 @@ uvicorn main:app --reload --port 8001
 将项目根目录下的 `.env.template` 改名为 `.env`，并填写 DeepSeek API Key：
 
 ```env
-# 从 https://platform.deepseek.com/api_keys 获取（必填）
 DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
-
 ```
-
-| 变量 | 必填 | 说明 |
-|------|------|------|
-| `DEEPSEEK_API_KEY` | ✅ | DeepSeek API 密钥 |
-| `DEEPSEEK_MODEL` | ❌ | 模型名称，默认 `deepseek-chat` |
-| `DEEPSEEK_TEMPERATURE` | ❌ | 生成温度，值越低回答越确定，默认 `0.7` |
-
-
 
 ## 许可证
 

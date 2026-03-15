@@ -29,32 +29,32 @@
 
     <div class="page" style="max-width: none; padding: 0;">
         <aside class="panel">
-        <h1>演示核技巧（函数变换）</h1>
-        <p class="hint">上传 CSV 后手动选择 x/y/标签列。通过多项式核或高斯核把二维点映射到 z 轴，观察从线性不可分到线性可分的变化。</p>
+        <h1>核技巧</h1>
+        <p class="hint">输入数据集，应用核技巧，观察数据集在三维空间是否线性可分</p>
 
         <div class="group">
             <h2>1) 上传数据集</h2>
-            <label for="csv-file">CSV 文件</label>
+            <label for="csv-file">CSV格式数据集</label>
             <input id="csv-file" type="file" accept=".csv" />
-            <label for="preset-dataset">或选择预设数据集</label>
+            <label for="preset-dataset">预设数据集</label>
             <select id="preset-dataset">
-                <option value="xor">XOR 交叉分布（二维不可线性分）</option>
-                <option value="rings">双环分布（二维不可线性分）</option>
+                <option value="xor">XOR 交叉分布</option>
+                <option value="rings">双环分布</option>
                 <option value="linear">线性可分对照组</option>
             </select>
-            <button id="load-preset-btn" type="button">加载预设数据集</button>
+            <button id="load-preset-btn" type="button">加载数据集</button>
             <label for="x-col">x 列</label>
             <select id="x-col"></select>
             <label for="y-col">y 列</label>
             <select id="y-col"></select>
             <label for="label-col">标签列</label>
             <select id="label-col"></select>
-            <button id="load-btn">加载并可视化</button>
+            <button id="load-btn">更新属性列</button>
             <p id="dataset-status" class="hint" style="margin-top:8px; margin-bottom:0;"></p>
         </div>
 
         <div class="group">
-            <h2>2) 核技巧（z轴函数变换）</h2>
+            <h2>2) 核技巧</h2>
             <label for="kernel-type">核函数</label>
             <select id="kernel-type">
                 <option value="poly">多项式核 (Polynomial)</option>
@@ -78,11 +78,11 @@
             </div>
 
             <button id="animate-btn">升维动画</button>
-            <button id="default-mode-btn" type="button">默认参数模式</button>
+            <button id="default-mode-btn" type="button">重置为默认参数</button>
         </div>
 
         <div class="group">
-            <h2>3) 超平面（可移动）</h2>
+            <h2>3) 设置超平面</h2>
             <label for="plane-z">沿 Z 轴平移</label>
             <div class="inline">
                 <input id="plane-z" type="range" min="-2" max="2" step="0.05" value="0" />
@@ -107,7 +107,7 @@
 
     <section class="scene-wrap">
         <div class="scene-head">
-            <span>Three.js 主引擎 · 暖色亮色主题</span>
+            <span>3D可视化画布</span>
             <span style="color:#8f6a4f;">左键拖动旋转 · 滚轮缩放</span>
         </div>
         <div id="scene"></div>

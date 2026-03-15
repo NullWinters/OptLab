@@ -1,12 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}点搜索 - 流程观察{% endblock %}
 {% block head %}
-    <!-- D3.js 可视化库 -->
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <!-- Math.js 科学计算库 -->
-    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
-    <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
-    <link rel="stylesheet" href="/static/css/courses/line-search/observation.css">
+<!-- D3.js 可视化库 -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<!-- Math.js 科学计算库 -->
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+<link rel="stylesheet" href="/static/css/courses/line-search/common.css">
+<link rel="stylesheet" href="/static/css/courses/line-search/observation.css">
 {% endblock %}
 {% block content %}
 <div class="container">
@@ -179,36 +179,14 @@
         </section>
     </div>
 
-    <!-- 思考记录区域 -->
+    <!-- 实验笔记区域 -->
     <section class="questions">
-        <h2>请观察算法运行并思考</h2>
+        <h2>实验笔记</h2>
 
         <div class="question-item">
-            <h4>问题 1：梯度下降</h4>
-            <p>
-                为什么要选择负梯度方向作为迭代方向？
-            </p>
+            <h4>点此设置标题</h4>
             <label for="observation-q1"></label>
-            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q1"></textarea>
-            <h4>问题 2：学习率</h4>
-            <p>
-                观察并记录不同学习率对算法收敛的影响。你认为求解最小值点时学习率应如何变化？
-            </p>
-            <label for="observation-q2"></label>
-            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q2"></textarea>
-            <h4>问题 3：二次收敛性</h4>
-            <p>
-                观察牛顿法与割线法能否在有限步内达到二次函数的极小值点，并分析其原因。
-            </p>
-            <label for="observation-q3"></label>
-            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q3"></textarea>
-            <h4>问题 4：逆抛物线插值法</h4>
-            <p>
-                割线法使用割线信息近似二阶导数值，避免了计算二阶导数。试进一步使用割线信息近似一阶导数值，推导迭代公式。
-            </p>
-            <label for="observation-q4"></label>
-            <textarea class="answer-input" placeholder="在此记录你的观察..." id="observation-q4"></textarea>
-
+            <textarea class="answer-input" placeholder="在此记录你的思考..." id="observation-q1"></textarea>
         </div>
     </section>
 </div>
@@ -219,25 +197,25 @@
     window.AI_CONFIG = {
         PAGE_ID: 'point_search_observation',
         BUTTON_REGISTRY: [
-            { id: "function-select", description: "测试函数选择下拉框", type: "normal" },
-            { id: "custom-func-btn", description: "自定义函数按钮", type: "normal" },
-            { id: "initial-x0", description: "初始点x0滑动条", type: "normal" },
-            { id: "initial-x_prev", description: "初始点x-1滑动条（割线法专用）", type: "normal" },
-            { id: "learning-rate", description: "学习率滑动条（梯度下降法专用）", type: "normal" },
-            { id: "iterations", description: "迭代次数滑动条", type: "normal" },
-            { id: "gd-btn", description: "梯度下降法切换按钮", type: "normal" },
-            { id: "newton-btn", description: "牛顿法切换按钮", type: "normal" },
-            { id: "secant-btn", description: "割线法切换按钮", type: "normal" },
-            { id: "play-btn", description: "自动播放按钮", type: "normal" },
-            { id: "step-btn", description: "单步迭代按钮", type: "normal" },
-            { id: "reset-btn", description: "重置实验按钮", type: "normal" }
+            {id: "function-select", description: "测试函数选择下拉框", type: "normal"},
+            {id: "custom-func-btn", description: "自定义函数按钮", type: "normal"},
+            {id: "initial-x0", description: "初始点x0滑动条", type: "normal"},
+            {id: "initial-x_prev", description: "初始点x-1滑动条（割线法专用）", type: "normal"},
+            {id: "learning-rate", description: "学习率滑动条（梯度下降法专用）", type: "normal"},
+            {id: "iterations", description: "迭代次数滑动条", type: "normal"},
+            {id: "gd-btn", description: "梯度下降法切换按钮", type: "normal"},
+            {id: "newton-btn", description: "牛顿法切换按钮", type: "normal"},
+            {id: "secant-btn", description: "割线法切换按钮", type: "normal"},
+            {id: "play-btn", description: "自动播放按钮", type: "normal"},
+            {id: "step-btn", description: "单步迭代按钮", type: "normal"},
+            {id: "reset-btn", description: "重置实验按钮", type: "normal"}
         ],
         GUIDEBOOK: `这是点搜索流程观察页面。
         页面布局：
         - 顶部为导航栏
         - 左侧为函数可视化画布和参数调节区（初始点、学习率、迭代次数）
         - 右侧为算法选择和实时参数状态显示
-        - 底部为思考练习区
+        - 底部为实验笔记区
         
         使用流程：
         1. 在右侧选择想要观察的算法（梯度下降、牛顿、割线）。
@@ -248,8 +226,12 @@
 </script>
 
 <script type="module">
-    import { GradientDescent, NewtonsMethod, SecantMethod } from '/static/js/courses/line-search/point-search/algorithms.js';
-    import { PointSearchVisualizer } from '/static/js/courses/line-search/point-search/visualization.js';
+    import {
+        GradientDescent,
+        NewtonsMethod,
+        SecantMethod
+    } from '/static/js/courses/line-search/point-search/algorithms.js';
+    import {PointSearchVisualizer} from '/static/js/courses/line-search/point-search/visualization.js';
 
     const FunctionLibrary = {
         quadratic: {
@@ -306,7 +288,7 @@
             option.textContent = `${func.name}：${func.formula}`;
             select.appendChild(option);
         });
-        
+
         const customOption = document.createElement('option');
         customOption.value = 'custom_trigger';
         customOption.textContent = '--- 自定义函数 ---';
@@ -424,7 +406,7 @@
         pause(true);
         const funcInfo = FunctionLibrary[AppState.functionType];
         const expr = funcInfo.expression;
-        
+
         if (AppState.currentAlgorithm === 'gd') {
             AppState.solver = new GradientDescent(expr, AppState.x0, AppState.alpha, AppState.n);
         } else if (AppState.currentAlgorithm === 'newton') {
@@ -447,7 +429,7 @@
             AppState.visualizer.focusOnLatest();
         } else {
             // 拖动时：仅在超出边界时 autoZoom，否则只更新点的位置
-            AppState.visualizer.autoZoom(AppState.solver.history, { dragging: true });
+            AppState.visualizer.autoZoom(AppState.solver.history, {dragging: true});
             updateUI(true); // 传入 isDragging 标志
         }
     }
