@@ -163,22 +163,99 @@
         </div>
         <p>通过代入目标函数并剪辑，可得解析解 $\alpha_2^{\text{new}}$，进而求出 $\alpha_1^{\text{new}}$。</p>
 
-        <h3>3.3 算法流程伪代码</h3>
+        <h3>3.3 算法流程</h3>
         <div class="highlight">
-            <pre>
-初始化 α = 0, b = 0
-重复直到收敛：
-    外层循环：选择违反KKT条件的向量 x_i ，第一个变量为 α_i
-    内层循环：选择变化速度最大的向量，即 |E_i - E_j| 最大的向量 x_j，第二个变量为 α_j
-    更新 α_i, α_j
-    更新 b 和 E
-返回 α, b
-            </pre>
+            <p style="margin-top: 0;">SMO 算法每次优化两个拉格朗日乘子，具体步骤如下：</p>
+            <ol style="margin-left: 1.5rem; list-style-type: decimal; line-height: 1.8; padding-left: 0.5rem;">
+                <li>
+                    <strong>初始化</strong>：设拉格朗日乘子向量 \(\boldsymbol{\alpha} = \mathbf{0}\)，阈值 \(b =
+                    0\)。计算初始误差
+                    \(E_i = g(\mathbf{x}_i) - y_i\)，其中
+                    \(g(\mathbf{x}_i) = \sum_{j=1}^{N} \alpha_j y_j K(\mathbf{x}_j, \mathbf{x}_i) + b\)。
+                </li>
+                <li>
+                    <strong>外层循环</strong>：寻找违反 KKT 条件的第一个变量 \(\alpha_i\)。违反条件包括：
+                    <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                        <li>\(0 < \alpha_i < C\) 且 \(y_i E_i \neq 0\)；</li>
+                        <li>\(\alpha_i = 0\) 且 \(y_i E_i < 0\)；</li>
+                        <li>\(\alpha_i = C\) 且 \(y_i E_i > 0\)。</li>
+                    </ul>
+                    优先扫描间隔边界上的样本（\(0 < \alpha_i < C\)），再遍历整个训练集。找到后进入内层循环。
+                </li>
+                <li>
+                    <strong>内层循环</strong>：选择第二个变量 \(\alpha_j\)，使得 \(|E_i - E_j|\) 最大，以加快收敛。若
+                    \(\alpha_j\) 更新变化过小，则退回外层循环选取下一个 \(\alpha_i\)。
+                </li>
+                <li>
+                    <strong>更新 \(\alpha_i, \alpha_j\)</strong>：
+                    <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                        <li>
+                            根据类别异同计算边界 \(L\) 和 \(H\)：<br>
+                            若 \(y_i = y_j\)：\(L = \max(0, \alpha_i + \alpha_j - C)\)，\(H = \min(C, \alpha_i +
+                            \alpha_j)\)；<br>
+                            若 \(y_i \neq y_j\)：\(L = \max(0, \alpha_j - \alpha_i)\)，\(H = \min(C, C + \alpha_j -
+                            \alpha_i)\)。
+                        </li>
+                        <li>计算 \(\eta = 2K_{i,j} - K_{i,i} - K_{j,j}\)，其中 \(K_{i,j} = K(\mathbf{x}_i,
+                            \mathbf{x}_j)\)。
+                        </li>
+                        <li>
+                            未剪辑的 \(\alpha_j\) 更新量为 \(\alpha_j - \frac{y_j(E_i - E_j)}{\eta}\)，剪辑后得到
+                            \(\alpha_j^{\text{new}}\)：
+                            \[
+                            \alpha_j^{\text{new}} =
+                            \begin{cases}
+                            L, & \alpha_j - \dfrac{y_j(E_i - E_j)}{\eta} < L \\[2ex]
+                            \alpha_j - \dfrac{y_j(E_i - E_j)}{\eta}, & L \leq \alpha_j - \dfrac{y_j(E_i - E_j)}{\eta}
+                            \leq H \\[2ex]
+                            H, & \alpha_j - \dfrac{y_j(E_i - E_j)}{\eta} > H
+                            \end{cases}
+                            \]
+                        </li>
+                        <li>更新 \(\alpha_i^{\text{new}} = \alpha_i + y_i y_j (\alpha_j - \alpha_j^{\text{new}})\)。</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>更新阈值 \(b\) 和误差 \(E\)</strong>：
+                    <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                        <li>
+                            计算中间变量：
+                            \[
+                            b_i = b - E_i - y_i(\alpha_i^{\text{new}} - \alpha_i)K_{i,i} - y_j(\alpha_j^{\text{new}} -
+                            \alpha_j)K_{i,j}
+                            \]
+                            \[
+                            b_j = b - E_j - y_i(\alpha_i^{\text{new}} - \alpha_i)K_{i,j} - y_j(\alpha_j^{\text{new}} -
+                            \alpha_j)K_{j,j}
+                            \]
+                        </li>
+                        <li>
+                            新阈值 \(b^{\text{new}}\) 由以下规则确定：<br>
+                            若 \(0 < \alpha_i^{\text{new}} < C\)，则 \(b^{\text{new}} = b_i\)；<br>
+                            若 \(0 < \alpha_j^{\text{new}} < C\)，则 \(b^{\text{new}} = b_j\)；<br>
+                            否则 \(b^{\text{new}} = (b_i + b_j)/2\)。
+                        </li>
+                        <li>
+                            更新所有样本的误差：
+                            \[
+                            E_k^{\text{new}} = E_k + y_i(\alpha_i^{\text{new}} - \alpha_i)K_{i,k} +
+                            y_j(\alpha_j^{\text{new}} - \alpha_j)K_{j,k} + b^{\text{new}} - b
+                            \]
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>终止条件检查</strong>：若所有样本满足 \(|y_i g(\mathbf{x}_i) - 1| < tol\) 或迭代次数达到
+                    \(max\_iter\)，则停止。
+                </li>
+                <li>
+                    <strong>输出模型</strong>：得到 \(\boldsymbol{\omega} = \sum_{i=1}^{N} \alpha_i y_i K(\cdot,
+                    \mathbf{x}_i)\)，决策函数
+                    \(f(\mathbf{x}) = \operatorname{sign}\big(\boldsymbol{\omega} \cdot \mathbf{x} + b\big)\)。
+                </li>
+            </ol>
         </div>
-
-        <div class="highlight">
-            下方画布示意了SMO迭代的过程。每次迭代将高亮被选中的两个样本点，并更新分离超平面。
-        </div>
+        <!-- 注意：下方可视化容器保持不变 -->
         <div class="visualization-container">
             <div id="smo-canvas" class="canvas-container"></div>
             <button id="play-smo" class="nav-btn active">播放</button>
