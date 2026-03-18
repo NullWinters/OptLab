@@ -462,19 +462,11 @@ function createOrUpdatePoints(zValue = 0) {
     }
 }
 
-// ---------- Kernel transform ----------
 function computeTargetZ() {
-    const kernel = $('kernel-type').value;
-    const d = Number($('poly-degree').value);
-    const gamma = Number($('rbf-gamma').value);
-
     const raw = state.points.map(p => {
         const x = p.ox;
         const y = p.oy;
-        if (kernel === 'poly') {
-            return Math.pow(x, d) + Math.pow(y, d);
-        }
-        return Math.exp(-gamma * (x * x + y * y));
+        return Math.sqrt(2) * x * y;
     });
 
     const mn = Math.min(...raw), mx = Math.max(...raw);
@@ -538,37 +530,12 @@ function updatePlane() {
     $(id).addEventListener('input', updatePlane);
 });
 
-// ---------- Kernel params display ----------
-$('poly-degree').addEventListener('input', (e) => {
-    $('poly-degree-val').textContent = e.target.value;
-});
-
-$('rbf-gamma').addEventListener('input', (e) => {
-    $('rbf-gamma-val').textContent = e.target.value;
-});
-
-function updateKernelParamVisibility() {
-    const kernel = $('kernel-type').value;
-    $('poly-param-group').style.display = kernel === 'poly' ? 'block' : 'none';
-    $('rbf-param-group').style.display = kernel === 'rbf' ? 'block' : 'none';
-}
-
-$('kernel-type').addEventListener('change', updateKernelParamVisibility);
-
 // ---------- Default preset ----------
 function applyDefaultMode() {
-    $('kernel-type').value = 'poly';
-    $('poly-degree').value = '3';
-    $('rbf-gamma').value = '1.2';
-    $('poly-degree-val').textContent = '3';
-    $('rbf-gamma-val').textContent = '1.2';
-    updateKernelParamVisibility();
-
     $('plane-z').value = '0';
     $('plane-yaw').value = '0';
     $('plane-pitch').value = '0';
     updatePlane();
-    updateKernelParamVisibility();
 }
 
 $('default-mode-btn').addEventListener('click', () => {
