@@ -15,17 +15,38 @@ function setAccuracyText(text) {
     accEl.textContent = text;
 }
 
+function refreshCurrentMapText() {
+    const el = $('current-map-text');
+    if (!el) return;
+    const mapX = state.mapExpr.x.replace(/\*/g, '·');
+    const mapY = state.mapExpr.y.replace(/\*/g, '·');
+    const mapZ = state.mapExpr.z.replace(/\*/g, '·');
+    el.textContent = `当前映射：φ(x, y) = (${mapX}, ${mapY}, ${mapZ})`;
+}
+
 const state = {
     headers: [],
     rows: [],
     points: [],
     pointsMesh: null,
-    targetZ: [],
-    currentZ: [],
+    targetMapped: [],
+    currentMapped: [],
+    mapExpr: {
+        x: 'x^2',
+        y: 'y^2',
+        z: 'sqrt(2)*x*y'
+    },
     minX: 0,
     maxX: 1,
     minY: 0,
     maxY: 1,
+};
+
+const MAPPING_PRESETS = {
+    textbook: { x: 'x^2', y: 'y^2', z: 'sqrt(2)*x*y' },
+    identity_lift: { x: 'x', y: 'y', z: 'x^2 + y^2' },
+    trig: { x: 'sin(x)', y: 'cos(y)', z: 'x*y' },
+    saddle: { x: 'x', y: 'y', z: 'x^2 - y^2' }
 };
 
 // ---------- Three.js ----------
@@ -242,7 +263,7 @@ function fillSelectors(headers) {
 }
 
 function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
-    if (!state.points.length || !state.currentZ.length) {
+    if (!state.points.length || !state.currentMapped.length) {
         return null;
     }
 
@@ -265,7 +286,8 @@ function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
 
     for (let i = 0; i < state.points.length; i++) {
         const p = state.points[i];
-        const v = new THREE.Vector3(p.x, state.currentZ[i], p.y);
+        const m = state.currentMapped[i];
+        const v = new THREE.Vector3(m.x, m.z, m.y);
         const signed = normal.dot(v.clone().sub(planePoint));
         const positiveSide = signed >= 0;
 
@@ -285,7 +307,7 @@ function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
 }
 
 function updateSeparationAccuracy() {
-    if (!state.points.length || !state.currentZ.length) {
+    if (!state.points.length || !state.currentMapped.length) {
         setAccuracyText('划分准确率：--');
         return;
     }
@@ -303,7 +325,7 @@ function updateSeparationAccuracy() {
 }
 
 function autoFitPlaneFromCurrentPoints() {
-    if (!state.points.length || state.points.length !== state.currentZ.length) return;
+    if (!state.points.length || state.points.length !== state.currentMapped.length) return;
 
     const labels = [...new Set(state.points.map(p => p.label))];
     if (labels.length !== 2) {
@@ -390,7 +412,7 @@ function visualizeFromSelection(showSuccessHint = true) {
     }
 
     state.points = normalizeXY(parsed);
-    createOrUpdatePoints(0);
+    createOrUpdatePoints();
     autoFitPlaneFromCurrentPoints();
     setStatus(`渲染完成：共 ${parsed.length} 个点，类别数 ${labels.size}。`);
     if (showSuccessHint) {
@@ -421,7 +443,7 @@ function normalizeXY(points) {
     }));
 }
 
-function createOrUpdatePoints(zValue = 0) {
+function createOrUpdatePoints() {
     const geometry = new THREE.BufferGeometry();
     const pos = new Float32Array(state.points.length * 3);
     const col = new Float32Array(state.points.length * 3);
@@ -432,13 +454,14 @@ function createOrUpdatePoints(zValue = 0) {
         [labels[1], new THREE.Color('#1e88e5')],
     ]);
 
-    state.currentZ = [];
+    state.currentMapped = [];
     for (let i = 0; i < state.points.length; i++) {
         const p = state.points[i];
-        pos[i * 3] = p.x;
-        pos[i * 3 + 1] = zValue;
-        pos[i * 3 + 2] = p.y;
-        state.currentZ.push(zValue);
+        const m = { x: p.x, y: p.y, z: 0 };
+        state.currentMapped.push(m);
+        pos[i * 3] = m.x;
+        pos[i * 3 + 1] = m.z;
+        pos[i * 3 + 2] = m.y;
 
         const c = colorMap.get(p.label) || new THREE.Color('#7e57c2');
         col[i * 3] = c.r;
@@ -462,16 +485,61 @@ function createOrUpdatePoints(zValue = 0) {
     }
 }
 
-function computeTargetZ() {
-    const raw = state.points.map(p => {
-        const x = p.ox;
-        const y = p.oy;
-        return Math.sqrt(2) * x * y;
-    });
+function evaluateMappingExpr(expr, x, y) {
+    if (window.math && typeof window.math.evaluate === 'function') {
+        return window.math.evaluate(expr, { x, y });
+    }
 
-    const mn = Math.min(...raw), mx = Math.max(...raw);
-    const span = Math.max(mx - mn, 1e-6);
-    return raw.map(v => ((v - mn) / span) * 5.5 - 1.0);
+    if (!/^[0-9a-zA-Z_+\-*/^().,\s]+$/.test(expr)) {
+        throw new Error('表达式包含不支持的字符');
+    }
+
+    const jsExpr = expr.replace(/\^/g, '**');
+    const fn = new Function(
+        'x',
+        'y',
+        'const {sin,cos,tan,asin,acos,atan,exp,log,sqrt,abs,pow,min,max,PI,E} = Math; return (' + jsExpr + ');'
+    );
+    return fn(x, y);
+}
+
+function getRawMappedPoint(p) {
+    const x = p.ox;
+    const y = p.oy;
+    const raw = {
+        x: evaluateMappingExpr(state.mapExpr.x, x, y),
+        y: evaluateMappingExpr(state.mapExpr.y, x, y),
+        z: evaluateMappingExpr(state.mapExpr.z, x, y)
+    };
+    if (!Number.isFinite(raw.x) || !Number.isFinite(raw.y) || !Number.isFinite(raw.z)) {
+        throw new Error('映射结果包含非数值（NaN/Infinity），请检查表达式定义域。');
+    }
+    return raw;
+}
+
+function normalizeMapped(rawMapped) {
+    const xs = rawMapped.map(p => p.x);
+    const ys = rawMapped.map(p => p.y);
+    const zs = rawMapped.map(p => p.z);
+
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const minZ = Math.min(...zs), maxZ = Math.max(...zs);
+
+    const spanX = Math.max(maxX - minX, 1e-6);
+    const spanY = Math.max(maxY - minY, 1e-6);
+    const spanZ = Math.max(maxZ - minZ, 1e-6);
+
+    return rawMapped.map(p => ({
+        x: ((p.x - minX) / spanX) * 8 - 4,
+        y: ((p.y - minY) / spanY) * 8 - 4,
+        z: ((p.z - minZ) / spanZ) * 5.5 - 1.0
+    }));
+}
+
+function computeTargetMapped() {
+    const rawMapped = state.points.map(getRawMappedPoint);
+    return normalizeMapped(rawMapped);
 }
 
 $('animate-btn').addEventListener('click', () => {
@@ -480,11 +548,16 @@ $('animate-btn').addEventListener('click', () => {
         return;
     }
 
-    state.targetZ = computeTargetZ();
+    try {
+        state.targetMapped = computeTargetMapped();
+    } catch (err) {
+        setStatus(`映射计算失败：${err.message}`, true);
+        return;
+    }
 
     const duration = 1100;
     const start = performance.now();
-    const from = [...state.currentZ];
+    const from = state.currentMapped.map(p => ({ ...p }));
     const pos = state.pointsMesh.geometry.attributes.position.array;
 
     function step(now) {
@@ -492,9 +565,16 @@ $('animate-btn').addEventListener('click', () => {
         const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
         for (let i = 0; i < state.points.length; i++) {
-            const z = from[i] + (state.targetZ[i] - from[i]) * ease;
-            state.currentZ[i] = z;
-            pos[i * 3 + 1] = z;
+            const target = state.targetMapped[i];
+            const next = {
+                x: from[i].x + (target.x - from[i].x) * ease,
+                y: from[i].y + (target.y - from[i].y) * ease,
+                z: from[i].z + (target.z - from[i].z) * ease
+            };
+            state.currentMapped[i] = next;
+            pos[i * 3] = next.x;
+            pos[i * 3 + 1] = next.z;
+            pos[i * 3 + 2] = next.y;
         }
 
         state.pointsMesh.geometry.attributes.position.needsUpdate = true;
@@ -530,8 +610,78 @@ function updatePlane() {
     $(id).addEventListener('input', updatePlane);
 });
 
+function validateMappingExpr(expr, testScope) {
+    const val = evaluateMappingExpr(expr, testScope.x, testScope.y);
+    if (!Number.isFinite(val)) {
+        throw new Error(`表达式 "${expr}" 结果不是有效数值`);
+    }
+}
+
+function applyCustomMappingFromInputs() {
+    const errEl = $('map-expr-error');
+    if (errEl) errEl.textContent = '';
+
+    const xExpr = $('map-x-input').value.trim();
+    const yExpr = $('map-y-input').value.trim();
+    const zExpr = $('map-z-input').value.trim();
+
+    if (!xExpr || !yExpr || !zExpr) {
+        const msg = '请完整输入 x_new、y_new、z_new 三个表达式。';
+        if (errEl) errEl.textContent = msg;
+        setStatus(msg, true);
+        return;
+    }
+
+    try {
+        validateMappingExpr(xExpr, { x: 1.23, y: -0.8 });
+        validateMappingExpr(yExpr, { x: 1.23, y: -0.8 });
+        validateMappingExpr(zExpr, { x: 1.23, y: -0.8 });
+        state.mapExpr = { x: xExpr, y: yExpr, z: zExpr };
+        refreshCurrentMapText();
+        setStatus('自定义映射已应用。点击“升维动画”查看效果。');
+        $('custom-map-modal').style.display = 'none';
+    } catch (err) {
+        const msg = `映射表达式错误：${err.message}`;
+        if (errEl) errEl.textContent = msg;
+        setStatus(msg, true);
+    }
+}
+
+$('apply-map-btn').addEventListener('click', applyCustomMappingFromInputs);
+$('custom-map-btn').addEventListener('click', () => {
+    const errEl = $('map-expr-error');
+    if (errEl) errEl.textContent = '';
+    $('custom-map-modal').style.display = 'flex';
+});
+$('map-preset-select').addEventListener('change', (e) => {
+    const preset = MAPPING_PRESETS[e.target.value];
+    if (!preset) return;
+    $('map-x-input').value = preset.x;
+    $('map-y-input').value = preset.y;
+    $('map-z-input').value = preset.z;
+});
+$('close-map-modal').addEventListener('click', () => {
+    $('custom-map-modal').style.display = 'none';
+});
+window.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'custom-map-modal') {
+        $('custom-map-modal').style.display = 'none';
+    }
+});
+
 // ---------- Default preset ----------
 function applyDefaultMode() {
+    $('map-preset-select').value = 'textbook';
+    $('map-x-input').value = MAPPING_PRESETS.textbook.x;
+    $('map-y-input').value = MAPPING_PRESETS.textbook.y;
+    $('map-z-input').value = MAPPING_PRESETS.textbook.z;
+    state.mapExpr = {
+        x: $('map-x-input').value,
+        y: $('map-y-input').value,
+        z: $('map-z-input').value
+    };
+    refreshCurrentMapText();
+
     $('plane-z').value = '0';
     $('plane-yaw').value = '0';
     $('plane-pitch').value = '0';
@@ -541,7 +691,7 @@ function applyDefaultMode() {
 $('default-mode-btn').addEventListener('click', () => {
     applyDefaultMode();
     if (state.points.length && state.pointsMesh) {
-        createOrUpdatePoints(0);
+        createOrUpdatePoints();
         setStatus('已切换为默认参数模式。');
     }
 });
