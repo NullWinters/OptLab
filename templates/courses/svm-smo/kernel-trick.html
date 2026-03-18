@@ -3,6 +3,7 @@
 {% block head %}
 <link rel="stylesheet" href="/static/css/courses/svm-smo/introduction.css">
 <link rel="stylesheet" href="/static/css/courses/svm-smo/kernel-trick.css">
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
     <script type="importmap">
         {
             "imports": {
@@ -55,12 +56,55 @@
 
         <div class="group">
             <h2>2) 核技巧</h2>
-            <p class="hint" style="margin-top:0;">
-                固定映射：φ(x, y) = (x², √2xy, y²)
-            </p>
+            <p id="current-map-text" class="hint" style="margin-top:0;">当前映射：φ(x, y) = (x², y², √2xy)</p>
+            <button id="custom-map-btn" type="button">自定义映射</button>
 
             <button id="animate-btn">升维动画</button>
             <button id="default-mode-btn" type="button">重置为默认参数</button>
+        </div>
+
+        <div id="custom-map-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>自定义映射解析器 (math.js)</h3>
+                    <span id="close-map-modal" class="close-modal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group">
+                        <label for="map-preset-select">预设映射</label>
+                        <select id="map-preset-select">
+                            <option value="textbook">教材映射 φ=(x², y², √2xy)</option>
+                            <option value="identity_lift">基础抬升 φ=(x, y, x²+y²)</option>
+                            <option value="trig">三角映射 φ=(sin(x), cos(y), x*y)</option>
+                            <option value="saddle">鞍面映射 φ=(x, y, x²-y²)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="map-x-input">x_new(x, y)</label>
+                        <input id="map-x-input" type="text" value="x^2" placeholder="例如: x^2" />
+                    </div>
+                    <div class="input-group">
+                        <label for="map-y-input">y_new(x, y)</label>
+                        <input id="map-y-input" type="text" value="y^2" placeholder="例如: y^2" />
+                    </div>
+                    <div class="input-group">
+                        <label for="map-z-input">z_new(x, y)</label>
+                        <input id="map-z-input" type="text" value="sqrt(2)*x*y" placeholder="例如: sqrt(2)*x*y" />
+                    </div>
+                    <p id="map-expr-error" class="hint" style="margin-top:8px; margin-bottom:0; color:#c62828;"></p>
+                    <div class="examples-section" style="margin-top: 10px;">
+                        <h4 style="margin: 0 0 6px; color:#8f6a4f;">示例表达式</h4>
+                        <ul>
+                            <li><code>x^2</code>、<code>y^2</code>、<code>sqrt(2)*x*y</code></li>
+                            <li><code>sin(x)</code>、<code>cos(y)</code>、<code>x*y</code></li>
+                            <li><code>x</code>、<code>y</code>、<code>x^2+y^2</code></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="apply-map-btn" type="button">确定</button>
+                </div>
+            </div>
         </div>
 
         <div class="group">
@@ -109,13 +153,20 @@
             { id: 'y-col', description: 'y坐标列选择框', type: 'normal' },
             { id: 'label-col', description: '标签列选择框', type: 'normal' },
             { id: 'load-btn', description: '加载并可视化按钮', type: 'normal' },
+            { id: 'current-map-text', description: '当前映射公式文本', type: 'normal' },
+            { id: 'custom-map-btn', description: '打开自定义映射弹窗按钮', type: 'normal' },
+            { id: 'map-preset-select', description: '预设映射下拉框', type: 'normal' },
+            { id: 'map-x-input', description: '自定义映射x_new表达式输入框', type: 'normal' },
+            { id: 'map-y-input', description: '自定义映射y_new表达式输入框', type: 'normal' },
+            { id: 'map-z-input', description: '自定义映射z_new表达式输入框', type: 'normal' },
+            { id: 'apply-map-btn', description: '应用自定义映射按钮', type: 'normal' },
             { id: 'animate-btn', description: '升维动画按钮', type: 'normal' },
             { id: 'default-mode-btn', description: '默认参数模式按钮', type: 'normal' },
             { id: 'plane-z', description: '超平面沿Z轴平移滑块', type: 'normal' },
             { id: 'plane-yaw', description: '超平面Yaw旋转滑块', type: 'normal' },
             { id: 'plane-pitch', description: '超平面Pitch旋转滑块', type: 'normal' }
         ],
-        GUIDEBOOK: '这是支持向量机核技巧三维可视化页面。页面左侧是参数面板，右侧是Three.js三维场景。用户先上传CSV或加载预设数据，再选择x/y/标签列并可视化。之后可播放升维动画，使用固定映射 φ(x, y)=(x², √2xy, y²) 观察二维数据映射到三维后的可分性变化。超平面可平移和旋转，并实时显示按颜色标签计算的划分准确率。'
+        GUIDEBOOK: '这是支持向量机核技巧三维可视化页面。页面左侧是参数面板，右侧是Three.js三维场景。用户先上传CSV或加载预设数据，再选择x/y/标签列并可视化。可使用默认固定映射 φ(x, y)=(x², √2xy, y²)，也可自定义输入 φ(x, y)=(x_new, y_new, z_new) 表达式并应用，再播放升维动画观察可分性变化。超平面可平移和旋转，并实时显示按颜色标签计算的划分准确率。'
     };
 </script>
 <script type="module" src="/static/js/courses/svm-smo/kernel-trick.js"></script>
