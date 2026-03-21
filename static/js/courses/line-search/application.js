@@ -112,9 +112,9 @@ class FibonacciSearch {
         const x2 = this.b - rho * l;
         const f1 = this.func(x1);
         const f2 = this.func(x2);
-        
+
         this.history.push({ a: this.a, b: this.b, x1, x2, f1, f2 });
-        
+
         if (f1 > f2) {
             this.a = x1;
         } else if (f1 < f2) {
@@ -123,7 +123,7 @@ class FibonacciSearch {
             this.a = x1;
             this.b = x2;
         }
-        
+
         this.k++;
         if (this.k >= this.n) this.isComplete = true;
         return true;
@@ -156,7 +156,7 @@ class GradientDescent {
         const y = this.func(this.xk);
         const nextDf = this.df(this.xk);
         this.history.push({ x: this.xk, y: y, df: nextDf });
-        
+
         if (this.currentIteration >= this.n || !isFinite(this.xk) || !isFinite(y)) {
             this.isComplete = true;
         }
@@ -248,10 +248,10 @@ class SecantMethod {
             this.container = document.getElementById(containerId);
             this.width = this.container.clientWidth;
             this.height = this.container.clientHeight || 350; // 动态高度
-            
+
             this.plotWidth = this.width - this.margin.left - this.margin.right;
             this.plotHeight = this.height - this.margin.top - this.margin.bottom;
-            
+
             this.duration = 400;
             this.currentDomain = null;
             this.currentFunc = null;
@@ -278,7 +278,7 @@ class SecantMethod {
                     this.update(this.lastArgs.func, this.lastArgs.domain, this.lastArgs.history, this.lastArgs.type, this.lastArgs.algo, this.lastArgs.subStep);
                 }
             };
-            
+
             this.initSvg();
             window.addEventListener('resize', () => this.handleResize());
         }
@@ -289,7 +289,7 @@ class SecantMethod {
 
             const newWidth = container.clientWidth;
             const newHeight = container.clientHeight || 350;
-            
+
             if (newWidth === 0 || (newWidth === this.width && newHeight === this.height)) return;
 
             this.width = newWidth;
@@ -306,7 +306,7 @@ class SecantMethod {
             this.yScale.range([this.plotHeight, 0]);
 
             this.xAxisG.attr("transform", `translate(0, ${this.plotHeight})`);
-            
+
             // 更新轴标签位置
             if (this.xLabel) {
                 this.xLabel.attr("x", this.plotWidth).attr("y", this.plotHeight + 35);
@@ -327,10 +327,10 @@ class SecantMethod {
                 .attr("width", this.width)
                 .attr("height", this.height)
                 .attr("viewBox", `0 0 ${this.width} ${this.height}`);
-            
+
             this.plot = this.svg.append("g")
                 .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
-            
+
             this.xScale = d3.scaleLinear().range([0, this.plotWidth]);
             this.yScale = d3.scaleLinear().range([this.plotHeight, 0]);
 
@@ -353,7 +353,7 @@ class SecantMethod {
                 .attr("fill", "none")
                 .attr("stroke", "var(--primary-color)")
                 .attr("stroke-width", 2.5);
-                
+
             // 轴标签
             this.xLabel = this.plot.append("text")
                 .attr("x", this.plotWidth)
@@ -362,7 +362,7 @@ class SecantMethod {
                 .attr("fill", "#8d6e63")
                 .attr("font-size", "12px")
                 .text("x");
-                
+
             this.plot.append("text")
                 .attr("x", -10)
                 .attr("y", -15)
@@ -383,9 +383,9 @@ class SecantMethod {
 
         updateAxes(duration = this.duration) {
             const t = d3.transition().duration(duration);
-            
+
             this.xAxisG.transition(t).call(d3.axisBottom(this.xScale).ticks(8));
-            
+
             // 针对极端大数据集的 Y 轴格式化
             const yAxis = d3.axisLeft(this.yScale)
                 .ticks(6)
@@ -396,7 +396,7 @@ class SecantMethod {
                     return d3.format(".2s")(d);
                 });
             this.yAxisG.transition(t).call(yAxis);
-            
+
             // 网格更新
             let gridX = this.gridLayer.selectAll("line.grid-x").data(this.xScale.ticks(8));
             gridX.exit().remove();
@@ -424,7 +424,7 @@ class SecantMethod {
         update(func, domain, history = [], type = "point", algo = null, subStep = 0) {
             this.lastArgs = { func, domain, history, type, algo, subStep };
             this.currentFunc = func;
-            
+
             // 检测并修复隐藏容器导致的尺寸为0问题
             if (this.width <= 0 && this.container.clientWidth > 0) {
                 this.width = this.container.clientWidth;
@@ -433,29 +433,29 @@ class SecantMethod {
                 this.plotHeight = this.height - this.margin.top - this.margin.bottom;
                 this.initSvg();
             }
-            
+
             // 确保 domain 合法且有跨度
             let dom = this.currentDomain || domain;
             if (!dom || !isFinite(dom[0]) || !isFinite(dom[1]) || dom[0] === dom[1]) {
                 dom = [-10, 10];
             }
             this.xScale.domain(dom);
-            
+
             // 1. 进一步优化的自适应采样：引入解析极小值点强制采样，防止遗漏极窄波谷
             const rangeSamples = 100;
             let xSamples = d3.range(dom[0], dom[1], (dom[1] - dom[0]) / rangeSamples);
-            
-            const optVal = (type === "range" && algo && algo.constructor.name === "BisectionSearch") ? 
+
+            const optVal = (type === "range" && algo && algo.constructor.name === "BisectionSearch") ?
                           (algo.a + algo.b)/2 : (type === "ls" ? b_fit : p_opt_val);
             if (isFinite(optVal) && optVal >= dom[0] && optVal <= dom[1]) {
                 xSamples.push(optVal);
             }
             xSamples.sort((a,b) => a - b);
-            
+
             // 计算 y 轴范围，增加稳健性
             const yValues = xSamples.map(x => func(x)).filter(y => isFinite(y));
             let yExtent = d3.extent(yValues);
-            
+
             if (yExtent[0] === undefined) yExtent = [0, 1];
             if (yExtent[0] === yExtent[1]) yExtent = [yExtent[0] - 1, yExtent[0] + 1];
 
@@ -470,7 +470,7 @@ class SecantMethod {
                 .defined(d => isFinite(d.y) && Math.abs(d.y) < 1e25) // 过滤掉极端异常值
                 .x(d => this.xScale(d.x))
                 .y(d => this.yScale(d.y));
-            
+
             let curvePoints = d3.range(dom[0], dom[1], (dom[1] - dom[0]) / adaptiveSamples);
             if (isFinite(optVal) && optVal >= dom[0] && optVal <= dom[1]) curvePoints.push(optVal);
             curvePoints.sort((a,b) => a - b);
@@ -503,7 +503,7 @@ class SecantMethod {
         updateRangeHistory(history, func, algo, subStep = 0) {
             const duration = this.duration;
             let latest = algo ? { a: algo.a, b: algo.b } : history[history.length - 1];
-            
+
             const intervalData = latest ? [latest] : [];
             let rect = this.intervalLayer.selectAll("rect.interval-rect").data(intervalData);
             rect.exit().remove();
@@ -613,7 +613,7 @@ class SecantMethod {
                     if (d.df !== undefined) txt += ` (f'=${d.df.toFixed(3)})`;
                     return txt;
                 });
-                
+
             let compText = this.pointsLayer.selectAll("text.compare-info").data(compareInfo ? [compareInfo] : []);
             compText.exit().remove();
             compText.enter().append("text").attr("class", "compare-info")
@@ -687,7 +687,7 @@ class SecantMethod {
     let b_search = 0, a_search = 0; // 搜索解结果 (LS)
 
     let lsViz, profitViz;
-    
+
     // 状态管理
     const AppState = {
         ls: {
@@ -825,7 +825,7 @@ class SecantMethod {
         let html = '';
         const n = prices.length;
         const maxDisplay = 100;
-        
+
         if (n <= maxDisplay) {
             prices.forEach((p, i) => {
                 html += `<tr><td>${p}</td><td>${demands[i]}</td></tr>`;
@@ -842,7 +842,7 @@ class SecantMethod {
                 html += `<tr><td>${prices[i]}</td><td>${demands[i]}</td></tr>`;
             }
         }
-        
+
         const dataTableBody = document.getElementById('dataTableBody');
         if (dataTableBody) {
             dataTableBody.innerHTML = html;
@@ -859,7 +859,7 @@ class SecantMethod {
         B_ls = prices.reduce((acc, p, i) => acc + (demands[i] - y_mean) * (p - x_mean), 0);
         b_fit = B_ls / A_ls;
         a_fit = y_mean - b_fit * x_mean;
-        
+
         const cost = parseFloat(document.getElementById('costInput').value) || 0;
         document.getElementById('cDisplay').textContent = cost;
         p_opt_val = (b_fit * cost - a_fit) / (2 * b_fit);
@@ -925,15 +925,15 @@ class SecantMethod {
         pausePlay(type, true);
         state.subStep = 0;
         state.status = "未开始";
-        
+
         if (type === 'ls') {
             const ps = document.getElementById('profitSection');
             if (ps) ps.style.display = 'none';
         }
-        
+
         const viz = type === 'ls' ? lsViz : profitViz;
         viz.currentDomain = null; // 重置视角
-        
+
         const method = document.getElementById(`${type}MethodSelect`).value;
         let func, df, ddf, domain;
         if (type === 'ls') {
@@ -1007,7 +1007,7 @@ class SecantMethod {
         state.subStep++;
         const method = document.getElementById(`${type}MethodSelect`).value;
         const isRange = ['bisect', 'golden', 'fib'].includes(method);
-        
+
         let completedCycle = false;
         if (isRange) {
             if (state.subStep === 4) {
@@ -1042,7 +1042,7 @@ class SecantMethod {
         const viz = type === 'ls' ? lsViz : profitViz;
         const method = document.getElementById(`${type}MethodSelect`).value;
         const isRange = ['bisect', 'golden', 'fib'].includes(method);
-        
+
         let domain;
         if (type === 'ls') domain = [b_fit - 10, b_fit + 10];
         else {
@@ -1065,19 +1065,19 @@ class SecantMethod {
         }
 
         viz.update(algo.func, domain, algo.history, isRange ? "range" : "point", algo, state.subStep);
-        
+
         const resSpan = document.getElementById(`${type}SearchRes`);
         const stepSpan = document.getElementById(`${type}StepInfo`);
         if (algo.history.length > 0 || state.subStep > 0) {
             const val = isRange ? (algo.a + algo.b) / 2 : algo.xk;
             resSpan.textContent = val.toFixed(4);
             stepSpan.textContent = `${state.status} (第 ${algo.currentIteration || algo.k || 0} 轮, 子步 ${state.subStep})`;
-            
+
             if (type === 'ls') {
                 const cur_a = y_mean - val * x_mean;
                 document.getElementById('lsInterceptRes').textContent = cur_a.toFixed(4);
                 document.getElementById('funcDisplay').textContent = `D(p) = ${cur_a.toFixed(2)} ${val>=0?'+':'-'} ${Math.abs(val).toFixed(2)}p`;
-                
+
                 if (algo.isComplete && state.subStep === 0) {
                     b_search = val;
                     a_search = cur_a;
@@ -1085,7 +1085,7 @@ class SecantMethod {
                     document.getElementById('aDisplayForProfit').textContent = a_search.toFixed(2);
                     document.getElementById('signDisplayForProfit').textContent = b_search >= 0 ? '+' : '-';
                     document.getElementById('bDisplayForProfit').textContent = Math.abs(b_search).toFixed(2);
-                    
+
                     // 立即触发第二部分画布的有效重绘
                     updateViz('profit');
                 }

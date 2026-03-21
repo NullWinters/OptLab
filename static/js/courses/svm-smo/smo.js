@@ -1,0 +1,773 @@
+/**
+ * SMO Algorithm Implementation for 2D Linear SVM
+ */
+class SMO {
+    constructor(data, C, tol, maxIter) {
+        this.X = data.map(d => [d.x, d.y]);
+        this.y = data.map(d => d.label);
+        this.N = data.length;
+        this.C = C;
+        this.tol = tol;
+        this.maxIter = maxIter;
+
+        this.alphas = new Array(this.N).fill(0);
+        this.b = 0;
+        this.w = [0, 0];
+        this.errors = this.y.map(yi => -yi); // Initially g(x) = 0, so E = 0 - y = -y
+
+        this.iter = 0;
+        this.subStep = 0; // 0: select i, 1: select j, 2: update
+        this.i = -1;
+        this.j = -1;
+        this.jCandidates = [];
+        this.jCandidateIdx = 0;
+        this.jSearchStage = 0; // 0: heuristic, 1: random
+        this.jTried = new Set();
+        this.isFinished = false;
+        
+        // Track if there were any changes in the current full pass
+        this.entireSet = true;
+        this.numChanged = 0;
+    }
+
+    getG(idx) {
+        // g(x) = w * x + b
+        return this.w[0] * this.X[idx][0] + this.w[1] * this.X[idx][1] + this.b;
+    }
+
+    updateW() {
+        // w = sum(alpha_i * y_i * x_i)
+        let wx = 0, wy = 0;
+        for (let i = 0; i < this.N; i++) {
+            wx += this.alphas[i] * this.y[i] * this.X[i][0];
+            wy += this.alphas[i] * this.y[i] * this.X[i][1];
+        }
+        this.w = [wx, wy];
+    }
+
+    updateErrors() {
+        for (let k = 0; k < this.N; k++) {
+            this.errors[k] = this.getG(k) - this.y[k];
+        }
+    }
+
+    getAccuracy() {
+        let correct = 0;
+        for (let i = 0; i < this.N; i++) {
+            const g = this.getG(i);
+            const pred = g >= 0 ? 1 : -1;
+            if (pred === this.y[i]) {
+                correct++;
+            }
+        }
+        return correct / this.N;
+    }
+
+    shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    // Helper to compute partial objective function for alpha_i and alpha_j
+    getObjective(i, j, ai, aj) {
+        const Ki = this.X[i][0]**2 + this.X[i][1]**2;
+        const Kj = this.X[j][0]**2 + this.X[j][1]**2;
+        const Kij = this.X[i][0]*this.X[j][0] + this.X[i][1]*this.X[j][1];
+        
+        let s = 0;
+        for (let k = 0; k < this.N; k++) {
+            if (k !== i && k !== j) {
+                s += this.alphas[k] * this.y[k] * (this.y[i] * (this.X[k][0]*this.X[i][0] + this.X[k][1]*this.X[i][1]) + 
+                                                   this.y[j] * (this.X[k][0]*this.X[j][0] + this.X[k][1]*this.X[j][1]));
+            }
+        }
+        
+        return ai + aj - 0.5 * Ki * ai**2 - 0.5 * Kj * aj**2 - this.y[i] * this.y[j] * Kij * ai * aj - ai * s;
+    }
+
+    // Check if i violates KKT
+    violatesKKT(i) {
+        const Ei = this.errors[i];
+        const r = Ei * this.y[i];
+        if ((r < -this.tol && this.alphas[i] < this.C) || (r > this.tol && this.alphas[i] > 0)) {
+            return true;
+        }
+        return false;
+    }
+
+    nextStep() {
+        if (this.isFinished) return false;
+
+        // Check iteration limit
+        if (this.iter >= this.maxIter) {
+            this.isFinished = true;
+            return false;
+        }
+
+        if (this.subStep === 0) {
+            // 选择第一个拉格朗日乘子 i
+            let found = false;
+            let startIndex = (this.i === -1) ? 0 : (this.i + 1) % this.N;
+
+            // 1. 优先遍历非边界样本（支持向量，0 < alpha < C），寻找违反 KKT 条件的样本
+            for (let count = 0; count < this.N; count++) {
+                let idx = (startIndex + count) % this.N;
+                if (this.alphas[idx] > 0 && this.alphas[idx] < this.C) {
+                    if (this.violatesKKT(idx)) {
+                        this.i = idx;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            // 2. 如果非边界样本中没有违反 KKT 的，则遍历整个数据集寻找违反者
+            if (!found) {
+                for (let count = 0; count < this.N; count++) {
+                    let idx = (startIndex + count) % this.N;
+                    if (this.violatesKKT(idx)) {
+                        this.i = idx;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found) {
+                this.isFinished = true;
+                return false;
+            }
+
+            this.j = -1; // 重置 j
+            this.jCandidates = [];
+            this.jCandidateIdx = 0;
+            this.jSearchStage = 0;
+            this.jTried.clear();
+            this.subStep = 1;
+            return true;
+        } else if (this.subStep === 1) {
+            // Select second alpha j using two-stage search mechanism
+            if (this.jCandidates.length === 0 || this.jCandidateIdx >= this.jCandidates.length) {
+                const Ei = this.errors[this.i];
+                
+                if (this.jSearchStage === 0) {
+                    // Phase 1: Heuristic optimal search (non-bound examples)
+                    let nonBoundCandidates = [];
+                    for (let k = 0; k < this.N; k++) {
+                        if (k === this.i) continue;
+                        if (this.alphas[k] > 0 && this.alphas[k] < this.C) {
+                            nonBoundCandidates.push({idx: k, deltaE: Math.abs(Ei - this.errors[k])});
+                        }
+                    }
+                    if (nonBoundCandidates.length > 0) {
+                        nonBoundCandidates.sort((a, b) => b.deltaE - a.deltaE);
+                        this.jCandidates = nonBoundCandidates.map(c => c.idx);
+                        this.jCandidates.forEach(idx => this.jTried.add(idx));
+                        this.jCandidateIdx = 0;
+                        this.jSearchStage = 1;
+                    } else {
+                        // Skip to next phase if no non-bound candidates
+                        this.jSearchStage = 1;
+                    }
+                }
+
+                // Stage transitions
+                if (this.jSearchStage === 1 && (this.jCandidates.length === 0 || this.jCandidateIdx >= this.jCandidates.length)) {
+                    // Phase 2: Backup random search (other candidates)
+                    let otherCandidates = [];
+                    for (let k = 0; k < this.N; k++) {
+                        if (k === this.i || this.jTried.has(k)) continue;
+                        otherCandidates.push(k);
+                    }
+                    if (otherCandidates.length > 0) {
+                        this.shuffle(otherCandidates);
+                        this.jCandidates = otherCandidates;
+                        this.jCandidateIdx = 0;
+                        this.jSearchStage = 2;
+                    } else {
+                        // All candidates exhausted for this i
+                        this.jSearchStage = 3;
+                    }
+                }
+
+                // If completely exhausted all candidates for current i
+                if (this.jSearchStage >= 3 || (this.jSearchStage === 2 && this.jCandidateIdx >= this.jCandidates.length)) {
+                    this.jCandidates = [];
+                    this.jCandidateIdx = 0;
+                    this.jSearchStage = 0;
+                    this.jTried.clear();
+                    this.subStep = 0;
+                    return this.nextStep();
+                }
+            }
+
+            this.j = this.jCandidates[this.jCandidateIdx++];
+            this.subStep = 2;
+            return true;
+        } else if (this.subStep === 2) {
+            // Update alphas i and j
+            const i = this.i;
+            const j = this.j;
+            const Yi = this.y[i];
+            const Yj = this.y[j];
+            const Ei = this.errors[i];
+            const Ej = this.errors[j];
+            const oldAi = this.alphas[i];
+            const oldAj = this.alphas[j];
+
+            let L, H;
+            if (Yi !== Yj) {
+                L = Math.max(0, oldAj - oldAi);
+                H = Math.min(this.C, this.C + oldAj - oldAi);
+            } else {
+                L = Math.max(0, oldAi + oldAj - this.C);
+                H = Math.min(this.C, oldAi + oldAj);
+            }
+
+            if (L === H) {
+                this.subStep = 1; // Try next j
+                return this.nextStep(); 
+            }
+
+            const K11 = this.X[i][0]**2 + this.X[i][1]**2;
+            const K22 = this.X[j][0]**2 + this.X[j][1]**2;
+            const K12 = this.X[i][0]*this.X[j][0] + this.X[i][1]*this.X[j][1];
+            const eta = K11 + K22 - 2 * K12;
+
+            let newAj;
+            if (eta > 0) {
+                newAj = oldAj + Yj * (Ei - Ej) / eta;
+                if (newAj > H) newAj = H;
+                else if (newAj < L) newAj = L;
+            } else {
+                // eta <= 0: evaluate objective at boundaries L and H
+                const L_ai = oldAi + Yi * Yj * (oldAj - L);
+                const H_ai = oldAi + Yi * Yj * (oldAj - H);
+                
+                const objL = this.getObjective(i, j, L_ai, L);
+                const objH = this.getObjective(i, j, H_ai, H);
+                
+                if (objL > objH + 1e-10) {
+                    newAj = L;
+                } else if (objL < objH - 1e-10) {
+                    newAj = H;
+                } else {
+                    newAj = oldAj;
+                }
+            }
+
+            if (Math.abs(newAj - oldAj) < 1e-10) {
+                this.subStep = 1; // Try next j
+                return this.nextStep();
+            }
+
+            const newAi = oldAi + Yi * Yj * (oldAj - newAj);
+
+            // Update b
+            const b1 = this.b - Ei - Yi * (newAi - oldAi) * K11 - Yj * (newAj - oldAj) * K12;
+            const b2 = this.b - Ej - Yi * (newAi - oldAi) * K12 - Yj * (newAj - oldAj) * K22;
+
+            if (newAi > 0 && newAi < this.C) this.b = b1;
+            else if (newAj > 0 && newAj < this.C) this.b = b2;
+            else this.b = (b1 + b2) / 2;
+
+            this.alphas[i] = newAi;
+            this.alphas[j] = newAj;
+            
+            this.updateW();
+            this.updateErrors();
+            this.iter++;
+            
+            // If reached max iter, mark as finished immediately
+            if (this.iter >= this.maxIter) {
+                this.isFinished = true;
+            }
+
+            // Success! Reset j candidates for next i
+            this.jCandidates = [];
+            this.jCandidateIdx = 0;
+            this.jSearchStage = 0;
+            this.jTried.clear();
+            this.subStep = 0;
+            return true;
+        }
+    }
+}
+
+/**
+ * Visualization and Page Logic
+ */
+const App = {
+    data: [],
+    smo: null,
+    state: 'unstarted', // unstarted, playing, paused, finished
+    timer: null,
+    speed: 500,
+    
+    // Hyperparameters
+    C: 1.0,
+    tol: 0.01,
+    maxIter: 100,
+
+    // D3 elements
+    svg: null,
+    tooltip: null,
+    width: 0,
+    height: 0,
+    xScale: null,
+    yScale: null,
+
+    init() {
+        this.setupD3();
+        this.bindEvents();
+        this.loadExampleData();
+        this.updateUI();
+    },
+
+    setupD3() {
+        this.container = d3.select("#smo-canvas");
+        
+        this.svg = this.container.append("svg");
+        
+        this.tooltip = this.container.append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+        
+        // Layers
+        this.g = this.svg.append("g");
+
+        this.xScale = d3.scaleLinear();
+        this.yScale = d3.scaleLinear();
+
+        this.xAxis = this.g.append("g");
+        this.yAxis = this.g.append("g");
+        
+        this.planeLayer = this.g.append("g").attr("class", "plane-layer");
+        this.pointLayer = this.g.append("g").attr("class", "point-layer");
+        this.highlightLayer = this.g.append("g").attr("class", "highlight-layer");
+
+        // Initial update
+        this.updateDimensions();
+    },
+
+    updateDimensions() {
+        if (!this.container) this.container = d3.select("#smo-canvas");
+        const rect = this.container.node().getBoundingClientRect();
+        this.width = rect.width;
+        this.height = rect.height;
+        
+        this.svg
+            .attr("width", this.width)
+            .attr("height", this.height);
+        
+        const margin = {top: 20, right: 20, bottom: 30, left: 40};
+        this.innerWidth = this.width - margin.left - margin.right;
+        this.innerHeight = this.height - margin.top - margin.bottom;
+
+        this.g.attr("transform", `translate(${margin.left}, ${margin.top})`);
+
+        this.xScale.range([0, this.innerWidth]);
+        this.yScale.range([this.innerHeight, 0]);
+
+        this.xAxis.attr("transform", `translate(0, ${this.innerHeight})`);
+        
+        // Update scales if domain exists
+        if (this.data && this.data.length > 0) {
+            this.updateScales();
+        }
+
+        // Update clip path
+        let defs = this.svg.select("defs");
+        if (defs.empty()) defs = this.svg.append("defs");
+        
+        let clip = defs.select("#clip");
+        if (clip.empty()) {
+            clip = defs.append("clipPath").attr("id", "clip");
+            clip.append("rect");
+        }
+        clip.select("rect")
+            .attr("width", this.innerWidth)
+            .attr("height", this.innerHeight);
+    },
+
+    handleResize() {
+        this.updateDimensions();
+        this.draw();
+    },
+
+    bindEvents() {
+        document.getElementById('btn-play').onclick = () => this.play();
+        document.getElementById('btn-pause').onclick = () => this.pause();
+        document.getElementById('btn-step').onclick = () => this.step();
+        document.getElementById('btn-reset').onclick = () => this.loadExampleData();
+        document.getElementById('csv-upload').onchange = (e) => this.handleUpload(e);
+        document.getElementById('btn-apply-cols').onclick = () => this.applySelectedColumns();
+        
+        window.addEventListener('resize', () => {
+            clearTimeout(this.resizeTimer);
+            this.resizeTimer = setTimeout(() => this.handleResize(), 100);
+        });
+        
+        // Sliders
+        const updateC = (val) => {
+            this.C = Math.pow(10, parseFloat(val));
+            document.getElementById('val-c').innerText = (this.C < 0.01 || this.C > 1000) ? this.C.toExponential(2) : this.C.toFixed(2);
+            if (this.state !== 'unstarted') this.reset();
+        };
+        const updateTol = (val) => {
+            this.tol = Math.pow(10, parseFloat(val));
+            document.getElementById('val-tol').innerText = (this.tol < 0.01) ? this.tol.toExponential(2) : this.tol.toFixed(4);
+            if (this.state !== 'unstarted') this.reset();
+        };
+        const updateMaxIter = (val) => {
+            this.maxIter = parseInt(val);
+            document.getElementById('val-max-iter').innerText = this.maxIter;
+            if (this.state !== 'unstarted') this.reset();
+        };
+
+        document.getElementById('slider-c').oninput = (e) => updateC(e.target.value);
+        document.getElementById('slider-tol').oninput = (e) => updateTol(e.target.value);
+        document.getElementById('slider-max-iter').oninput = (e) => updateMaxIter(e.target.value);
+
+        // Speed Control
+        document.getElementById('speed-control').oninput = (e) => {
+            // value is 100 to 2000. 
+            // In observation.html: AppState.speed = 2100 - parseInt(e.target.value);
+            // Higher value in slider means faster speed (smaller interval)
+            this.speed = 2100 - parseInt(e.target.value);
+            const speedText = this.speed < 500 ? '快速' : this.speed < 1500 ? '正常' : '慢速';
+            document.getElementById('speed-value').innerText = speedText;
+            if (this.state === 'playing') {
+                this.pause();
+                this.play();
+            }
+        };
+    },
+
+    togglePanel(el) {
+        const card = el.closest('.panel-card');
+        card.classList.toggle('collapsed');
+    },
+
+    loadExampleData() {
+        // Simple linear separable data
+        this.data = [
+            {x: 1, y: 1, label: 1}, {x: 2, y: 1, label: 1}, {x: 1, y: 2, label: 1},
+            {x: 4, y: 4, label: -1}, {x: 5, y: 4, label: -1}, {x: 4, y: 5, label: -1},
+            {x: 2, y: 3, label: 1}, {x: 3, y: 2, label: 1},
+            {x: 5, y: 5, label: -1}, {x: 6, y: 5, label: -1}, {x: 5, y: 6, label: -1}
+        ];
+        this.data.forEach((d, i) => d.id = i);
+        document.getElementById('column-selection').style.display = 'none';
+        document.getElementById('csv-upload').value = '';
+        this.reset();
+    },
+
+    handleUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            this.processCSV(text);
+        };
+        reader.readAsText(file);
+    },
+
+    processCSV(text) {
+        const rows = text.split('\n').map(r => r.trim()).filter(r => r);
+        if (rows.length < 2) return;
+
+        const header = rows[0].split(',').map(s => s.trim());
+        const dataRows = rows.slice(1).map(row => row.split(',').map(s => s.trim()));
+
+        this.rawCSVHeader = header;
+        this.rawCSVData = dataRows;
+
+        this.fillColumnSelects(header);
+        document.getElementById('column-selection').style.display = 'block';
+    },
+
+    fillColumnSelects(header) {
+        const xSelect = document.getElementById('x-col');
+        const ySelect = document.getElementById('y-col');
+        const labelSelect = document.getElementById('label-col');
+
+        [xSelect, ySelect, labelSelect].forEach(select => {
+            select.innerHTML = '';
+            header.forEach((col, idx) => {
+                const option = document.createElement('option');
+                option.value = idx;
+                option.text = col;
+                select.appendChild(option);
+            });
+        });
+
+        // Try to auto-select if common names exist
+        header.forEach((col, idx) => {
+            const name = col.toLowerCase();
+            if (name === 'x') xSelect.value = idx;
+            if (name === 'y') ySelect.value = idx;
+            if (name === 'label' || name === 'target' || name === 'class') labelSelect.value = idx;
+        });
+    },
+
+    applySelectedColumns() {
+        const xIdx = parseInt(document.getElementById('x-col').value);
+        const yIdx = parseInt(document.getElementById('y-col').value);
+        const labelIdx = parseInt(document.getElementById('label-col').value);
+
+        if (isNaN(xIdx) || isNaN(yIdx) || isNaN(labelIdx)) {
+            alert("请选择有效的列");
+            return;
+        }
+
+        const newData = [];
+        const labels = new Set();
+        
+        for (let i = 0; i < this.rawCSVData.length; i++) {
+            const cols = this.rawCSVData[i];
+            const x = parseFloat(cols[xIdx]);
+            const y = parseFloat(cols[yIdx]);
+            const label = cols[labelIdx];
+            
+            if (isNaN(x) || isNaN(y)) continue;
+            
+            newData.push({x, y, originalLabel: label});
+            labels.add(label);
+        }
+
+        if (labels.size > 2) {
+            alert("标签列的取值种类不能超过2种（当前检测到 " + labels.size + " 种）");
+            return;
+        }
+
+        const labelArr = Array.from(labels);
+        newData.forEach((d, idx) => {
+            d.label = (d.originalLabel === labelArr[0]) ? 1 : -1;
+            d.id = idx;
+        });
+
+        this.data = newData;
+        this.reset();
+        // Keep the column selection visible but maybe collapse it if we had a toggle
+    },
+
+    reset() {
+        this.pause();
+        this.smo = new SMO(this.data, this.C, this.tol, this.maxIter);
+        this.state = 'unstarted';
+        this.updateScales();
+        this.draw();
+        this.updateUI();
+    },
+
+    updateScales() {
+        const xExtent = d3.extent(this.data, d => d.x);
+        const yExtent = d3.extent(this.data, d => d.y);
+        const xPadding = (xExtent[1] - xExtent[0]) * 0.2 || 1;
+        const yPadding = (yExtent[1] - yExtent[0]) * 0.2 || 1;
+
+        this.xScale.domain([xExtent[0] - xPadding, xExtent[1] + xPadding]);
+        this.yScale.domain([yExtent[0] - yPadding, yExtent[1] + yPadding]);
+
+        this.xAxis.call(d3.axisBottom(this.xScale));
+        this.yAxis.call(d3.axisLeft(this.yScale));
+    },
+
+    play() {
+        if (this.state === 'finished') return;
+        this.state = 'playing';
+        this.updateUI();
+        this.timer = setInterval(() => {
+            if (!this.stepLogic()) {
+                this.pause();
+                if (this.smo.isFinished) {
+                    this.state = 'finished';
+                    this.updateUI();
+                }
+            }
+        }, this.speed);
+    },
+
+    pause() {
+        if (this.state === 'playing') {
+            this.state = 'paused';
+        }
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+        this.updateUI();
+    },
+
+    step() {
+        if (this.state === 'finished') return;
+        this.stepLogic();
+        if (this.smo.isFinished) {
+            this.state = 'finished';
+        } else {
+            this.state = 'paused';
+        }
+        this.updateUI();
+    },
+
+    stepLogic() {
+        const result = this.smo.nextStep();
+        this.draw();
+        this.updateParams();
+        return result;
+    },
+
+    draw() {
+        // Points
+        const points = this.pointLayer.selectAll("circle").data(this.data);
+        points.enter().append("circle")
+            .merge(points)
+            .attr("cx", d => this.xScale(d.x))
+            .attr("cy", d => this.yScale(d.y))
+            .attr("r", 5)
+            .attr("fill", d => d.label === 1 ? "#e74c3c" : "#3498db")
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 1)
+            .on("mouseover", (event, d) => {
+                const alpha = this.smo ? this.smo.alphas[d.id] : 0;
+                this.tooltip.transition().duration(200).style("opacity", .9);
+                this.tooltip.html(`
+                    <b>编号:</b> ${d.id}<br/>
+                    <b>坐标:</b> (${d.x.toFixed(2)}, ${d.y.toFixed(2)})<br/>
+                    <b>乘子 α:</b> ${alpha.toFixed(4)}
+                `);
+                
+                const [mouseX, mouseY] = d3.pointer(event, this.container.node());
+                this.tooltip
+                    .style("left", (mouseX + 15) + "px")
+                    .style("top", (mouseY - 15) + "px");
+            })
+            .on("mousemove", (event) => {
+                const [mouseX, mouseY] = d3.pointer(event, this.container.node());
+                this.tooltip
+                    .style("left", (mouseX + 15) + "px")
+                    .style("top", (mouseY - 15) + "px");
+            })
+            .on("mouseout", () => {
+                this.tooltip.transition().duration(500).style("opacity", 0);
+            });
+        points.exit().remove();
+
+        // Highlighting
+        this.highlightLayer.selectAll("*").remove();
+        if (this.smo && this.smo.i !== -1) {
+            const pi = this.data[this.smo.i];
+            this.highlightLayer.append("circle")
+                .attr("cx", this.xScale(pi.x))
+                .attr("cy", this.yScale(pi.y))
+                .attr("r", 10)
+                .attr("fill", "none")
+                .attr("stroke", "#f1c40f")
+                .attr("stroke-width", 3)
+                .attr("stroke-dasharray", "4 2");
+        }
+        if (this.smo && this.smo.j !== -1 && this.smo.subStep !== 1) {
+            const pj = this.data[this.smo.j];
+            this.highlightLayer.append("circle")
+                .attr("cx", this.xScale(pj.x))
+                .attr("cy", this.yScale(pj.y))
+                .attr("r", 10)
+                .attr("fill", "none")
+                .attr("stroke", "#f39c12")
+                .attr("stroke-width", 3)
+                .attr("stroke-dasharray", "4 2");
+        }
+
+        // Plane
+        this.planeLayer.selectAll("*").remove();
+        if (this.smo && (this.smo.w[0] !== 0 || this.smo.w[1] !== 0)) {
+            this.drawBoundary(this.smo.w, this.smo.b, "#5f3a1f", 2, false); // Main
+            this.drawBoundary(this.smo.w, this.smo.b + 1, "#8f6a4f", 1, true); // +1
+            this.drawBoundary(this.smo.w, this.smo.b - 1, "#8f6a4f", 1, true); // -1
+        }
+    },
+
+    drawBoundary(w, b, color, width, dashed) {
+        // w0*x + w1*y + b = 0  =>  y = (-w0*x - b) / w1
+        const x1 = this.xScale.domain()[0];
+        const x2 = this.xScale.domain()[1];
+        let p1, p2;
+
+        if (Math.abs(w[1]) > 1e-9) {
+            p1 = [x1, (-w[0] * x1 - b) / w[1]];
+            p2 = [x2, (-w[0] * x2 - b) / w[1]];
+        } else {
+            const vx = -b / w[0];
+            p1 = [vx, this.yScale.domain()[0]];
+            p2 = [vx, this.yScale.domain()[1]];
+        }
+
+        this.planeLayer.append("line")
+            .attr("x1", this.xScale(p1[0]))
+            .attr("y1", this.yScale(p1[1]))
+            .attr("x2", this.xScale(p2[0]))
+            .attr("y2", this.yScale(p2[1]))
+            .attr("stroke", color)
+            .attr("stroke-width", width)
+            .attr("stroke-dasharray", dashed ? "5,5" : "none")
+            .attr("clip-path", "url(#clip)");
+    },
+
+    updateUI() {
+        const playBtn = document.getElementById('btn-play');
+        const pauseBtn = document.getElementById('btn-pause');
+        const stepBtn = document.getElementById('btn-step');
+        
+        playBtn.disabled = (this.state === 'playing' || this.state === 'finished');
+        pauseBtn.disabled = (this.state !== 'playing');
+        stepBtn.disabled = (this.state === 'playing' || this.state === 'finished');
+        
+        const statusEl = document.getElementById('status-text');
+        statusEl.innerText = {
+            'unstarted': '未开始',
+            'playing': '播放中',
+            'paused': '已暂停',
+            'finished': '已结束'
+        }[this.state];
+        statusEl.className = 'status-tag status-' + this.state;
+        
+        this.updateParams();
+    },
+
+    updateParams() {
+        if (!this.smo) return;
+        document.getElementById('param-iter').innerText = this.smo.iter;
+        document.getElementById('param-i').innerText = this.smo.i === -1 ? '-' : this.smo.i;
+        document.getElementById('param-j').innerText = (this.smo.j === -1 || this.smo.subStep === 1) ? '-' : this.smo.j;
+        
+        document.getElementById('param-alpha-i').innerText = this.smo.i === -1 ? '-' : this.smo.alphas[this.smo.i].toFixed(4);
+        document.getElementById('param-alpha-j').innerText = (this.smo.j === -1 || this.smo.subStep === 1) ? '-' : this.smo.alphas[this.smo.j].toFixed(4);
+        
+        if (this.smo.i !== -1) {
+            const p = this.data[this.smo.i];
+            document.getElementById('param-coord-i').innerText = `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
+        } else {
+            document.getElementById('param-coord-i').innerText = '-';
+        }
+        
+        if (this.smo.j !== -1 && this.smo.subStep !== 1) {
+            const p = this.data[this.smo.j];
+            document.getElementById('param-coord-j').innerText = `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
+        } else {
+            document.getElementById('param-coord-j').innerText = '-';
+        }
+
+        document.getElementById('param-w').innerText = `[${this.smo.w[0].toFixed(3)}, ${this.smo.w[1].toFixed(3)}]`;
+        document.getElementById('param-b').innerText = this.smo.b.toFixed(3);
+        
+        const accuracy = this.smo.getAccuracy();
+        document.getElementById('param-accuracy').innerText = (accuracy * 100).toFixed(2) + '%';
+    }
+};
+
+window.onload = () => App.init();

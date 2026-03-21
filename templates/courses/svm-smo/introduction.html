@@ -34,8 +34,9 @@
 
     <!-- 导航栏 -->
     <nav class="navigation">
-        <button class="nav-btn active">算法介绍</button>
+        <button class="nav-btn active" onclick="window.location.href='introduction.html'">算法介绍</button>
         <button class="nav-btn" onclick="window.location.href='kernel-trick.html'">核技巧</button>
+        <button class="nav-btn" onclick="window.location.href='smo.html'">SMO 算法</button>
     </nav>
 
     <!-- 引言 -->
@@ -176,15 +177,19 @@
                 <li>
                     <strong>外层循环</strong>：寻找违反 KKT 条件的第一个变量 \(\alpha_i\)。违反条件包括：
                     <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
-                        <li>\(0 < \alpha_i < C\) 且 \(y_i E_i \neq 0\)；</li>
-                        <li>\(\alpha_i = 0\) 且 \(y_i E_i < 0\)；</li>
-                        <li>\(\alpha_i = C\) 且 \(y_i E_i > 0\)。</li>
+                        <li>\(0 < \alpha_i < C\) 且 \(y_i E_i \neq 0\)</li>
+                        <li>\(\alpha_i = 0\) 且 \(y_i E_i < 0\)</li>
+                        <li>\(\alpha_i = C\) 且 \(y_i E_i > 0\)</li>
                     </ul>
-                    优先扫描间隔边界上的样本（\(0 < \alpha_i < C\)），再遍历整个训练集。找到后进入内层循环。
+                    优先扫描间隔边界上的样本（\(0 < \alpha_i < C\)），再遍历整个训练集。找到后进入内层循环。若仍无违反者，算法终止。
                 </li>
                 <li>
-                    <strong>内层循环</strong>：选择第二个变量 \(\alpha_j\)，使得 \(|E_i - E_j|\) 最大，以加快收敛。若
-                    \(\alpha_j\) 更新变化过小，则退回外层循环选取下一个 \(\alpha_i\)。
+                    <strong>内层循环：选择第二个乘子 \(\alpha_j\)</strong><br>
+                    <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                        <li><strong>阶段一（启发式）</strong>：在非边界样本中，按 \(|E_i - E_j|\) 降序生成候选列表</li>
+                        <li><strong>阶段二（保底）</strong>：若阶段一未找到有效配对，则从剩余样本中随机打乱顺序依次尝试</li>
+                        <li>若所有候选均失败，则返回外层循环选择下一个 \(i\)</li>
+                    </ul>
                 </li>
                 <li>
                     <strong>更新 \(\alpha_i, \alpha_j\)</strong>：
@@ -192,9 +197,9 @@
                         <li>
                             根据类别异同计算边界 \(L\) 和 \(H\)：<br>
                             若 \(y_i = y_j\)：\(L = \max(0, \alpha_i + \alpha_j - C)\)，\(H = \min(C, \alpha_i +
-                            \alpha_j)\)；<br>
+                            \alpha_j)\)<br>
                             若 \(y_i \neq y_j\)：\(L = \max(0, \alpha_j - \alpha_i)\)，\(H = \min(C, C + \alpha_j -
-                            \alpha_i)\)。
+                            \alpha_i)\)
                         </li>
                         <li>计算 \(\eta = 2K_{i,j} - K_{i,i} - K_{j,j}\)，其中 \(K_{i,j} = K(\mathbf{x}_i,
                             \mathbf{x}_j)\)。
@@ -231,9 +236,9 @@
                         </li>
                         <li>
                             新阈值 \(b^{\text{new}}\) 由以下规则确定：<br>
-                            若 \(0 < \alpha_i^{\text{new}} < C\)，则 \(b^{\text{new}} = b_i\)；<br>
-                            若 \(0 < \alpha_j^{\text{new}} < C\)，则 \(b^{\text{new}} = b_j\)；<br>
-                            否则 \(b^{\text{new}} = (b_i + b_j)/2\)。
+                            若 \(0 < \alpha_i^{\text{new}} < C\)，则 \(b^{\text{new}} = b_i\)<br>
+                            若 \(0 < \alpha_j^{\text{new}} < C\)，则 \(b^{\text{new}} = b_j\)<br>
+                            否则 \(b^{\text{new}} = (b_i + b_j)/2\)
                         </li>
                         <li>
                             更新所有样本的误差：

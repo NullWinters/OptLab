@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}SMO 算法交互实验 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/courses/svm-smo/introduction.css">
+<link rel="stylesheet" href="/static/css/courses/svm-smo/smo.css">
+<script src="/static/js/lib/d3.v7.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1400px;">
+    <a href="index.html" class="back-btn">返回</a>
+
+    <header class="header">
+        <h1>SMO 算法交互实验</h1>
+        <p class="subtitle">二维线性 SVM 的逐步优化观察</p>
+    </header>
+
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">算法介绍</button>
+        <button class="nav-btn" onclick="window.location.href='kernel-trick.html'">核技巧</button>
+        <button class="nav-btn active" onclick="window.location.href='smo.html'">SMO 算法</button>
+    </nav>
+
+    <div class="page-container">
+        <!-- 左侧：可视化 -->
+        <section class="visualization-section">
+            <div class="viz-header">
+                <h2>SVM可视化画布</h2>
+                <span id="status-text" class="status-tag status-unstarted">未开始</span>
+            </div>
+            <div id="smo-canvas"></div>
+            <!-- 可视化控制 -->
+            <div class="viz-controls">
+                <div class="slider-row">
+                    <div class="control-group">
+                        <label for="slider-c">惩罚系数 C: <span id="val-c">1.00</span></label>
+                        <input type="range" id="slider-c" min="-5" max="5" step="0.1" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label for="slider-tol">容差 tol: <span id="val-tol">0.0100</span></label>
+                        <input type="range" id="slider-tol" min="-8" max="0" step="0.1" value="-2">
+                    </div>
+                    <div class="control-group">
+                        <label for="slider-max-iter">最大迭代次数: <span id="val-max-iter">100</span></label>
+                        <input type="range" id="slider-max-iter" min="10" max="1000" step="10" value="100">
+                    </div>
+                </div>
+            </div>
+            <div class="viz-spacer"></div>
+        </section>
+
+        <!-- 右侧：面板 -->
+        <aside class="control-panel">
+            <!-- 数据控制 -->
+            <div class="panel-card" id="panel-dataset">
+                <h3 onclick="App.togglePanel(this)">数据集设置 <i class="fas fa-chevron-up toggle-btn"></i></h3>
+                <div class="panel-body">
+                    <div class="group">
+                        <label for="csv-upload">上传 CSV 数据集</label>
+                        <input type="file" id="csv-upload" accept=".csv" class="panel-input"
+                               style="width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px; background: #fff;">
+
+                        <div id="column-selection" style="display: none; margin-top: 10px;">
+                            <div class="control-group" style="margin-bottom: 8px;">
+                                <label for="x-col">x 列</label>
+                                <select id="x-col" class="panel-input" style="width: 100%; background: #fff;"></select>
+                            </div>
+                            <div class="control-group" style="margin-bottom: 8px;">
+                                <label for="y-col">y 列</label>
+                                <select id="y-col" class="panel-input" style="width: 100%; background: #fff;"></select>
+                            </div>
+                            <div class="control-group" style="margin-bottom: 8px;">
+                                <label for="label-col">标签列</label>
+                                <select id="label-col" class="panel-input"
+                                        style="width: 100%; background: #fff;"></select>
+                            </div>
+                            <button id="btn-apply-cols" class="btn btn-primary" style="width: 100%;">确认应用所选列
+                            </button>
+                        </div>
+                    </div>
+                    <button id="btn-reset" class="btn btn-secondary" style="width: 100%; margin-top: 10px;">
+                        重置算法与数据
+                    </button>
+                </div>
+            </div>
+
+            <!-- 算法控制 -->
+            <div class="panel-card" id="panel-algo">
+                <h3 onclick="App.togglePanel(this)">算法控制 <i class="fas fa-chevron-up toggle-btn"></i></h3>
+                <div class="panel-body">
+                    <div class="button-group">
+                        <button id="btn-play" class="btn btn-primary">播放</button>
+                        <button id="btn-pause" class="btn btn-secondary">暂停</button>
+                        <button id="btn-step" class="btn btn-primary">单步</button>
+                        <button id="btn-reset-algo" class="btn btn-secondary" onclick="App.reset()">重置</button>
+                    </div>
+                    <!-- 速度控制 -->
+                    <div class="control-group" style="margin-top: 15px;">
+                        <label for="speed-control"
+                               style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; color: var(--text);">
+                            <span>播放速度</span>
+                            <span id="speed-value">正常</span>
+                        </label>
+                        <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
+                               style="width: 100%; accent-color: var(--primary);">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 参数展示 -->
+            <div class="panel-card" id="panel-params">
+                <h3 onclick="App.togglePanel(this)">关键参数 <i class="fas fa-chevron-up toggle-btn"></i></h3>
+                <div class="panel-body">
+                    <table class="param-table">
+                        <tr>
+                            <td>当前迭代次数</td>
+                            <td id="param-iter">0</td>
+                        </tr>
+                        <tr>
+                            <td>选中乘子编号 (i, j)</td>
+                            <td><span id="param-i">-</span>, <span id="param-j">-</span></td>
+                        </tr>
+                        <tr>
+                            <td>乘子值 α_i, α_j</td>
+                            <td><span id="param-alpha-i">-</span>, <span id="param-alpha-j">-</span></td>
+                        </tr>
+                        <tr>
+                            <td>实例 i 坐标</td>
+                            <td id="param-coord-i">-</td>
+                        </tr>
+                        <tr>
+                            <td>实例 j 坐标</td>
+                            <td id="param-coord-j">-</td>
+                        </tr>
+                        <tr>
+                            <td>权重向量 w</td>
+                            <td id="param-w">[0.000, 0.000]</td>
+                        </tr>
+                        <tr>
+                            <td>截距 b</td>
+                            <td id="param-b">0.000</td>
+                        </tr>
+                        <tr>
+                            <td>分类准确率</td>
+                            <td id="param-accuracy">0.00%</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/courses/svm-smo/smo.js"></script>
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'svm_smo_interaction',
+        BUTTON_REGISTRY: [
+            {id: 'csv-upload', description: '上传CSV数据集文件', type: 'normal'},
+            {id: 'x-col', description: 'x坐标列选择框', type: 'normal'},
+            {id: 'y-col', description: 'y坐标列选择框', type: 'normal'},
+            {id: 'label-col', description: '标签列选择框', type: 'normal'},
+            {id: 'btn-apply-cols', description: '确认应用选中的x、y和标签列', type: 'normal'},
+            {id: 'btn-reset', description: '重置整个实验，包括数据和算法状态', type: 'normal'},
+            {id: 'btn-play', description: '开始自动执行SMO算法优化过程', type: 'normal'},
+            {id: 'btn-pause', description: '暂停当前正在进行的自动优化', type: 'normal'},
+            {id: 'btn-step', description: '执行算法的一个子步骤（选择i、选择j或更新）', type: 'normal'},
+            {id: 'speed-control', description: '调整播放速度', type: 'normal'},
+            {id: 'slider-c', description: '调整惩罚系数C，控制对错分样本的惩罚程度', type: 'normal'},
+            {id: 'slider-tol', description: '调整收敛精度tol', type: 'normal'},
+            {id: 'slider-max-iter', description: '设置算法最大允许的迭代次数', type: 'normal'}
+        ],
+        GUIDEBOOK: '这是SMO算法交互网页，用于通过可视化方式展示线性SVM的优化过程。用户可以上传二维数据集，并根据需要选择数据集中的哪些列分别作为x列、y列和标签列。之后利用控制面板中的播放、单步按钮观察算法如何逐步调整拉格朗日乘子，进而改变分离超平面的位置。页面右侧实时展示算法的关键参数。鼠标悬停在画布上的数据点可以查看该点的详细信息。'
+    };
+</script>
+{% endblock %}

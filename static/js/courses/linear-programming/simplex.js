@@ -12,6 +12,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const checkBtn = document.getElementById('check-btn');
     const iterationResults = document.getElementById('iteration-results');
     const viz2dContainer = document.getElementById('visualization-2d');
+    const exampleSelect = document.getElementById('example-select');
+    const loadExampleBtn = document.getElementById('load-example-btn');
+
+    const examples = {
+        'max': {
+            n: 3,
+            m: 3,
+            type: 'max',
+            c: [2, 5, 1],
+            a: [[2, -1, 7], [1, 3, 4], [3, 6, 1]],
+            b: [6, 9, 3]
+        },
+        'min': {
+            n: 3,
+            m: 3,
+            type: 'min',
+            c: [-2, -5, -1],
+            a: [[2, -1, 7], [1, 3, 4], [3, 6, 1]],
+            b: [6, 9, 3]
+        },
+        'unbounded': {
+            n: 2,
+            m: 1,
+            type: 'max',
+            c: [1, 1],
+            a: [[1, -1]],
+            b: [1]
+        },
+        'degenerate': {
+            n: 2,
+            m: 2,
+            type: 'max',
+            c: [3, 4],
+            a: [[1, 1], [2, 2]],
+            b: [4, 8]
+        },
+        'multiple': {
+            n: 2,
+            m: 2,
+            type: 'max',
+            c: [1, 1],
+            a: [[1, 0], [0, 1]],
+            b: [3, 3]
+        }
+    };
 
     // 初始化表格
     generateCoeffTable();
@@ -22,6 +67,37 @@ document.addEventListener('DOMContentLoaded', function() {
     resetBtn.addEventListener('click', resetForm);
     checkBtn.addEventListener('click', validateInputs);
     solveBtn.addEventListener('click', solveSimplex);
+    loadExampleBtn.addEventListener('click', loadExample);
+
+    function loadExample() {
+        const selected = exampleSelect.value;
+        const data = examples[selected];
+        if (!data) return;
+
+        numVarsInput.value = data.n;
+        numConstraintsInput.value = data.m;
+        document.querySelector(`input[name="solve-type"][value="${data.type}"]`).checked = true;
+
+        generateCoeffTable();
+
+        // 填充系数
+        data.c.forEach((val, j) => {
+            const input = document.getElementById(`c-${j + 1}`);
+            if (input) input.value = val;
+        });
+
+        data.a.forEach((row, i) => {
+            row.forEach((val, j) => {
+                const input = document.getElementById(`a-${i + 1}-${j + 1}`);
+                if (input) input.value = val;
+            });
+            const bInput = document.getElementById(`b-${i + 1}`);
+            if (bInput) bInput.value = data.b[i];
+        });
+
+        iterationResults.innerHTML = '<div class="placeholder-text">已加载示例数据，点击“求解”开始实验。</div>';
+        viz2dContainer.classList.add('hidden');
+    }
 
     /**
      * 动态生成系数输入表格
@@ -33,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const m = parseInt(numConstraintsInput.value);
 
         let html = '<table class="input-table">';
-        
+
         // 表头
         html += '<thead><tr><th></th>';
         for (let j = 1; j <= n; j++) {
@@ -56,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             html += `<td><input type="number" step="any" id="b-${i}" value="0"></td></tr>`;
         }
-        
+
         html += '</tbody></table>';
         coeffTableContainer.innerHTML = html;
     }
@@ -73,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateInputs() {
         const n = parseInt(numVarsInput.value);
         const m = parseInt(numConstraintsInput.value);
-        
+
         // 检查所有输入是否为有效数字
         const inputs = coeffTableContainer.querySelectorAll('input[type="number"]');
         for (let input of inputs) {
@@ -127,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 变量总数 = 原始变量 + 松弛变量
         const totalVars = n + m;
         const cj = [...c, ...new Array(m).fill(0)];
-        
+
         // 初始基变量：松弛变量 x_{n+1} ... x_{n+m}
         const basis = [];
         for (let i = 1; i <= m; i++) {
@@ -155,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         while (!finished && iteration < maxIterations) {
             iteration++;
-            
+
             // 计算检验数 sigma_j = c_j - z_j = c_j - sum(cB_i * a_ij)
             const sigma = [];
             for (let j = 0; j < totalVars; j++) {
@@ -270,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 迭代更新（主元消去）
             const pivot = fullA[leavingIdx][enteringIdx];
-            
+
             // 1. 主元行归一化
             currentB[leavingIdx] /= pivot;
             for (let j = 0; j < totalVars; j++) {
@@ -297,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 3. 渲染结果
         renderResults(steps, status, solveType);
-        
+
         // 4. 二维可视化 (如果 n=2)
         if (n === 2) {
             render2DViz(c, a, b, steps, solveType);
@@ -308,26 +384,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderResults(steps, status, solveType) {
         iterationResults.innerHTML = '';
-        
+
         steps.forEach((step, idx) => {
             const card = document.createElement('div');
             card.className = 'iteration-card';
-            
+
             let title = `第 ${step.iteration} 次迭代`;
             if (step.status === 'optimal') title += " (达到最优)";
             if (step.status === 'unbounded') title += " (检测到无界)";
-            
+
             card.innerHTML = `<h4>${title}</h4>`;
-            
+
             // SVG 表格容器
             const tableWrapper = document.createElement('div');
             tableWrapper.className = 'table-wrapper';
             const svg = d3.select(tableWrapper).append('svg')
                 .attr('class', 'simplex-svg');
-            
+
             renderSimplexTable(svg, step);
             card.appendChild(tableWrapper);
-            
+
             // 说明文本
             const explanation = document.createElement('div');
             explanation.className = 'explanation';
@@ -488,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         text += `<br><strong>比值测试：</strong> 经过计算，最小正比值为对应 <strong>${step.leaving}</strong> 所在的行，故 <strong>${step.leaving}</strong> 离基。`;
         text += `<br><strong>更新：</strong> 以 <strong>${step.entering}</strong> 和 <strong>${step.leaving}</strong> 交叉处的元素为主元进行行变换。`;
-        
+
         return text;
     }
 
