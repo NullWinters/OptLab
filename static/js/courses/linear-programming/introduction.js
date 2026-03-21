@@ -165,7 +165,7 @@ function initObservationViz() {
     if (container.empty()) return;
 
     // 移除 initObservationViz 中原来的动态生成逻辑（已移至 updateUI）
-    
+
     const width = container.node().getBoundingClientRect().width || 400;
     const height = 400;
     const margin = { top: 30, right: 30, bottom: 40, left: 50 };
@@ -299,24 +299,24 @@ function initObservationViz() {
             }
         }
 
-        if (window.MathJax) MathJax.typesetPromise();
+        if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
     }
 
     window.iterate = function(enteringVar) {
         if (isAnimating) return;
         const enteringIdx = parseInt(enteringVar.substring(1));
         const nextIndex = vertexAdjacency[currentStateIndex]?.[enteringIdx];
-        
+
         if (nextIndex !== undefined) {
             const currentV = vertices[currentStateIndex];
             const nextV = vertices[nextIndex];
-            
+
             // 找出离基变量 (在 currentV.basic 中但不在 nextV.basic 中的)
             const leavingIdx = currentV.basic.find(b => !nextV.basic.includes(b));
-            
+
             let stepInfo = `<b>从 (${currentV.x}, ${currentV.y}) 移动到 (${nextV.x}, ${nextV.y})</b><br>`;
             stepInfo += `选择 $x_${enteringIdx}$ 为入基变量，确定 $x_${leavingIdx}$ 为离基变量。<br>`;
-            
+
             const prevF = 3 * currentV.x + 5 * currentV.y;
             const nextF = 3 * nextV.x + 5 * nextV.y;
             if (nextF > prevF) {
@@ -345,7 +345,7 @@ function initObservationViz() {
         if (isAnimating) return;
         isAnimating = true;
         this.disabled = true;
-        
+
         // 如果已在最优解，先重置回起点
         if (currentStateIndex === 3) {
             currentStateIndex = 0;
@@ -353,10 +353,10 @@ function initObservationViz() {
             updateUI();
             await new Promise(r => setTimeout(r, 1000));
         }
-        
+
         document.getElementById("algebraic-steps").innerText = "自动演示开始...";
         updateUI();
-        
+
         while (currentStateIndex !== 3) {
             const state = vertices[currentStateIndex];
             // 找到最佳入基变量 (sigma 最大的正数)
@@ -377,7 +377,7 @@ function initObservationViz() {
             window.iterate(`x${bestVarIdx}`);
             isAnimating = true;
             updateUI();
-            
+
             await new Promise(r => setTimeout(r, 2000));
         }
 

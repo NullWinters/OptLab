@@ -151,14 +151,15 @@ body {
     font-weight: bold;
 }
 
-.input-group input {
+.input-group input, .input-group select {
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     outline: none;
+    background: white;
 }
 
-.input-group input:focus {
+.input-group input:focus, .input-group select:focus {
     border-color: var(--secondary-color);
     box-shadow: 0 0 0 2px rgba(255, 143, 0, 0.1);
 }
