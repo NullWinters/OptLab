@@ -13,6 +13,8 @@ export class BisectionSearch {
         this.currentIteration = 0;
         this.history = [];
         this.isComplete = false;
+        this.hasConverged = false;
+        this.terminationReason = null; // 'converged'
         this.result = null;
 
         // 预解析导函数 (如果输入是字符串表达式)
@@ -70,6 +72,8 @@ export class BisectionSearch {
         // 检查停止条件
         if (Math.abs(l) < this.epsilon) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
             this.result = (this.a + this.b) / 2;
             return false;
         }
@@ -83,6 +87,8 @@ export class BisectionSearch {
         if (Math.abs(df_m) < 1e-10) {
             decision = '导数为0，找到极小值点';
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
             this.result = m;
         } else if (df_m * df_a > 0) {
             decision = '导数与左端点同号，舍弃左半区间';

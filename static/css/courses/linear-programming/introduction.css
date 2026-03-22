@@ -93,6 +93,10 @@ body {
     border-color: var(--primary-color);
 }
 
+.nav-btn:hover:not(.active):not(:disabled) {
+    background-color: var(--highlight-bg);
+}
+
 .nav-btn:disabled {
     border-color: #BCAAA4;
     color: #BCAAA4;

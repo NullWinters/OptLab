@@ -1,8 +1,4 @@
-/**
- * 一维搜索方法应用实验脚本
- */
-
-// --- 1. 算法类实现 ---
+// 一维搜索方法应用实验脚本
 
 class BisectionSearch {
     constructor(func, df, a, b, eps = 1e-3) {
@@ -37,7 +33,6 @@ class BisectionSearch {
         } else if (dmid * db > 0) {
             this.b = mid;
         } else {
-            // 理论上单谷函数不应进入此分支
             this.isComplete = true;
             return false;
         }
@@ -112,9 +107,9 @@ class FibonacciSearch {
         const x2 = this.b - rho * l;
         const f1 = this.func(x1);
         const f2 = this.func(x2);
-
+        
         this.history.push({ a: this.a, b: this.b, x1, x2, f1, f2 });
-
+        
         if (f1 > f2) {
             this.a = x1;
         } else if (f1 < f2) {
@@ -123,7 +118,7 @@ class FibonacciSearch {
             this.a = x1;
             this.b = x2;
         }
-
+        
         this.k++;
         if (this.k >= this.n) this.isComplete = true;
         return true;
@@ -156,7 +151,7 @@ class GradientDescent {
         const y = this.func(this.xk);
         const nextDf = this.df(this.xk);
         this.history.push({ x: this.xk, y: y, df: nextDf });
-
+        
         if (this.currentIteration >= this.n || !isFinite(this.xk) || !isFinite(y)) {
             this.isComplete = true;
         }
@@ -232,10 +227,7 @@ class SecantMethod {
     }
 }
 
-// --- 2. 可视化类实现 ---
-
 (function() {
-    // Helper: convert integer to Unicode subscript string (supports minus sign)
     function toSubscript(n) {
         const map = {'-':'\u208B','0':'\u2080','1':'\u2081','2':'\u2082','3':'\u2083','4':'\u2084','5':'\u2085','6':'\u2086','7':'\u2087','8':'\u2088','9':'\u2089'};
         return String(n).split('').map(ch => map[ch] || ch).join('');
@@ -247,11 +239,11 @@ class SecantMethod {
             this.margin = { top: 40, right: 40, bottom: 50, left: 70 };
             this.container = document.getElementById(containerId);
             this.width = this.container.clientWidth;
-            this.height = this.container.clientHeight || 350; // 动态高度
-
+            this.height = 350; // 固定高度
+            
             this.plotWidth = this.width - this.margin.left - this.margin.right;
             this.plotHeight = this.height - this.margin.top - this.margin.bottom;
-
+            
             this.duration = 400;
             this.currentDomain = null;
             this.currentFunc = null;
@@ -278,46 +270,8 @@ class SecantMethod {
                     this.update(this.lastArgs.func, this.lastArgs.domain, this.lastArgs.history, this.lastArgs.type, this.lastArgs.algo, this.lastArgs.subStep);
                 }
             };
-
+            
             this.initSvg();
-            window.addEventListener('resize', () => this.handleResize());
-        }
-
-        handleResize() {
-            const container = document.getElementById(this.containerId);
-            if (!container) return;
-
-            const newWidth = container.clientWidth;
-            const newHeight = container.clientHeight || 350;
-
-            if (newWidth === 0 || (newWidth === this.width && newHeight === this.height)) return;
-
-            this.width = newWidth;
-            this.height = newHeight;
-            this.plotWidth = this.width - this.margin.left - this.margin.right;
-            this.plotHeight = this.height - this.margin.top - this.margin.bottom;
-
-            this.svg
-                .attr("width", this.width)
-                .attr("height", this.height)
-                .attr("viewBox", `0 0 ${this.width} ${this.height}`);
-
-            this.xScale.range([0, this.plotWidth]);
-            this.yScale.range([this.plotHeight, 0]);
-
-            this.xAxisG.attr("transform", `translate(0, ${this.plotHeight})`);
-
-            // 更新轴标签位置
-            if (this.xLabel) {
-                this.xLabel.attr("x", this.plotWidth).attr("y", this.plotHeight + 35);
-            }
-
-            if (this.lastArgs) {
-                const prevDuration = this.duration;
-                this.duration = 0;
-                this.update(this.lastArgs.func, this.lastArgs.domain, this.lastArgs.history, this.lastArgs.type, this.lastArgs.algo, this.lastArgs.subStep);
-                this.duration = prevDuration;
-            }
         }
 
         initSvg() {
@@ -327,10 +281,10 @@ class SecantMethod {
                 .attr("width", this.width)
                 .attr("height", this.height)
                 .attr("viewBox", `0 0 ${this.width} ${this.height}`);
-
+            
             this.plot = this.svg.append("g")
                 .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
-
+            
             this.xScale = d3.scaleLinear().range([0, this.plotWidth]);
             this.yScale = d3.scaleLinear().range([this.plotHeight, 0]);
 
@@ -353,16 +307,16 @@ class SecantMethod {
                 .attr("fill", "none")
                 .attr("stroke", "var(--primary-color)")
                 .attr("stroke-width", 2.5);
-
+                
             // 轴标签
-            this.xLabel = this.plot.append("text")
+            this.plot.append("text")
                 .attr("x", this.plotWidth)
                 .attr("y", this.plotHeight + 35)
                 .attr("text-anchor", "end")
                 .attr("fill", "#8d6e63")
                 .attr("font-size", "12px")
                 .text("x");
-
+                
             this.plot.append("text")
                 .attr("x", -10)
                 .attr("y", -15)
@@ -383,9 +337,9 @@ class SecantMethod {
 
         updateAxes(duration = this.duration) {
             const t = d3.transition().duration(duration);
-
+            
             this.xAxisG.transition(t).call(d3.axisBottom(this.xScale).ticks(8));
-
+            
             // 针对极端大数据集的 Y 轴格式化
             const yAxis = d3.axisLeft(this.yScale)
                 .ticks(6)
@@ -396,7 +350,7 @@ class SecantMethod {
                     return d3.format(".2s")(d);
                 });
             this.yAxisG.transition(t).call(yAxis);
-
+            
             // 网格更新
             let gridX = this.gridLayer.selectAll("line.grid-x").data(this.xScale.ticks(8));
             gridX.exit().remove();
@@ -424,38 +378,36 @@ class SecantMethod {
         update(func, domain, history = [], type = "point", algo = null, subStep = 0) {
             this.lastArgs = { func, domain, history, type, algo, subStep };
             this.currentFunc = func;
-
+            
             // 检测并修复隐藏容器导致的尺寸为0问题
             if (this.width <= 0 && this.container.clientWidth > 0) {
                 this.width = this.container.clientWidth;
-                this.height = this.container.clientHeight || 350;
                 this.plotWidth = this.width - this.margin.left - this.margin.right;
-                this.plotHeight = this.height - this.margin.top - this.margin.bottom;
                 this.initSvg();
             }
-
-            // 确保 domain 合法且有跨度
+            
+            // domain 校验
             let dom = this.currentDomain || domain;
             if (!dom || !isFinite(dom[0]) || !isFinite(dom[1]) || dom[0] === dom[1]) {
                 dom = [-10, 10];
             }
             this.xScale.domain(dom);
-
-            // 1. 进一步优化的自适应采样：引入解析极小值点强制采样，防止遗漏极窄波谷
+            
+            // 自适应采样
             const rangeSamples = 100;
             let xSamples = d3.range(dom[0], dom[1], (dom[1] - dom[0]) / rangeSamples);
-
-            const optVal = (type === "range" && algo && algo.constructor.name === "BisectionSearch") ?
+            
+            const optVal = (type === "range" && algo && algo.constructor.name === "BisectionSearch") ? 
                           (algo.a + algo.b)/2 : (type === "ls" ? b_fit : p_opt_val);
             if (isFinite(optVal) && optVal >= dom[0] && optVal <= dom[1]) {
                 xSamples.push(optVal);
             }
             xSamples.sort((a,b) => a - b);
-
+            
             // 计算 y 轴范围，增加稳健性
             const yValues = xSamples.map(x => func(x)).filter(y => isFinite(y));
             let yExtent = d3.extent(yValues);
-
+            
             if (yExtent[0] === undefined) yExtent = [0, 1];
             if (yExtent[0] === yExtent[1]) yExtent = [yExtent[0] - 1, yExtent[0] + 1];
 
@@ -464,13 +416,13 @@ class SecantMethod {
 
             this.updateAxes();
 
-            // 2. 绘制函数曲线：使用 adaptiveSamples 并处理极端值
+            // 绘制曲线
             const adaptiveSamples = Math.max(200, Math.min(2000, Math.ceil(this.width)));
             const line = d3.line()
                 .defined(d => isFinite(d.y) && Math.abs(d.y) < 1e25) // 过滤掉极端异常值
                 .x(d => this.xScale(d.x))
                 .y(d => this.yScale(d.y));
-
+            
             let curvePoints = d3.range(dom[0], dom[1], (dom[1] - dom[0]) / adaptiveSamples);
             if (isFinite(optVal) && optVal >= dom[0] && optVal <= dom[1]) curvePoints.push(optVal);
             curvePoints.sort((a,b) => a - b);
@@ -503,7 +455,7 @@ class SecantMethod {
         updateRangeHistory(history, func, algo, subStep = 0) {
             const duration = this.duration;
             let latest = algo ? { a: algo.a, b: algo.b } : history[history.length - 1];
-
+            
             const intervalData = latest ? [latest] : [];
             let rect = this.intervalLayer.selectAll("rect.interval-rect").data(intervalData);
             rect.exit().remove();
@@ -613,7 +565,7 @@ class SecantMethod {
                     if (d.df !== undefined) txt += ` (f'=${d.df.toFixed(3)})`;
                     return txt;
                 });
-
+                
             let compText = this.pointsLayer.selectAll("text.compare-info").data(compareInfo ? [compareInfo] : []);
             compText.exit().remove();
             compText.enter().append("text").attr("class", "compare-info")
@@ -687,7 +639,7 @@ class SecantMethod {
     let b_search = 0, a_search = 0; // 搜索解结果 (LS)
 
     let lsViz, profitViz;
-
+    
     // 状态管理
     const AppState = {
         ls: {
@@ -695,16 +647,26 @@ class SecantMethod {
             subStep: 0,
             isPlaying: false,
             timer: null,
-            speed: 1000,
-            status: "未开始"
+            speed: 1100,
+            status: "未开始",
+            method: "",
+            // 记录本次 LS 实验的初始设置与完整迭代数据
+            initialParams: {},
+            targetLabel: "",
+            iterationLog: []
         },
         profit: {
             algo: null,
             subStep: 0,
             isPlaying: false,
             timer: null,
-            speed: 1000,
-            status: "未开始"
+            speed: 1100,
+            status: "未开始",
+            method: "",
+            // 记录本次利润优化实验的初始设置与完整迭代数据
+            initialParams: {},
+            targetLabel: "",
+            iterationLog: []
         }
     };
 
@@ -733,8 +695,30 @@ class SecantMethod {
             updateSliders('ls');
             resetAlgo('ls');
         });
+        function speedLabel(sliderValue) {
+            const v = Number(sliderValue);
+            if (!isFinite(v)) return '—';
+            // slider 越大，播放越快（delay = 2100 - slider）
+            if (v <= 500) return '很慢';
+            if (v <= 900) return '较慢';
+            if (v <= 1300) return '正常';
+            if (v <= 1700) return '较快';
+            return '很快';
+        }
+
+        const lsSpeedValueEl = document.getElementById('lsSpeedValue');
+        const profitSpeedValueEl = document.getElementById('profitSpeedValue');
+
+        function syncSpeedLabels() {
+            const lsSlider = document.getElementById('lsSpeedSlider');
+            const profitSlider = document.getElementById('profitSpeedSlider');
+            if (lsSlider && lsSpeedValueEl) lsSpeedValueEl.textContent = speedLabel(lsSlider.value);
+            if (profitSlider && profitSpeedValueEl) profitSpeedValueEl.textContent = speedLabel(profitSlider.value);
+        }
+
         document.getElementById('lsSpeedSlider').addEventListener('input', (e) => {
-            AppState.ls.speed = 2100 - parseInt(e.target.value);
+            AppState.ls.speed = Math.round(2100 - Number(e.target.value));
+            if (lsSpeedValueEl) lsSpeedValueEl.textContent = speedLabel(e.target.value);
             if (AppState.ls.isPlaying) {
                 pausePlay('ls', true);
                 togglePlay('ls');
@@ -755,7 +739,8 @@ class SecantMethod {
             resetAlgo('profit');
         });
         document.getElementById('profitSpeedSlider').addEventListener('input', (e) => {
-            AppState.profit.speed = 2100 - parseInt(e.target.value);
+            AppState.profit.speed = Math.round(2100 - Number(e.target.value));
+            if (profitSpeedValueEl) profitSpeedValueEl.textContent = speedLabel(e.target.value);
             if (AppState.profit.isPlaying) {
                 pausePlay('profit', true);
                 togglePlay('profit');
@@ -765,6 +750,502 @@ class SecantMethod {
         document.getElementById('profitZoomOut').addEventListener('click', () => profitViz.zoom(0.8));
         document.getElementById('profitPanLeft').addEventListener('click', () => profitViz.pan(-1));
         document.getElementById('profitPanRight').addEventListener('click', () => profitViz.pan(1));
+
+        // 首次进入时同步一次速度文案（避免默认显示不一致）
+        syncSpeedLabels();
+
+        // 最小二乘迭代数据查看/导出
+        const lsOpenBtn = document.getElementById('ls-iteration-log-open-btn');
+        const lsExportBtn = document.getElementById('ls-iteration-log-export-csv-btn');
+        const lsModal = document.getElementById('ls-iteration-log-modal');
+        const lsCloseBtn = document.getElementById('ls-iteration-log-close');
+
+        function renderLsIterationLog() {
+            const tbody = document.getElementById('ls-iteration-log-body');
+            const methodSpan = document.getElementById('ls-iteration-log-summary-method');
+            const initSpan = document.getElementById('ls-iteration-log-summary-init');
+            const targetSpan = document.getElementById('ls-iteration-log-summary-target');
+            const countSpan = document.getElementById('ls-iteration-log-summary-count');
+            const finalBox = document.getElementById('ls-iteration-log-final-summary');
+
+            let log = Array.isArray(AppState.ls.iterationLog) ? AppState.ls.iterationLog : [];
+
+            // 仅对点搜索类方法（GD / Newton / Secant）做 history 兜底；
+            // 区间类方法（golden/fib/bisect）由 recordIteration 按当前区间推导 β 与 L(β)
+            const methodForLs = AppState.ls.method || '';
+            const isRangeMethodLs = ['golden', 'bisect', 'fib'].includes(methodForLs);
+
+            if ((!log || !log.length) &&
+                !isRangeMethodLs &&
+                AppState.ls.algo &&
+                Array.isArray(AppState.ls.algo.history)) {
+                const algo = AppState.ls.algo;
+                log = algo.history.map((h, idx) => {
+                    const beta = typeof h.x === 'number' ? h.x : algo.xk;
+                    const L = typeof h.y === 'number' ? h.y : algo.func(beta);
+                    const dL = typeof h.df === 'number'
+                        ? h.df
+                        : (typeof algo.df === 'function' ? algo.df(beta) : null);
+                    const ddL = typeof h.ddf === 'number' ? h.ddf : null;
+                    return {
+                        iteration: idx,
+                        beta,
+                        L,
+                        dL,
+                        ddL,
+                        is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? beta) : null,
+                        timestamp: ''
+                    };
+                });
+                AppState.ls.iterationLog = log;
+            }
+
+            if (methodSpan) methodSpan.textContent = AppState.ls.method || '--';
+            if (initSpan) initSpan.textContent = AppState.ls.initialParams && Object.keys(AppState.ls.initialParams).length
+                ? JSON.stringify(AppState.ls.initialParams)
+                : '--';
+            if (targetSpan) targetSpan.textContent = AppState.ls.targetLabel || '--';
+            if (countSpan) countSpan.textContent = String(log.length);
+
+            if (!log.length) {
+                if (tbody) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="6" style="padding: 8px 4px; color: #777;">当前尚无迭代数据，请先运行一次完整拟合实验。</td></tr>';
+                }
+                if (finalBox) {
+                    finalBox.style.display = 'none';
+                    finalBox.textContent = '';
+                }
+                return;
+            }
+
+            const final =
+                [...log].reverse().find(row => row.is_complete && row.result != null) || null;
+            if (final && finalBox) {
+                const betaStar = Number(final.beta).toFixed(6);
+                finalBox.style.display = 'block';
+                finalBox.textContent =
+                    `根据记录的迭代数据，本次实验在第 ${final.iteration} 次迭代附近收敛到近似最优参数 β* ≈ ${betaStar}，对应 L(β*) ≈ ${Number(final.L).toFixed(6)}，梯度 ≈ ${final.dL != null ? Number(final.dL).toFixed(6) : '—'}。`;
+            } else if (finalBox) {
+                finalBox.style.display = 'none';
+                finalBox.textContent = '';
+            }
+
+            if (tbody) {
+                tbody.innerHTML = log.map(row => {
+                    let statusLabel;
+                    if (!row.is_complete) {
+                        statusLabel = '进行中';
+                    } else if (row.has_converged) {
+                        statusLabel = '已收敛';
+                    } else {
+                        statusLabel = '已终止（未收敛）';
+                    }
+                    const isFinal = final && final.iteration === row.iteration;
+                    const rowStyle = isFinal
+                        ? 'background-color: #fff8e1; font-weight: 600;'
+                        : '';
+                    return `<tr style="${rowStyle}">
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.iteration}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.beta).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.L).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.dL != null ? Number(row.dL).toFixed(6) : '—'}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.ddL != null ? Number(row.ddL).toFixed(6) : '—'}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${statusLabel}</td>
+</tr>`;
+                }).join('');
+            }
+        }
+
+        if (lsOpenBtn && lsModal && lsCloseBtn) {
+            lsOpenBtn.addEventListener('click', () => {
+                renderLsIterationLog();
+                lsModal.style.display = 'flex';
+            });
+            lsCloseBtn.addEventListener('click', () => {
+                lsModal.style.display = 'none';
+            });
+            lsModal.addEventListener('click', (e) => {
+                if (e.target === lsModal) {
+                    lsModal.style.display = 'none';
+                }
+            });
+        }
+
+        if (lsExportBtn) {
+            lsExportBtn.addEventListener('click', () => {
+                let log = Array.isArray(AppState.ls.iterationLog) ? AppState.ls.iterationLog : [];
+
+                // 日志为空时用 history 回填
+                const methodForLs = AppState.ls.method || '';
+                const isRangeMethodLs = ['golden', 'bisect', 'fib'].includes(methodForLs);
+                if ((!log || !log.length) &&
+                    !isRangeMethodLs &&
+                    AppState.ls.algo &&
+                    Array.isArray(AppState.ls.algo.history)) {
+                    const algo = AppState.ls.algo;
+                    log = algo.history.map((h, idx) => {
+                        const beta = typeof h.x === 'number' ? h.x : algo.xk;
+                        const L = typeof h.y === 'number' ? h.y : algo.func(beta);
+                        const dL = typeof h.df === 'number'
+                            ? h.df
+                            : (typeof algo.df === 'function' ? algo.df(beta) : null);
+                        const ddL = typeof h.ddf === 'number' ? h.ddf : null;
+                        return {
+                            iteration: idx,
+                            beta,
+                            L,
+                            dL,
+                            ddL,
+                            is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                            result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? beta) : null,
+                            timestamp: ''
+                        };
+                    });
+                    AppState.ls.iterationLog = log;
+                }
+
+                if (!log.length) {
+                    alert('当前尚无迭代数据，请先运行一次完整拟合实验。');
+                    return;
+                }
+                const esc = v => { const s = String(v ?? ''); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const summary = [
+                    ['项目', '值'],
+                    ['原函数/目标', 'L(β)'],
+                    ['算法', AppState.ls.method || ''],
+                    ['初始参数', JSON.stringify(AppState.ls.initialParams || {})],
+                    []
+                ];
+                const header = [
+                    'iteration',
+                    'method',
+                    'beta',
+                    'L',
+                    'dL',
+                    'ddL',
+                    'target',
+                    'initial_params',
+                    'is_complete',
+                    'has_converged',
+                    'termination_reason',
+                    'result',
+                    'timestamp'
+                ];
+                const rows = log.map(row => [
+                    row.iteration,
+                    AppState.ls.method,
+                    row.beta,
+                    row.L,
+                    row.dL != null ? row.dL : '',
+                    row.ddL != null ? row.ddL : '',
+                    AppState.ls.targetLabel || '',
+                    JSON.stringify(AppState.ls.initialParams || {}),
+                    row.is_complete ? 'true' : 'false',
+                    row.has_converged ? 'true' : 'false',
+                    row.termination_reason || '',
+                    row.result != null ? row.result : '',
+                    row.timestamp || ''
+                ]);
+                const csvLines = [...summary, header, ...rows].map(cols => cols.map(esc).join(',')).join('\n');
+
+                const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'line-search.application.ls-iterations.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        const lsSaveToProfileBtn = document.getElementById('ls-iteration-log-save-to-profile-btn');
+        if (lsSaveToProfileBtn && typeof apiPost === 'function' && typeof getStoredToken === 'function') {
+            lsSaveToProfileBtn.addEventListener('click', () => {
+                if (!getStoredToken()) {
+                    alert('请先登录后再保存至个人中心。');
+                    return;
+                }
+                let log = Array.isArray(AppState.ls.iterationLog) ? AppState.ls.iterationLog : [];
+                const methodForLs = AppState.ls.method || '';
+                const isRangeMethodLs = ['golden', 'bisect', 'fib'].includes(methodForLs);
+                if ((!log || !log.length) && !isRangeMethodLs && AppState.ls.algo && Array.isArray(AppState.ls.algo.history)) {
+                    const algo = AppState.ls.algo;
+                    log = algo.history.map((h, idx) => ({
+                        iteration: idx,
+                        beta: typeof h.x === 'number' ? h.x : algo.xk,
+                        L: typeof h.y === 'number' ? h.y : algo.func(typeof h.x === 'number' ? h.x : algo.xk),
+                        dL: typeof h.df === 'number' ? h.df : (typeof algo.df === 'function' ? algo.df(typeof h.x === 'number' ? h.x : algo.xk) : null),
+                        ddL: typeof h.ddf === 'number' ? h.ddf : null,
+                        is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? h.x) : null,
+                        timestamp: ''
+                    }));
+                }
+                if (!log.length) {
+                    alert('当前尚无迭代数据，请先运行一次完整拟合实验后再保存。');
+                    return;
+                }
+                const methodLabels = { golden: '黄金分割法', fib: '斐波那契数列法', bisect: '二分法', gd: '梯度下降法', newton: '牛顿法', secant: '割线法' };
+                const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
+                if (alias == null || String(alias).trim() === '') return;
+                const payload = {
+                    algorithm_name: methodLabels[methodForLs] || methodForLs || '一维搜索',
+                    test_function: 'L(β)',
+                    initial_state: AppState.ls.initialParams || {},
+                    iteration_data: log
+                };
+                apiPost('/experiments/records', { alias: String(alias).trim(), source_page: 'line-search.application.main', payload })
+                    .then(() => alert('已保存至个人中心。'))
+                    .catch(() => alert('保存失败，请检查登录状态后重试。'));
+            });
+        }
+
+        // 利润优化迭代数据查看/导出
+        const profitOpenBtn = document.getElementById('profit-iteration-log-open-btn');
+        const profitExportBtn = document.getElementById('profit-iteration-log-export-csv-btn');
+        const profitModal = document.getElementById('profit-iteration-log-modal');
+        const profitCloseBtn = document.getElementById('profit-iteration-log-close');
+
+        function renderProfitIterationLog() {
+            const tbody = document.getElementById('profit-iteration-log-body');
+            const methodSpan = document.getElementById('profit-iteration-log-summary-method');
+            const funcSpan = document.getElementById('profit-iteration-log-summary-func');
+            const costSpan = document.getElementById('profit-iteration-log-summary-cost');
+            const initSpan = document.getElementById('profit-iteration-log-summary-init');
+            const targetSpan = document.getElementById('profit-iteration-log-summary-target');
+            const countSpan = document.getElementById('profit-iteration-log-summary-count');
+            const finalBox = document.getElementById('profit-iteration-log-final-summary');
+
+            let log = Array.isArray(AppState.profit.iterationLog) ? AppState.profit.iterationLog : [];
+
+            // 如果迭代日志为空但算法已有历史记录，基于 history 回填一份日志，保证实验数据可查看
+            if ((!log || !log.length) && AppState.profit.algo && Array.isArray(AppState.profit.algo.history)) {
+                const algo = AppState.profit.algo;
+                log = algo.history.map((h, idx) => ({
+                    iteration: idx,
+                    p: typeof h.x === 'number' ? h.x : algo.xk,
+                    neg_profit: typeof h.y === 'number' ? h.y : algo.func(typeof h.x === 'number' ? h.x : algo.xk),
+                    d_neg_profit: typeof h.df === 'number'
+                        ? h.df
+                        : (typeof algo.df === 'function' ? algo.df(typeof h.x === 'number' ? h.x : algo.xk) : null),
+                    dd_neg_profit: typeof h.ddf === 'number' ? h.ddf : null,
+                    is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                    result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? h.x) : null,
+                    timestamp: ''
+                }));
+                AppState.profit.iterationLog = log;
+            }
+
+            if (funcSpan) funcSpan.textContent = '-π(p)';
+            if (methodSpan) methodSpan.textContent = AppState.profit.method || '--';
+            if (costSpan) costSpan.textContent = AppState.profit.initialParams && AppState.profit.initialParams.cost != null
+                ? String(AppState.profit.initialParams.cost)
+                : '--';
+            if (initSpan) initSpan.textContent = AppState.profit.initialParams && Object.keys(AppState.profit.initialParams).length
+                ? JSON.stringify(AppState.profit.initialParams)
+                : '--';
+            if (targetSpan) targetSpan.textContent = AppState.profit.targetLabel || '--';
+            if (countSpan) countSpan.textContent = String(log.length);
+
+            if (!log.length) {
+                if (tbody) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="6" style="padding: 8px 4px; color: #777;">当前尚无迭代数据，请先运行一次完整利润优化实验。</td></tr>';
+                }
+                if (finalBox) {
+                    finalBox.style.display = 'none';
+                    finalBox.textContent = '';
+                }
+                return;
+            }
+
+            const final =
+                [...log].reverse().find(row => row.is_complete && row.result != null) || null;
+            if (final && finalBox) {
+                const pStar = Number(final.p).toFixed(6);
+                finalBox.style.display = 'block';
+                finalBox.textContent =
+                    `根据记录的迭代数据，本次实验在第 ${final.iteration} 次迭代附近收敛到近似最优定价 p* ≈ ${pStar}，对应 -π(p*) ≈ ${Number(final.neg_profit).toFixed(6)}，一阶导 ≈ ${final.d_neg_profit != null ? Number(final.d_neg_profit).toFixed(6) : '—'}。`;
+            } else if (finalBox) {
+                finalBox.style.display = 'none';
+                finalBox.textContent = '';
+            }
+
+            if (tbody) {
+                tbody.innerHTML = log.map(row => {
+                    let statusLabel;
+                    if (!row.is_complete) {
+                        statusLabel = '进行中';
+                    } else if (row.has_converged) {
+                        statusLabel = '已收敛';
+                    } else {
+                        statusLabel = '已终止（未收敛）';
+                    }
+                    const isFinal = final && final.iteration === row.iteration;
+                    const rowStyle = isFinal
+                        ? 'background-color: #fff8e1; font-weight: 600;'
+                        : '';
+                    return `<tr style="${rowStyle}">
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.iteration}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.p).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.neg_profit).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.d_neg_profit != null ? Number(row.d_neg_profit).toFixed(6) : '—'}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.dd_neg_profit != null ? Number(row.dd_neg_profit).toFixed(6) : '—'}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${statusLabel}</td>
+</tr>`;
+                }).join('');
+            }
+        }
+
+        if (profitOpenBtn && profitModal && profitCloseBtn) {
+            profitOpenBtn.addEventListener('click', () => {
+                renderProfitIterationLog();
+                profitModal.style.display = 'flex';
+            });
+            profitCloseBtn.addEventListener('click', () => {
+                profitModal.style.display = 'none';
+            });
+            profitModal.addEventListener('click', (e) => {
+                if (e.target === profitModal) {
+                    profitModal.style.display = 'none';
+                }
+            });
+        }
+
+        if (profitExportBtn) {
+            profitExportBtn.addEventListener('click', () => {
+                let log = Array.isArray(AppState.profit.iterationLog) ? AppState.profit.iterationLog : [];
+
+                // 日志为空时用 history 回填
+                const methodForProfit = AppState.profit.method || '';
+                const isRangeMethodProfit = ['golden', 'bisect', 'fib'].includes(methodForProfit);
+                if ((!log || !log.length) &&
+                    !isRangeMethodProfit &&
+                    AppState.profit.algo &&
+                    Array.isArray(AppState.profit.algo.history)) {
+                    const algo = AppState.profit.algo;
+                    log = algo.history.map((h, idx) => {
+                        const p = typeof h.x === 'number' ? h.x : algo.xk;
+                        const negProfit = typeof h.y === 'number' ? h.y : algo.func(p);
+                        const dNeg = typeof h.df === 'number'
+                            ? h.df
+                            : (typeof algo.df === 'function' ? algo.df(p) : null);
+                        const ddNeg = typeof h.ddf === 'number' ? h.ddf : null;
+                        return {
+                            iteration: idx,
+                            p,
+                            neg_profit: negProfit,
+                            d_neg_profit: dNeg,
+                            dd_neg_profit: ddNeg,
+                            is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                            result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? p) : null,
+                            timestamp: ''
+                        };
+                    });
+                    AppState.profit.iterationLog = log;
+                }
+
+                if (!log.length) {
+                    alert('当前尚无迭代数据，请先运行一次完整利润优化实验。');
+                    return;
+                }
+                const esc = v => { const s = String(v ?? ''); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const summary = [
+                    ['项目', '值'],
+                    ['原函数/目标', '-π(p)'],
+                    ['算法', AppState.profit.method || ''],
+                    ['初始参数', JSON.stringify(AppState.profit.initialParams || {})],
+                    []
+                ];
+                const header = [
+                    'iteration',
+                    'method',
+                    'p',
+                    'neg_profit',
+                    'd_neg_profit',
+                    'dd_neg_profit',
+                    'target',
+                    'initial_params',
+                    'is_complete',
+                    'has_converged',
+                    'termination_reason',
+                    'result',
+                    'timestamp'
+                ];
+                const rows = log.map(row => [
+                    row.iteration,
+                    AppState.profit.method,
+                    row.p,
+                    row.neg_profit,
+                    row.d_neg_profit != null ? row.d_neg_profit : '',
+                    row.dd_neg_profit != null ? row.dd_neg_profit : '',
+                    AppState.profit.targetLabel || '',
+                    JSON.stringify(AppState.profit.initialParams || {}),
+                    row.is_complete ? 'true' : 'false',
+                    row.has_converged ? 'true' : 'false',
+                    row.termination_reason || '',
+                    row.result != null ? row.result : '',
+                    row.timestamp || ''
+                ]);
+                const csvLines = [...summary, header, ...rows].map(cols => cols.map(esc).join(',')).join('\n');
+
+                const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'line-search.application.profit-iterations.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        const profitSaveToProfileBtn = document.getElementById('profit-iteration-log-save-to-profile-btn');
+        if (profitSaveToProfileBtn && typeof apiPost === 'function' && typeof getStoredToken === 'function') {
+            profitSaveToProfileBtn.addEventListener('click', () => {
+                if (!getStoredToken()) {
+                    alert('请先登录后再保存至个人中心。');
+                    return;
+                }
+                let log = Array.isArray(AppState.profit.iterationLog) ? AppState.profit.iterationLog : [];
+                if ((!log || !log.length) && AppState.profit.algo && Array.isArray(AppState.profit.algo.history)) {
+                    const algo = AppState.profit.algo;
+                    log = algo.history.map((h, idx) => ({
+                        iteration: idx,
+                        p: typeof h.x === 'number' ? h.x : algo.xk,
+                        neg_profit: typeof h.y === 'number' ? h.y : algo.func(typeof h.x === 'number' ? h.x : algo.xk),
+                        d_neg_profit: typeof h.df === 'number' ? h.df : (typeof algo.df === 'function' ? algo.df(typeof h.x === 'number' ? h.x : algo.xk) : null),
+                        dd_neg_profit: typeof h.ddf === 'number' ? h.ddf : null,
+                        is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? h.x) : null,
+                        timestamp: ''
+                    }));
+                    AppState.profit.iterationLog = log;
+                }
+                if (!log.length) {
+                    alert('当前尚无迭代数据，请先运行一次完整利润优化实验后再保存。');
+                    return;
+                }
+                const methodLabels = { golden: '黄金分割法', fib: '斐波那契数列法', bisect: '二分法', gd: '梯度下降法', newton: '牛顿法', secant: '割线法' };
+                const methodForProfit = AppState.profit.method || '';
+                const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
+                if (alias == null || String(alias).trim() === '') return;
+                const payload = {
+                    algorithm_name: methodLabels[methodForProfit] || methodForProfit || '一维搜索',
+                    test_function: '-π(p)',
+                    initial_state: AppState.profit.initialParams || {},
+                    iteration_data: log
+                };
+                apiPost('/experiments/records', { alias: String(alias).trim(), source_page: 'line-search.application.main', payload })
+                    .then(() => alert('已保存至个人中心。'))
+                    .catch(() => alert('保存失败，请检查登录状态后重试。'));
+            });
+        }
     }
 
     function loadDefaultData() {
@@ -825,7 +1306,7 @@ class SecantMethod {
         let html = '';
         const n = prices.length;
         const maxDisplay = 100;
-
+        
         if (n <= maxDisplay) {
             prices.forEach((p, i) => {
                 html += `<tr><td>${p}</td><td>${demands[i]}</td></tr>`;
@@ -842,7 +1323,7 @@ class SecantMethod {
                 html += `<tr><td>${prices[i]}</td><td>${demands[i]}</td></tr>`;
             }
         }
-
+        
         const dataTableBody = document.getElementById('dataTableBody');
         if (dataTableBody) {
             dataTableBody.innerHTML = html;
@@ -859,7 +1340,7 @@ class SecantMethod {
         B_ls = prices.reduce((acc, p, i) => acc + (demands[i] - y_mean) * (p - x_mean), 0);
         b_fit = B_ls / A_ls;
         a_fit = y_mean - b_fit * x_mean;
-
+        
         const cost = parseFloat(document.getElementById('costInput').value) || 0;
         document.getElementById('cDisplay').textContent = cost;
         p_opt_val = (b_fit * cost - a_fit) / (2 * b_fit);
@@ -918,6 +1399,8 @@ class SecantMethod {
                 resetAlgo(type);
             });
         });
+        // 动态插入的进度条需重新初始化，才能正确显示「已覆盖蓝 / 未覆盖灰」轨道
+        if (typeof window.initRangeSliders === 'function') window.initRangeSliders();
     }
 
     function resetAlgo(type) {
@@ -925,16 +1408,18 @@ class SecantMethod {
         pausePlay(type, true);
         state.subStep = 0;
         state.status = "未开始";
-
+        state.method = document.getElementById(`${type}MethodSelect`).value;
+        state.iterationLog = [];
+        
         if (type === 'ls') {
             const ps = document.getElementById('profitSection');
             if (ps) ps.style.display = 'none';
         }
-
+        
         const viz = type === 'ls' ? lsViz : profitViz;
         viz.currentDomain = null; // 重置视角
-
-        const method = document.getElementById(`${type}MethodSelect`).value;
+        
+        const method = state.method;
         let func, df, ddf, domain;
         if (type === 'ls') {
             const scale = A_ls || 1;
@@ -955,6 +1440,77 @@ class SecantMethod {
             params[s.id.split('-')[1]] = parseFloat(s.value);
         });
         state.algo = createAlgo(method, func, df, ddf, params);
+
+        // 记录本次实验的初始参数与终止条件描述
+        if (type === 'ls') {
+            if (['golden', 'bisect', 'fib'].includes(method)) {
+                state.initialParams = {
+                    a: params.a,
+                    b: params.b,
+                    eps: params.eps,
+                    n: params.n
+                };
+            } else if (method === 'gd') {
+                state.initialParams = {
+                    x0: params.x0,
+                    eta: params.eta,
+                    n: params.n
+                };
+            } else if (method === 'newton') {
+                state.initialParams = {
+                    x0: params.x0,
+                    n: params.n
+                };
+            } else if (method === 'secant') {
+                state.initialParams = {
+                    x0: params.x0,
+                    x_prev: params.x_prev,
+                    n: params.n
+                };
+            }
+        } else {
+            const cost = parseFloat(document.getElementById('costInput').value) || 0;
+            if (['golden', 'bisect', 'fib'].includes(method)) {
+                state.initialParams = {
+                    a: params.a,
+                    b: params.b,
+                    eps: params.eps,
+                    n: params.n,
+                    cost
+                };
+            } else if (method === 'gd') {
+                state.initialParams = {
+                    x0: params.x0,
+                    eta: params.eta,
+                    n: params.n,
+                    cost
+                };
+            } else if (method === 'newton') {
+                state.initialParams = {
+                    x0: params.x0,
+                    n: params.n,
+                    cost
+                };
+            } else if (method === 'secant') {
+                state.initialParams = {
+                    x0: params.x0,
+                    x_prev: params.x_prev,
+                    n: params.n,
+                    cost
+                };
+            }
+        }
+
+        if (['golden', 'bisect'].includes(method)) {
+            state.targetLabel = `目标精度 ε = ${params.eps}`;
+        } else if (method === 'fib') {
+            state.targetLabel = `修正系数 ε = ${params.eps}；迭代次数 N = ${params.n}`;
+        } else if (method === 'gd') {
+            state.targetLabel = `学习率 η = ${params.eta}；最大迭代次数 N = ${params.n}`;
+        } else {
+            state.targetLabel = `最大迭代次数 N = ${params.n}`;
+        }
+
         updateViz(type);
         updateUIButtons(type);
     }
@@ -1007,17 +1563,23 @@ class SecantMethod {
         state.subStep++;
         const method = document.getElementById(`${type}MethodSelect`).value;
         const isRange = ['bisect', 'golden', 'fib'].includes(method);
-
+        
         let completedCycle = false;
         if (isRange) {
             if (state.subStep === 4) {
-                algo.iterate();
+                const moved = algo.iterate();
+                if (moved) {
+                    recordIteration(type);
+                }
                 state.subStep = 0;
                 completedCycle = true;
             }
         } else {
             if (state.subStep === 2) {
-                algo.iterate();
+                const moved = algo.iterate();
+                if (moved) {
+                    recordIteration(type);
+                }
                 state.subStep = 0;
                 completedCycle = true;
             }
@@ -1042,7 +1604,7 @@ class SecantMethod {
         const viz = type === 'ls' ? lsViz : profitViz;
         const method = document.getElementById(`${type}MethodSelect`).value;
         const isRange = ['bisect', 'golden', 'fib'].includes(method);
-
+        
         let domain;
         if (type === 'ls') domain = [b_fit - 10, b_fit + 10];
         else {
@@ -1065,19 +1627,19 @@ class SecantMethod {
         }
 
         viz.update(algo.func, domain, algo.history, isRange ? "range" : "point", algo, state.subStep);
-
+        
         const resSpan = document.getElementById(`${type}SearchRes`);
         const stepSpan = document.getElementById(`${type}StepInfo`);
         if (algo.history.length > 0 || state.subStep > 0) {
             const val = isRange ? (algo.a + algo.b) / 2 : algo.xk;
             resSpan.textContent = val.toFixed(4);
             stepSpan.textContent = `${state.status} (第 ${algo.currentIteration || algo.k || 0} 轮, 子步 ${state.subStep})`;
-
+            
             if (type === 'ls') {
                 const cur_a = y_mean - val * x_mean;
                 document.getElementById('lsInterceptRes').textContent = cur_a.toFixed(4);
                 document.getElementById('funcDisplay').textContent = `D(p) = ${cur_a.toFixed(2)} ${val>=0?'+':'-'} ${Math.abs(val).toFixed(2)}p`;
-
+                
                 if (algo.isComplete && state.subStep === 0) {
                     b_search = val;
                     a_search = cur_a;
@@ -1085,7 +1647,7 @@ class SecantMethod {
                     document.getElementById('aDisplayForProfit').textContent = a_search.toFixed(2);
                     document.getElementById('signDisplayForProfit').textContent = b_search >= 0 ? '+' : '-';
                     document.getElementById('bDisplayForProfit').textContent = Math.abs(b_search).toFixed(2);
-
+                    
                     // 立即触发第二部分画布的有效重绘
                     updateViz('profit');
                 }
@@ -1115,6 +1677,110 @@ class SecantMethod {
         document.getElementById(`${type}PauseBtn`).disabled = !state.isPlaying;
         document.getElementById(`${type}StepBtn`).disabled = state.isPlaying || isComplete;
         document.getElementById(`${type}ResetBtn`).disabled = isStart;
+    }
+
+    function recordIteration(type) {
+        const state = AppState[type];
+        const algo = state.algo;
+        if (!algo) return;
+        const history = algo.history || [];
+        if (!history.length) return;
+        const last = history[history.length - 1];
+        const method = state.method;
+
+        // 统一时间戳
+        const timestamp = new Date().toISOString();
+
+        if (type === 'ls') {
+            // β 轴上的搜索，根据方法类型区分区间类与点搜索类
+            let beta;
+            let L;
+            let dL = null;
+            let ddL = null;
+
+            if (['golden', 'bisect', 'fib'].includes(method)) {
+                // 对区间类方法，用当前区间中点作为代表 βₖ
+                if (typeof algo.a === 'number' && typeof algo.b === 'number') {
+                    beta = (algo.a + algo.b) / 2;
+                } else {
+                    beta = typeof algo.x === 'number' ? algo.x : (algo.xk ?? 0);
+                }
+                L = algo.func(beta);
+
+                // 利用 LS 的解析形式计算梯度与二阶导数，避免依赖 history 结构
+                const scale = A_ls || 1;
+                dL = (2 * A_ls * beta - 2 * B_ls) / scale;
+                ddL = (2 * A_ls) / scale;
+            } else {
+                // 点搜索类方法（GD / Newton / Secant）直接取 history 中的点
+                beta = typeof last.x === 'number' ? last.x : algo.xk;
+                L = typeof last.y === 'number' ? last.y : algo.func(beta);
+                dL = typeof last.df === 'number'
+                    ? last.df
+                    : (typeof algo.df === 'function' ? algo.df(beta) : null);
+                ddL = typeof last.ddf === 'number'
+                    ? last.ddf
+                    : null;
+            }
+
+            state.iterationLog.push({
+                iteration: algo.currentIteration || algo.k || 0,
+                beta,
+                L,
+                dL,
+                ddL,
+                is_complete: algo.isComplete,
+                has_converged: !!algo.isComplete, // 应用实验中统一视为收敛结束
+                termination_reason: null,
+                result: algo.isComplete ? (algo.xk ?? beta) : null,
+                timestamp
+            });
+        } else {
+            // p 轴上的搜索（负利润），同样区分区间类与点搜索类
+            let p;
+            let negProfit;
+            let dNeg = null;
+            let ddNeg = null;
+
+            if (['golden', 'bisect', 'fib'].includes(method)) {
+                if (typeof algo.a === 'number' && typeof algo.b === 'number') {
+                    p = (algo.a + algo.b) / 2;
+                } else {
+                    p = typeof algo.x === 'number' ? algo.x : (algo.xk ?? 0);
+                }
+                negProfit = algo.func(p);
+
+                // 用 df/ddf 计算
+                if (typeof algo.df === 'function') {
+                    dNeg = algo.df(p);
+                }
+                if (typeof algo.ddf === 'function') {
+                    ddNeg = algo.ddf(p);
+                }
+            } else {
+                p = typeof last.x === 'number' ? last.x : algo.xk;
+                negProfit = typeof last.y === 'number' ? last.y : algo.func(p);
+                dNeg = typeof last.df === 'number'
+                    ? last.df
+                    : (typeof algo.df === 'function' ? algo.df(p) : null);
+                ddNeg = typeof last.ddf === 'number'
+                    ? last.ddf
+                    : null;
+            }
+
+            state.iterationLog.push({
+                iteration: algo.currentIteration || algo.k || 0,
+                p,
+                neg_profit: negProfit,
+                d_neg_profit: dNeg,
+                dd_neg_profit: ddNeg,
+                is_complete: algo.isComplete,
+                has_converged: !!algo.isComplete,
+                termination_reason: null,
+                result: algo.isComplete ? (algo.xk ?? p) : null,
+                timestamp
+            });
+        }
     }
 
     window.onload = init;

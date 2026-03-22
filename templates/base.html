@@ -6,6 +6,7 @@
     <title>{% block title %}OptLab{% endblock %}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/components/ai-sidebar.css">
+    <link rel="stylesheet" href="/static/css/components/experiment-notes.css">
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -14,8 +15,13 @@
     </div>
 
     {% include 'components/_ai_sidebar.html' %}
+    {% block experiment_notes %}
+        {% include 'components/_experiment_notes.html' %}
+    {% endblock %}
 
+    <script src="/static/js/api.js"></script>
     <script src="/static/js/common/ai-sidebar.js"></script>
+    <script src="/static/js/common/experiment-notes.js"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -24,7 +24,7 @@ class UserCreateSchema(BaseModel):
     password: PasswordStr
 
 class LoginIn(BaseModel):
-    email: EmailStr
+    identifier: str
     password: PasswordStr
 
 class UserSchema(BaseModel):

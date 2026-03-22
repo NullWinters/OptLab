@@ -10,6 +10,7 @@
 <!-- 自定义样式 -->
 <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
 <link rel="stylesheet" href="/static/css/courses/line-search/observation.css">
+<link rel="stylesheet" href="/static/css/components/experiment-notes.css">
 {% endblock %}
 
 {% block content %}
@@ -112,94 +113,158 @@
                     </div>
                 </div>
 
-                <div class="control-group pan-zoom-group">
-                    <div class="pan-zoom-row"
-                         style="display: flex; gap: 12px; justify-content: center; align-items: center;">
-                        <div class="pan-buttons" style="display: flex; gap: 8px;">
-                            <button id="pan-left-btn" class="control-btn btn-primary"
-                                    style="padding: 5px 12px; font-size: 14px; background-color: #6d4c41;">向左
-                            </button>
-                            <button id="pan-right-btn" class="control-btn btn-primary"
-                                    style="padding: 5px 12px; font-size: 14px; background-color: #6d4c41;">向右
-                            </button>
-                        </div>
-                        <div class="zoom-buttons" style="display: flex; gap: 8px;">
-                            <button id="zoom-in-btn" class="control-btn btn-primary"
-                                    style="padding: 5px 12px; font-size: 14px; background-color: #795548;">放大
-                            </button>
-                            <button id="zoom-out-btn" class="control-btn btn-primary"
-                                    style="padding: 5px 12px; font-size: 14px; background-color: #8d6e63;">缩小
-                            </button>
-                        </div>
+                <!-- 算法选择 (移动至此) -->
+                <div class="algorithm-select-row">
+                    <div class="algorithm-selector-horizontal">
+                        <button class="algo-btn active" id="golden-section-btn">
+                            黄金分割法
+                        </button>
+                        <button class="algo-btn" id="fibonacci-btn">
+                            斐波那契数列法
+                        </button>
+                        <button class="algo-btn" id="bisection-btn">
+                            二分法
+                        </button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 右侧：算法控制面板 -->
-        <section class="algorithm-panel">
-            <!-- 算法选择 -->
-            <div class="panel-section">
-                <h3>选择算法</h3>
-                <div class="algorithm-selector">
-                    <button class="algo-btn active" id="golden-section-btn">
-                        黄金分割法
-                    </button>
-                    <button class="algo-btn" id="fibonacci-btn">
-                        斐波那契数列法
-                    </button>
-                    <button class="algo-btn" id="bisection-btn">
-                        二分法
-                    </button>
+        <!-- 右侧：多面板控制栏 -->
+        <aside class="right-column">
+            <!-- 算法控制 -->
+            <div class="control-panel" id="algo-control-panel">
+                <div class="panel-header">
+                    <h3>算法控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-buttons">
+                        <button class="control-btn btn-primary" id="play-btn">
+                            播放
+                        </button>
+                        <button class="control-btn btn-secondary" id="pause-btn">
+                            暂停
+                        </button>
+                        <button class="control-btn btn-primary" id="step-btn">
+                            单步
+                        </button>
+                        <button class="control-btn btn-accent" id="reset-btn">
+                            重置
+                        </button>
+                    </div>
+
+                    <!-- 速度控制 -->
+                    <div class="control-group playback-speed-group" style="width: 100%; align-items: stretch;">
+                        <label for="speed-control">播放速度：</label>
+                        <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
+                               style="width: 100%;">
+                        <span id="speed-value" style="text-align: center;">正常</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- 算法控制按钮 -->
-            <div class="panel-section">
-                <h3>算法控制</h3>
-                <div class="control-buttons">
-                    <button class="control-btn btn-primary" id="play-btn">
-                        播放
-                    </button>
-                    <button class="control-btn btn-secondary" id="pause-btn">
-                        暂停
-                    </button>
-                    <button class="control-btn btn-primary" id="step-btn">
-                        单步
-                    </button>
-                    <button class="control-btn btn-accent" id="reset-btn">
-                        重置
-                    </button>
+            <!-- 参数状态 -->
+            <div class="control-panel" id="param-status-panel">
+                <div class="panel-header">
+                    <h3>当前参数状态</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
                 </div>
-
-                <!-- 速度控制 -->
-                <div class="control-group">
-                    <label for="speed-control">播放速度：</label>
-                    <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000">
-                    <span id="speed-value">正常</span>
+                <div class="panel-content">
+                    <div class="parameter-display">
+                        <table class="param-table">
+                            <thead>
+                            <tr>
+                                <th>参数</th>
+                                <th>值</th>
+                            </tr>
+                            </thead>
+                            <tbody id="param-table-body">
+                            <!-- 动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
-            <!-- 参数显示 -->
-            <div class="panel-section">
-                <h3>当前参数状态</h3>
-                <div class="parameter-display">
-                    <table class="param-table">
-                        <thead>
-                        <tr>
-                            <th>参数</th>
-                            <th>值</th>
-                        </tr>
-                        </thead>
-                        <tbody id="param-table-body">
-                        <!-- 动态填充 -->
-                        </tbody>
-                    </table>
+            <!-- 画布控制 -->
+            <div class="control-panel" id="canvas-control-panel">
+                <div class="panel-header">
+                    <h3>画布控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="pan-zoom-row">
+                        <div class="pan-buttons">
+                            <button id="pan-left-btn" class="control-btn btn-primary">向左</button>
+                            <button id="pan-right-btn" class="control-btn btn-primary">向右</button>
+                        </div>
+                        <div class="zoom-buttons">
+                            <button id="zoom-in-btn" class="control-btn btn-primary">放大</button>
+                            <button id="zoom-out-btn" class="control-btn btn-primary">缩小</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-        </section>
+            <!-- 实验数据 -->
+            <div class="control-panel" id="experiment-data-panel">
+                <div class="panel-header">
+                    <h3>实验数据</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="data-buttons">
+                        <button id="iteration-log-open-btn" class="control-btn btn-primary">查看实验数据</button>
+                        <button id="iteration-log-export-csv-btn" class="control-btn btn-secondary">导出实验数据</button>
+                        <button id="iteration-log-save-to-profile-btn" class="control-btn btn-accent">保存至个人中心</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
     </div>
+
+    <!-- 迭代数据查看模态框 -->
+    <div id="iteration-log-modal" class="modal" style="display: none;">
+        <div class="modal-content"
+             style="max-width: 880px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">本次实验迭代数据</h3>
+                <span id="iteration-log-close" class="close-modal" style="cursor: pointer;">&times;</span>
+            </div>
+            <div class="modal-body" style="margin-top: 10px; overflow: auto;">
+                <div style="font-size: 13px; color: #555; margin-bottom: 8px;">
+                    <div>实验函数：<span id="iteration-log-summary-func">--</span></div>
+                    <div>算法：<span id="iteration-log-summary-algo">--</span></div>
+                    <div>初始参数：a₀ = <span id="iteration-log-summary-a0">--</span>，b₀ = <span
+                            id="iteration-log-summary-b0">--</span></div>
+                    <div>终止条件：<span id="iteration-log-summary-target">--</span></div>
+                    <div>总迭代步数：<span id="iteration-log-summary-count">--</span></div>
+                </div>
+                <div id="iteration-log-final-summary"
+                     style="font-size: 13px; color: #b71c1c; background: #fff3e0; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: none;">
+                    <!-- 最终收敛结果由脚本填充 -->
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                    <tr>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">左端点 a</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">右端点 b</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">区间长度</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">状态</th>
+                    </tr>
+                    </thead>
+                    <tbody id="iteration-log-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% block experiment_notes %}
+    {% include 'components/_experiment_notes.html' %}
+    {% endblock %}
 </div>
 <footer>
     一维搜索方法 · OptLab 教学资源
@@ -221,16 +286,25 @@
         runStatus: '未运行',
         subStep: 0, // 0: 初始/更新后, 1: a_try, 2: b_try, 3: compare, 4: update
         currentTrialPoints: null,
-        speed: 1000,
+        speed: 1100,
         functionType: 'quadratic',
+        functionExpr: '',
         a: -1,
         b: 1,
         epsilon: 0.001,
         n: 10,
         timer: null,
         solver: null,
-        visualizer: null
+        visualizer: null,
+        // 记录本次实验的初始区间与完整迭代数据
+        initialA: -1,
+        initialB: 1,
+        initialEpsilon: 0.001,
+        initialN: 10,
+        iterationLog: []
     };
+    // ES 模块内变量非全局；笔记组件在普通脚本中读取 window.AppState
+    window.AppState = AppState;
 
     // 初始化
     document.addEventListener('DOMContentLoaded', () => {
@@ -238,7 +312,168 @@
         initVisualizer();
         setupEventListeners();
         resetApp();
+        initPanelCollapsible();
+        initExperimentNotePersistence();
     });
+
+    function initPanelCollapsible() {
+        document.querySelectorAll('.collapse-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const panel = btn.closest('.control-panel');
+                panel.classList.toggle('collapsed');
+                // 面板折叠/展开会改变右侧高度，从而可能改变左侧容器高度，触发画布尺寸重算
+                if (AppState.visualizer) {
+                    setTimeout(() => {
+                        AppState.visualizer.resize();
+                    }, 310); // 对应 CSS 中 0.3s 的 transition 动画时间
+                }
+            });
+        });
+    }
+
+// 实验笔记持久化（与后端 /experiments/notes 接口对接）
+    function initExperimentNotePersistence() {
+        if (typeof apiGet !== "function") {
+            // 未登录或公共页面环境下静默跳过
+            return;
+        }
+
+        const experimentKey = "line-search.range_search.observation";
+        const answerInputs = Array.from(
+            document.querySelectorAll(".guidance-questions .answer-input")
+        );
+        if (!answerInputs.length) return;
+
+        const statusEl = document.createElement("div");
+        statusEl.style.fontSize = "12px";
+        statusEl.style.color = "#666";
+        statusEl.style.marginTop = "8px";
+        statusEl.textContent = "";
+        const container = document.querySelector(".guidance-questions");
+        if (container) container.appendChild(statusEl);
+
+        async function loadNote() {
+            try {
+                const note = await apiGet(
+                    `/experiments/notes/${encodeURIComponent(experimentKey)}`
+                );
+                if (note && note.extra_data && Array.isArray(note.extra_data.answers)) {
+                    note.extra_data.answers.forEach((text, idx) => {
+                        if (answerInputs[idx]) {
+                            answerInputs[idx].value = text || "";
+                        }
+                    });
+                    statusEl.textContent = "已加载上次保存的回答。";
+                }
+            } catch (err) {
+                // 401/404 等情况静默忽略，只在控制台记录
+                console.debug("load experiment note skipped:", err);
+            }
+        }
+
+        let saveTimer = null;
+        async function saveNote() {
+            const answers = answerInputs.map((el) => el.value || "");
+            const reflection = answers.join("\n\n");
+            const payload = {
+                reflection,
+                extra_data: {
+                    answers,
+                },
+            };
+            try {
+                await apiRequest(
+                    `/experiments/notes/${encodeURIComponent(experimentKey)}`,
+                    {
+                        method: "PUT",
+                        body: JSON.stringify(payload),
+                    }
+                );
+                statusEl.textContent = "回答已自动保存。";
+            } catch (err) {
+                console.debug("save experiment note failed:", err);
+                statusEl.textContent = "保存回答失败，请检查登录状态后重试。";
+            }
+        }
+
+        answerInputs.forEach((el) => {
+            el.addEventListener("input", () => {
+                statusEl.textContent = "正在编辑，稍后将自动保存...";
+                if (saveTimer) clearTimeout(saveTimer);
+                saveTimer = setTimeout(saveNote, 800);
+            });
+        });
+
+        const saveBtn = document.getElementById("answers-save-btn");
+        const clearBtn = document.getElementById("answers-clear-btn");
+        const exportBtn = document.getElementById("answers-export-btn");
+        if (saveBtn) {
+            saveBtn.addEventListener("click", () => {
+                if (saveTimer) clearTimeout(saveTimer);
+                saveNote();
+            });
+        }
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                answerInputs.forEach((el) => {
+                    el.value = "";
+                });
+                if (saveTimer) clearTimeout(saveTimer);
+                saveNote();
+            });
+        }
+
+        if (exportBtn) {
+            exportBtn.addEventListener("click", async () => {
+                if (typeof getStoredToken !== "function") {
+                    alert("当前环境不支持导出实验思考。");
+                    return;
+                }
+                const token = getStoredToken();
+                if (!token) {
+                    alert("请先登录后再导出实验思考。");
+                    return;
+                }
+                try {
+                    const res = await fetch(
+                        `/experiments/notes/${encodeURIComponent(experimentKey)}/export`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        },
+                    );
+                    if (!res.ok) {
+                        let msg = "导出实验思考失败，请稍后重试。";
+                        try {
+                            const text = await res.text();
+                            const data = text ? JSON.parse(text) : null;
+                            if (data && typeof data.detail === "string") {
+                                msg = data.detail;
+                            }
+                        } catch {
+                            // ignore
+                        }
+                        alert(msg);
+                        return;
+                    }
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${experimentKey}-thoughts.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                } catch (e) {
+                    alert("导出实验思考时发生错误，请检查网络连接后重试。");
+                }
+            });
+        }
+
+        loadNote();
+    }
 
     function initFunctionSelect() {
         const select = document.getElementById('function-select');
@@ -303,7 +538,7 @@
 
         // 速度
         document.getElementById('speed-control').addEventListener('input', (e) => {
-            AppState.speed = 2100 - parseInt(e.target.value);
+            AppState.speed = Math.round(2100 - Number(e.target.value));
             const speedText = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
             document.getElementById('speed-value').textContent = speedText;
             if (AppState.isPlaying) {
@@ -328,6 +563,12 @@
         document.getElementById('zoom-out-btn').addEventListener('click', () => {
             AppState.visualizer.zoom(0.8);
             updateUI();
+        });
+
+        window.addEventListener('resize', () => {
+            if (AppState.visualizer) {
+                AppState.visualizer.resize();
+            }
         });
 
         // 函数选择
@@ -410,6 +651,9 @@
                     resetApp();
                 } catch (e) {
                     console.error("初始化自定义函数算法时捕获异常:", e);
+                    // 初始化失败时 UI 仍可继续
+                    // 此时 resetApp 内部的 solver 可能未完全初始化，
+                    // 但由于我们已经在 BisectionSearch 内部做了 try-catch，这里通常是二次保险
                 }
 
                 document.getElementById('custom-func-modal').style.display = 'none';
@@ -424,6 +668,251 @@
         // 监听输入框，清除错误提示
         customExprInput.addEventListener('input', () => {
             exprError.textContent = '';
+        });
+
+        // 迭代数据查看模态框
+        const logOpenBtn = document.getElementById('iteration-log-open-btn');
+        const logExportCsvBtn = document.getElementById('iteration-log-export-csv-btn');
+        const logModal = document.getElementById('iteration-log-modal');
+        const logCloseBtn = document.getElementById('iteration-log-close');
+
+        function renderIterationLog() {
+            const tbody = document.getElementById('iteration-log-body');
+            const funcSpan = document.getElementById('iteration-log-summary-func');
+            const algoSpan = document.getElementById('iteration-log-summary-algo');
+            const a0Span = document.getElementById('iteration-log-summary-a0');
+            const b0Span = document.getElementById('iteration-log-summary-b0');
+            const targetSpan = document.getElementById('iteration-log-summary-target');
+            const countSpan = document.getElementById('iteration-log-summary-count');
+            const finalBox = document.getElementById('iteration-log-final-summary');
+
+            if (!tbody) return;
+
+            const log = Array.isArray(AppState.iterationLog)
+                ? AppState.iterationLog
+                : [];
+
+            if (!log.length) {
+                tbody.innerHTML =
+                    '<tr><td colspan="6" style="padding: 8px 4px; color: #777;">当前尚无迭代数据，请先运行一次完整实验。</td></tr>';
+                if (funcSpan) funcSpan.textContent = "--";
+                if (algoSpan) algoSpan.textContent = "--";
+                if (a0Span) a0Span.textContent = "--";
+                if (b0Span) b0Span.textContent = "--";
+                if (targetSpan) targetSpan.textContent = "--";
+                if (countSpan) countSpan.textContent = "0";
+                if (finalBox) {
+                    finalBox.style.display = "none";
+                    finalBox.textContent = "";
+                }
+                return;
+            }
+
+            const first = log[0];
+            const final =
+                [...log].reverse().find((row) => row.is_complete && row.result != null) || null;
+
+            if (funcSpan) funcSpan.textContent = first.function || "当前选择的测试函数";
+            if (algoSpan) algoSpan.textContent = first.algorithm || "--";
+            if (a0Span)
+                a0Span.textContent =
+                    typeof first.initial_a === "number"
+                        ? Number(first.initial_a).toFixed(4)
+                        : "--";
+            if (b0Span)
+                b0Span.textContent =
+                    typeof first.initial_b === "number"
+                        ? Number(first.initial_b).toFixed(4)
+                        : "--";
+            if (targetSpan) targetSpan.textContent = first.target || "--";
+            if (countSpan) countSpan.textContent = String(log.length);
+
+            if (final && finalBox) {
+                const intervalFinal = `[${Number(final.a).toFixed(6)}, ${Number(
+                    final.b,
+                ).toFixed(6)}]`;
+                const lengthFinal = Number(final.length).toFixed(6);
+                const xStar = Number(final.result).toFixed(6);
+                finalBox.style.display = "block";
+                finalBox.textContent = `本次实验收敛结果：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 收敛到近似最优点 x* ≈ ${xStar}，对应区间 ${intervalFinal}，区间长度约为 ${lengthFinal}。`;
+            } else if (finalBox) {
+                finalBox.style.display = "none";
+                finalBox.textContent = "";
+            }
+
+            tbody.innerHTML = log
+                .map((row) => {
+                    const statusLabel = row.is_complete ? "已完成" : "进行中";
+                    const isFinal =
+                        final && row.iteration === final.iteration && row.algorithm === final.algorithm;
+                    const rowStyle = isFinal
+                        ? 'background-color: #fff8e1; font-weight: 600;'
+                        : '';
+                    return `<tr style="${rowStyle}">
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.iteration}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.algorithm}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.a).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.b).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.length).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${statusLabel}</td>
+</tr>`;
+                })
+                .join("");
+        }
+
+        if (logOpenBtn && logModal && logCloseBtn) {
+            logOpenBtn.addEventListener("click", () => {
+                renderIterationLog();
+                logModal.style.display = "flex";
+            });
+            logCloseBtn.addEventListener("click", () => {
+                logModal.style.display = "none";
+            });
+            logModal.addEventListener("click", (e) => {
+                if (e.target === logModal) {
+                    logModal.style.display = "none";
+                }
+            });
+        }
+
+        const logSaveToProfileBtn = document.getElementById("iteration-log-save-to-profile-btn");
+        if (logSaveToProfileBtn) {
+            logSaveToProfileBtn.addEventListener("click", async () => {
+                if (typeof apiPost !== "function" || !getStoredToken()) {
+                    alert("请先登录后再保存至个人中心。");
+                    return;
+                }
+                const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+                if (!log.length) {
+                    alert("当前尚无迭代数据，请先运行一次完整实验后再保存。");
+                    return;
+                }
+                const alias = window.prompt("请输入本次实验的别名（用于在个人中心识别）：", "");
+                if (alias == null || String(alias).trim() === "") return;
+                const first = log[0];
+                const payload = {
+                    algorithm_name: first.algorithm || (AppState.currentAlgorithm === "golden-section" ? "黄金分割法" : AppState.currentAlgorithm === "fibonacci" ? "斐波那契数列法" : "二分法"),
+                    test_function: AppState.functionExpr || first.function,
+                    initial_state: {
+                        initial_a: AppState.initialA,
+                        initial_b: AppState.initialB,
+                        initial_epsilon: AppState.initialEpsilon,
+                        initial_n: AppState.initialN,
+                    },
+                    iteration_data: log,
+                };
+                try {
+                    await apiPost("/experiments/records", {
+                        alias: String(alias).trim(),
+                        source_page: "line-search.range_search.observation",
+                        payload,
+                    });
+                    alert("已保存至个人中心。");
+                } catch (e) {
+                    alert("保存失败，请检查登录状态后重试。");
+                }
+            });
+        }
+
+        if (logExportCsvBtn) {
+            logExportCsvBtn.addEventListener("click", () => {
+                const log = Array.isArray(AppState.iterationLog)
+                    ? AppState.iterationLog
+                    : [];
+                if (!log.length) {
+                    alert("当前尚无迭代数据，请先运行一次完整实验。");
+                    return;
+                }
+                const first = log[0];
+                const esc = (v) => { const s = String(v ?? ""); return (s.includes(",") || s.includes('"') || s.includes("\n")) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const summary = [
+                    ["项目", "值"],
+                    ["原函数/目标", AppState.functionExpr || (first && first.function) || ""],
+                    ["算法", (first && first.algorithm) || ""],
+                    ["初始参数", JSON.stringify(first ? { initial_a: first.initial_a, initial_b: first.initial_b, initial_epsilon: first.initial_epsilon, initial_n: first.initial_n } : {})],
+                    []
+                ];
+                const header = [
+                    "iteration",
+                    "algorithm",
+                    "function",
+                    "a",
+                    "b",
+                    "interval_length",
+                    "target",
+                    "initial_a",
+                    "initial_b",
+                    "initial_epsilon",
+                    "initial_n",
+                    "is_complete",
+                    "result",
+                    "timestamp",
+                ];
+                const rows = log.map((row) => [
+                    row.iteration,
+                    row.algorithm,
+                    row.function,
+                    row.a,
+                    row.b,
+                    row.length,
+                    row.target || "",
+                    row.initial_a,
+                    row.initial_b,
+                    row.initial_epsilon,
+                    row.initial_n,
+                    row.is_complete ? "true" : "false",
+                    row.result != null ? row.result : "",
+                    row.timestamp || "",
+                ]);
+                const csvLines = [...summary, header, ...rows].map((cols) => cols.map(esc).join(",")).join("\n");
+
+                const blob = new Blob([csvLines], {
+                    type: "text/csv;charset=utf-8;",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "line-search.range_search.observation-iterations.csv";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+        }
+    }
+
+    function recordIteration() {
+        if (!AppState.solver) return;
+        const { a, b, currentIteration, isComplete, result } = AppState.solver;
+        const length = Math.abs(b - a);
+        const algoLabel =
+            AppState.currentAlgorithm === 'golden-section'
+                ? '黄金分割法'
+                : AppState.currentAlgorithm === 'fibonacci'
+                ? '斐波那契数列法'
+                : '二分法';
+        let targetLabel;
+        if (AppState.currentAlgorithm === 'fibonacci') {
+            // 斐波那契数列法同时依赖“修正系数 ε”和“迭代次数 N”
+            targetLabel = `修正系数 ε = ${AppState.epsilon.toFixed(4)}；迭代次数 N = ${AppState.n}`;
+        } else {
+            targetLabel = `目标精度 ε = ${AppState.epsilon.toFixed(4)}`;
+        }
+        AppState.iterationLog.push({
+            iteration: currentIteration,
+            algorithm: algoLabel,
+            function: AppState.functionExpr,
+            a,
+            b,
+            length,
+            target: targetLabel,
+            initial_a: AppState.initialA,
+            initial_b: AppState.initialB,
+            initial_epsilon: AppState.initialEpsilon,
+            initial_n: AppState.initialN,
+            is_complete: isComplete,
+            result: isComplete ? result : null,
+            timestamp: new Date().toISOString(),
         });
     }
 
@@ -454,9 +943,16 @@
         AppState.runStatus = '未运行';
         AppState.subStep = 0;
         AppState.currentTrialPoints = null;
+        // 记录当前配置为本次实验的初始设置
+        AppState.initialA = AppState.a;
+        AppState.initialB = AppState.b;
+        AppState.initialEpsilon = AppState.epsilon;
+        AppState.initialN = AppState.n;
+        AppState.iterationLog = [];
 
         const funcType = AppState.functionType;
-        const expr = FunctionLibrary[funcType].expression || FunctionLibrary[funcType].calculate;
+        const funcMeta = FunctionLibrary[funcType];
+        const expr = funcMeta.expression || funcMeta.calculate;
         const func = x => calculateFunction(x, funcType);
 
         if (AppState.currentAlgorithm === 'golden-section') {
@@ -467,6 +963,10 @@
             AppState.solver = new BisectionSearch(expr, AppState.a, AppState.b, AppState.epsilon);
         }
 
+        // 记录当前使用的函数表达式（用于迭代数据查看与导出）
+        AppState.functionExpr = funcMeta && funcMeta.formula ? funcMeta.formula : String(expr || funcType);
+
+        // AppState.visualizer.drawFunction(func, FunctionLibrary[AppState.functionType].domain);
         if (AppState.visualizer) {
             AppState.visualizer.drawFunction(func, [AppState.a - 1, AppState.b + 1]);
         }
@@ -506,24 +1006,30 @@
             AppState.runStatus = '已暂停';
         }
 
+        // 如果已经完成且没有挂起的子步骤，直接返回
         if (AppState.solver.isComplete && AppState.subStep === 0) {
             updateUI();
             return false;
         }
 
+        // 推进子步骤
         AppState.subStep++;
 
         if (AppState.currentAlgorithm === 'bisection') {
+            // 二分法子步骤处理
             if (AppState.subStep === 4) {
                 const moved = AppState.solver.iterate();
                 if (moved) {
                     const {a, b} = AppState.solver;
                     AppState.visualizer.autoZoom(a, b);
                 }
+                // 一次完整迭代结束，记录当前迭代参数
+                recordIteration();
                 AppState.subStep = 0;
                 if (AppState.solver.isComplete) return false;
             }
         } else {
+            // 黄金分割和斐波那契子步骤处理
             if (AppState.subStep === 1) {
                 AppState.currentTrialPoints = AppState.solver.getTrialPoints();
             }
@@ -534,6 +1040,8 @@
                     const {a, b} = AppState.solver;
                     AppState.visualizer.autoZoom(a, b);
                 }
+                // 一次完整迭代结束，记录当前迭代参数
+                recordIteration();
                 AppState.subStep = 0;
                 if (AppState.solver.isComplete) return false;
             }
@@ -548,6 +1056,7 @@
         const {a, b, currentIteration, isComplete, result} = AppState.solver;
         const func = x => calculateFunction(x, AppState.functionType);
 
+        // 更新可视化
         AppState.visualizer.updateInterval(a, b);
 
         if (AppState.runStatus === '未运行' || AppState.subStep === 0 || isComplete) {
@@ -574,6 +1083,7 @@
             }
         }
 
+        // 更新表格
         let statusText = AppState.runStatus;
         if (isComplete) {
             statusText = `已完成 (x* ≈ ${result.toFixed(4)})`;
@@ -597,6 +1107,7 @@
 
         tableBody.innerHTML = data.map(([k, v]) => `<tr><td>${k}</td><td class="param-value">${v}</td></tr>`).join('');
 
+        // 更新控制按钮状态
         document.getElementById('play-btn').disabled = AppState.isPlaying || isComplete;
         document.getElementById('pause-btn').disabled = !AppState.isPlaying;
         document.getElementById('step-btn').disabled = AppState.isPlaying || isComplete;
@@ -614,10 +1125,6 @@
             {id: "initial-b", description: "初始区间右端点 b 的滑块，拖动可调整搜索区间的右边界", type: "normal"},
             {id: "precision", description: "精度 ε 的滑块，设置算法收敛精度（黄金分割法和二分法使用）", type: "normal"},
             {id: "iterations", description: "迭代次数 N 的滑块，设置斐波那契数列法的最大迭代次数", type: "normal"},
-            {id: "pan-left-btn", description: "向左平移按钮，将可视化视图向左移动", type: "normal"},
-            {id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal"},
-            {id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal"},
-            {id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal"},
             {id: "golden-section-btn", description: "黄金分割法按钮，选择黄金分割法算法进行实验", type: "normal"},
             {id: "fibonacci-btn", description: "斐波那契数列法按钮，选择斐波那契数列法算法进行实验", type: "normal"},
             {id: "bisection-btn", description: "二分法按钮，选择二分法算法进行实验", type: "normal"},
@@ -625,9 +1132,48 @@
             {id: "pause-btn", description: "暂停按钮，暂停算法的自动运行", type: "normal"},
             {id: "step-btn", description: "单步按钮，手动执行算法的下一个子步骤", type: "normal"},
             {id: "reset-btn", description: "重置按钮，将算法状态恢复到初始状态", type: "normal"},
-            {id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal"}
+            {id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal"},
+            {id: "pan-left-btn", description: "向左平移按钮，将可视化视图向左移动", type: "normal"},
+            {id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal"},
+            {id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal"},
+            {id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal"},
+            {id: "iteration-log-open-btn", description: "查看实验数据按钮，打开包含详细迭代记录的模态框", type: "normal"},
+            {id: "iteration-log-export-csv-btn", description: "导出实验数据按钮，将迭代记录导出为 CSV 文件", type: "normal"},
+            {id: "iteration-log-save-to-profile-btn", description: "保存至个人中心按钮，将本次实验记录永久保存", type: "normal"}
         ],
-        GUIDEBOOK: '这是一个区间收缩法教学实验的流程观察页面。页面用于观察黄金分割法、斐波那契数列法与二分法的执行过程。'
+        GUIDEBOOK: '这是区间收缩法教学实验的流程观察页面。右侧面板集成了算法控制、参数状态显示、画布控制以及实验数据管理功能。'
     };
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    ExperimentNotes.init({
+        experimentKey: 'line-search.range_search.observation',
+        mountSelector: '#exp-notes-mount',
+        getPageData: function() {
+            const st = window.AppState;
+            if (!st) return {};
+            const log = st.iterationLog || [];
+            const algoLabel = st.currentAlgorithm === 'golden-section' ? '黄金分割法'
+                : st.currentAlgorithm === 'fibonacci' ? '斐波那契数列法' : '二分法';
+            // 提取收敛结果
+            const finalRow = log.slice().reverse().find(function(r){ return r.is_complete && r.result != null; }) || null;
+            return {
+                algorithm: algoLabel,
+                function: st.functionExpr,
+                initial_a: st.initialA,
+                initial_b: st.initialB,
+                epsilon: st.initialEpsilon,
+                n: st.initialN,
+                convergence_result: finalRow ? {
+                    iteration: finalRow.iteration,
+                    x_star: finalRow.result,
+                    final_interval: finalRow ? [finalRow.a, finalRow.b] : null,
+                    final_length: finalRow ? Math.abs(finalRow.b - finalRow.a) : null
+                } : null,
+                iteration_log: log
+            };
+        }
+    });
+});
 </script>
 {% endblock %}

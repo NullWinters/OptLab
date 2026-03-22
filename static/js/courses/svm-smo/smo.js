@@ -330,7 +330,8 @@ const App = {
     setupD3() {
         this.container = d3.select("#smo-canvas");
         
-        this.svg = this.container.append("svg");
+        this.svg = this.container.append("svg")
+            .style("display", "block");
         
         this.tooltip = this.container.append("div")
             .attr("class", "tooltip")
@@ -351,6 +352,12 @@ const App = {
 
         // Initial update
         this.updateDimensions();
+
+        // 监听画布尺寸变化，实现自动重绘
+        const resizeObserver = new ResizeObserver(() => {
+            this.handleResize();
+        });
+        resizeObserver.observe(this.container.node());
     },
 
     updateDimensions() {
@@ -450,6 +457,7 @@ const App = {
     togglePanel(el) {
         const card = el.closest('.panel-card');
         card.classList.toggle('collapsed');
+        // 尺寸变化由 ResizeObserver 捕获并触发 handleResize
     },
 
     loadExampleData() {
