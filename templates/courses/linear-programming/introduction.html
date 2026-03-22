@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>线性规划与基本解 - 介绍</title>
+    <title>线性规划 - OptLab</title>
     <link rel="stylesheet" href="/static/css/courses/linear-programming/introduction.css">
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
     <script>
@@ -58,7 +58,8 @@
             \]
         </div>
         <p>
-            其中 \(x \in \mathbb{R}^n\) 是决策变量，\(c \in \mathbb{R}^n\) 是成本系数，\(A \in \mathbb{R}^{m\times n}\) 是约束矩阵，\(b \in \mathbb{R}^m\) 是右端项。我们通常假设 \(m < n\) 且 \(\text{rank} A = m\)，\(b \geq 0\)。
+            其中 \(x \in \mathbb{R}^n\) 是决策变量，\(c \in \mathbb{R}^n\) 是成本系数，\(A \in \mathbb{R}^{m\times n}\)
+            是约束矩阵，\(b \in \mathbb{R}^m\) 是右端项。我们通常假设 \(m < n\) 且 \(\text{rank} A = m\)，\(b \geq 0\)。
         </p>
         <p>
             任何其他形式（如最大化、不等式约束）均可通过引入松弛变量或剩余变量转化为上述标准型。因此，掌握标准型的求解方法是理解线性规划的关键。
@@ -69,7 +70,9 @@
     <div class="section">
         <h2>基本解：从无穷多解中抓住有限个候选</h2>
         <p>
-            对于方程组 \(Ax = b\)，由于变量个数多于方程个数，通常有无穷多组解。但若我们从 \(A\) 的 \(n\) 个列向量中选出 \(m\) 个线性无关的列构成基矩阵 \(B\)，则令其余 \(n-m\) 个变量（称为非基变量）为零，可唯一解出基变量 \(x_B = B^{-1}b\)，从而得到一个<strong>基本解</strong>：
+            对于方程组 \(Ax = b\)，由于变量个数多于方程个数，通常有无穷多组解。但若我们从 \(A\) 的 \(n\) 个列向量中选出
+            \(m\) 个线性无关的列构成基矩阵 \(B\)，则令其余 \(n-m\) 个变量（称为非基变量）为零，可唯一解出基变量 \(x_B =
+            B^{-1}b\)，从而得到一个<strong>基本解</strong>：
         </p>
         <div class="math-block">
             \[
@@ -104,7 +107,8 @@
         <div class="layout-split">
             <div class="text-content">
                 <p>
-                    将约束条件 \(Ax = b, x \geq 0\) 看作 \(\mathbb{R}^n\) 中的一个凸集 \(\Omega\)（称为可行域）。几何上，\(\Omega\) 是一个凸多面体。它的极点（即不能表示为集合中其他两点凸组合的点）恰好与基本可行解一一对应。
+                    将约束条件 \(Ax = b, x \geq 0\) 看作 \(\mathbb{R}^n\) 中的一个凸集 \(\Omega\)（称为可行域）。几何上，\(\Omega\)
+                    是一个凸多面体。它的极点（即不能表示为集合中其他两点凸组合的点）恰好与基本可行解一一对应。
                 </p>
                 <p>
                     换言之，基本可行解就是可行域的“角落”。线性规划的目标函数是线性的，因此其最优值必然在某个角落（极点）达到。
@@ -158,17 +162,17 @@
                     <div class="variables-table">
                         <table>
                             <thead>
-                                <tr>
-                                    <th>变量</th>
-                                    <th>\(x_1\)</th>
-                                    <th>\(x_2\)</th>
-                                    <th>\(x_3\)</th>
-                                    <th>\(x_4\)</th>
-                                    <th>\(x_5\)</th>
-                                </tr>
+                            <tr>
+                                <th>变量</th>
+                                <th>\(x_1\)</th>
+                                <th>\(x_2\)</th>
+                                <th>\(x_3\)</th>
+                                <th>\(x_4\)</th>
+                                <th>\(x_5\)</th>
+                            </tr>
                             </thead>
                             <tbody id="vars-body">
-                                <!-- 动态生成 -->
+                            <!-- 动态生成 -->
                             </tbody>
                         </table>
                     </div>
@@ -201,7 +205,7 @@
 
 <script src="/static/js/courses/linear-programming/introduction.js"></script>
 </body>
-<footer>
-    线性规划算法介绍 · OptLab 教学资源
+<footer class="footer">
+    线性规划 · OptLab 教学资源
 </footer>
 </html>

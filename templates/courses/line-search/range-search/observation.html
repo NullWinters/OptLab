@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}区间收缩法 - 流程观察{% endblock %}
+{% block title %}区间收缩法 - OptLab{% endblock %}
 
 {% block head %}
-    <!-- D3.js 可视化库 -->
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <!-- Math.js 科学计算库 -->
-    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
-    <!-- 自定义样式 -->
-    <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
-    <link rel="stylesheet" href="/static/css/courses/line-search/observation.css">
+<!-- D3.js 可视化库 -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<!-- Math.js 科学计算库 -->
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+<!-- 自定义样式 -->
+<link rel="stylesheet" href="/static/css/courses/line-search/common.css">
+<link rel="stylesheet" href="/static/css/courses/line-search/observation.css">
 {% endblock %}
 
 {% block content %}
@@ -20,12 +20,12 @@
         <h1>区间收缩法教学实验</h1>
         <p class="subtitle">观察黄金分割法、斐波那契数列法与二分法的执行过程</p>
     </header>
-   <!-- 导航栏 -->
+    <!-- 导航栏 -->
     <nav class="navigation">
         <button class="nav-btn" onclick="window.location.href='introduction.html'">
             算法介绍
         </button>
-        <button class="nav-btn active" onclick="window.location.href='observation.html'">
+        <button class="nav-btn active">
             流程观察
         </button>
         <button class="nav-btn" onclick="window.location.href='comparison.html'">
@@ -200,37 +200,10 @@
 
         </section>
     </div>
-
-    <!-- 观察记录区 -->
-    <section class="guidance-questions">
-        <h2>请观察算法运行并思考</h2>
-
-        <div class="question-item">
-            <h4>问题 1：黄金比例的选用</h4>
-            <p>观察黄金分割法的执行过程可以发现：只要选用 ρ&lt;0.5 的任意小数，算法均可有效执行。选用黄金比例与 1
-                的差值有什么好处？</p>
-            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-        </div>
-
-        <div class="question-item">
-            <h4>问题 2：收缩比</h4>
-            <p>斐波那契数列法使用迭代次数作为算法结束条件，如何计算算法收敛时的精度？</p>
-            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-        </div>
-
-        <div class="question-item">
-            <h4>问题 3：导函数计算</h4>
-            <p>二分法需要使用导函数信息，这在工程实践中导函数值一般是怎么计算的？</p>
-            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-        </div>
-
-        <div class="question-item">
-            <h4>问题 4：算法稳定性探索</h4>
-            <p>若使用非单谷函数或非单谷区间时，算法能否求解出最小值点？请观察并记录。</p>
-            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-        </div>
-    </section>
 </div>
+<footer>
+    一维搜索方法 · OptLab 教学资源
+</footer>
 {% endblock %}
 
 {% block scripts %}
@@ -634,39 +607,27 @@
     window.AI_CONFIG = {
         PAGE_ID: 'range_search_observation',
         BUTTON_REGISTRY: [
-            { id: "function-select", description: "测试函数选择下拉框，用于选择不同的测试函数", type: "normal" },
-            { id: "custom-func-btn", description: "自定义函数按钮，点击打开自定义函数输入框", type: "normal" },
-            { id: "confirm-custom-func", description: "确认应用自定义函数按钮（在自定义函数弹窗内）", type: "normal" },
-            { id: "initial-a", description: "初始区间左端点 a 的滑块，拖动可调整搜索区间的左边界", type: "normal" },
-            { id: "initial-b", description: "初始区间右端点 b 的滑块，拖动可调整搜索区间的右边界", type: "normal" },
-            { id: "precision", description: "精度 ε 的滑块，设置算法收敛精度（黄金分割法和二分法使用）", type: "normal" },
-            { id: "iterations", description: "迭代次数 N 的滑块，设置斐波那契数列法的最大迭代次数", type: "normal" },
-            { id: "pan-left-btn", description: "向左平移按钮，将可视化视图向左移动", type: "normal" },
-            { id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal" },
-            { id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal" },
-            { id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal" },
-            { id: "golden-section-btn", description: "黄金分割法按钮，选择黄金分割法算法进行实验", type: "normal" },
-            { id: "fibonacci-btn", description: "斐波那契数列法按钮，选择斐波那契数列法算法进行实验", type: "normal" },
-            { id: "bisection-btn", description: "二分法按钮，选择二分法算法进行实验", type: "normal" },
-            { id: "play-btn", description: "播放按钮，开始自动逐步运行所选算法", type: "normal" },
-            { id: "pause-btn", description: "暂停按钮，暂停算法的自动运行", type: "normal" },
-            { id: "step-btn", description: "单步按钮，手动执行算法的下一个子步骤", type: "normal" },
-            { id: "reset-btn", description: "重置按钮，将算法状态恢复到初始状态", type: "normal" },
-            { id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal" }
+            {id: "function-select", description: "测试函数选择下拉框，用于选择不同的测试函数", type: "normal"},
+            {id: "custom-func-btn", description: "自定义函数按钮，点击打开自定义函数输入框", type: "normal"},
+            {id: "confirm-custom-func", description: "确认应用自定义函数按钮（在自定义函数弹窗内）", type: "normal"},
+            {id: "initial-a", description: "初始区间左端点 a 的滑块，拖动可调整搜索区间的左边界", type: "normal"},
+            {id: "initial-b", description: "初始区间右端点 b 的滑块，拖动可调整搜索区间的右边界", type: "normal"},
+            {id: "precision", description: "精度 ε 的滑块，设置算法收敛精度（黄金分割法和二分法使用）", type: "normal"},
+            {id: "iterations", description: "迭代次数 N 的滑块，设置斐波那契数列法的最大迭代次数", type: "normal"},
+            {id: "pan-left-btn", description: "向左平移按钮，将可视化视图向左移动", type: "normal"},
+            {id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal"},
+            {id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal"},
+            {id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal"},
+            {id: "golden-section-btn", description: "黄金分割法按钮，选择黄金分割法算法进行实验", type: "normal"},
+            {id: "fibonacci-btn", description: "斐波那契数列法按钮，选择斐波那契数列法算法进行实验", type: "normal"},
+            {id: "bisection-btn", description: "二分法按钮，选择二分法算法进行实验", type: "normal"},
+            {id: "play-btn", description: "播放按钮，开始自动逐步运行所选算法", type: "normal"},
+            {id: "pause-btn", description: "暂停按钮，暂停算法的自动运行", type: "normal"},
+            {id: "step-btn", description: "单步按钮，手动执行算法的下一个子步骤", type: "normal"},
+            {id: "reset-btn", description: "重置按钮，将算法状态恢复到初始状态", type: "normal"},
+            {id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal"}
         ],
-        GUIDEBOOK: '这是一个区间收缩法教学实验的流程观察页面。页面用于观察黄金分割法、斐波那契数列法与二分法的执行过程。\n\n' +
-            '页面布局：\n' +
-            '- 左侧为算法可视化展示区域，包含函数图像、区间标记和试探点显示\n' +
-            '- 右侧为算法控制面板，包含算法选择、控制按钮和参数显示\n' +
-            '- 下方为观察思考区，提供引导性问题帮助学生记录观察\n\n' +
-            '使用流程：\n' +
-            '1)选择算法\n' +
-            '2)选择或自定义目标函数\n' +
-            '3)调整左右区间端点，黄金分割法与二分法需要调整精度，斐波那契数列法需要调整迭代次数和修正系数\n' +
-            '4)在算法控制面板点击单步按钮算法执行一步后暂停\n' +
-            '5)点击播放，算法会自动运行直至达到终止条件；拖动播放速度滑条可改变播放时算法的运行间隔\n' +
-            '6)用户可在参数状态面板查看关键参数的实时数值\n' +
-            '7)实验结束后填写最下方的思考题'
+        GUIDEBOOK: '这是一个区间收缩法教学实验的流程观察页面。页面用于观察黄金分割法、斐波那契数列法与二分法的执行过程。'
     };
 </script>
 {% endblock %}

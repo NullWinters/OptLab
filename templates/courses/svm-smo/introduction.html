@@ -1,28 +1,32 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="zh-CN">
 
-{% block title %}支持向量机与SMO算法 - 算法介绍{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="/static/css/courses/svm-smo/introduction.css">
-<script src="/static/js/lib/d3.v7.min.js"></script>
-<script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支持向量机与SMO算法 - OptLab</title>
+    <link rel="stylesheet" href="/static/css/courses/svm-smo/introduction.css">
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+            }
         }
-    }
-</script>
-<script>
-    window.MathJax = {
-        tex: {
-            inlineMath: [['$', '$'], ['\\(', '\\)']]
-        }
-    };
-</script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-{% endblock %}
+    </script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
 
-{% block content %}
+<body>
+
+
 <div class="container">
     <a href="index.html" class="back-btn">返回</a>
 
@@ -267,22 +271,9 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
 <script type="module" src="/static/js/courses/svm-smo/introduction.js"></script>
-<script>
-    window.AI_CONFIG = {
-        PAGE_ID: 'svm_smo_introduction',
-        BUTTON_REGISTRY: [
-            {
-                label: '解释SMO子问题',
-                callback: () => {
-                    alert('SMO每次选择两个变量进行优化，是因为有一个等式约束限制了变量的和，优化一个变量必然导致另一个变量随之改变。');
-                }
-            }
-        ],
-        GUIDEBOOK: '这是支持向量机与SMO算法的教学页面。你可以通过可视化直观理解最大间隔、核技巧以及SMO的迭代过程。'
-    };
-</script>
-{% endblock %}
+</body>
+<footer>
+    支持向量机与SMO · OptLab 教学资源
+</footer>
+</html>
