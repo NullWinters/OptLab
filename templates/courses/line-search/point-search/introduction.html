@@ -1,14 +1,15 @@
-{% extends 'base.html' %}
-
-{% block title %}点搜索 - 算法介绍{% endblock %}
-
-{% block head %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点搜索 - OptLab</title>
     <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
     <link rel="stylesheet" href="/static/css/courses/line-search/introduction.css">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-{% endblock %}
+</head>
+<body>
 
-{% block content %}
 <div class="container">
     <a href="../index.html" class="back-btn">返回</a>
 
@@ -131,14 +132,9 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-    window.AI_CONFIG = {
-        PAGE_ID: 'point_search_introduction',
-        BUTTON_REGISTRY: [],
-        GUIDEBOOK: '这是一个点搜索算法介绍页面。你可以在这里学习梯度下降法、牛顿法和割线法的理论知识。'
-    };
-</script>
-{% endblock %}
+</body>
+<footer>
+    一维搜索方法 · OptLab 教学资源
+</footer>
+</html>

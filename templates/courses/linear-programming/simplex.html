@@ -1,23 +1,23 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>单纯形法 - OptLab</title>
-    <link rel="stylesheet" href="/static/css/courses/linear-programming/simplex.css">
-    <!-- D3.js -->
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <!-- MathJax -->
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']]
-            }
-        };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</head>
-<body>
+{% extends 'base.html' %}
+
+{% block title %}单纯形法 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/courses/linear-programming/simplex.css">
+<!-- D3.js -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<!-- MathJax -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+    };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
+{% block content %}
 <div class="container">
     <a href="index.html" class="back-btn">返回</a>
 
@@ -107,9 +107,43 @@
     </div>
 </div>
 
-<script src="/static/js/courses/linear-programming/simplex.js"></script>
-</body>
-<footer>
-    线性规划单纯形法 · OptLab 教学资源
+<footer class="footer">
+    线性规划 · OptLab 教学资源
 </footer>
-</html>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'simplex_method',
+        BUTTON_REGISTRY: [
+            { id: "example-select", description: "预设场景选择下拉框", type: "normal" },
+            { id: "load-example-btn", description: "加载示例数据按钮", type: "normal" },
+            { id: "num-vars", description: "设置变量数量输入框", type: "normal" },
+            { id: "num-constraints", description: "设置约束数量输入框", type: "normal" },
+            { id: "reset-btn", description: "重置输入数据按钮", type: "normal" },
+            { id: "check-btn", description: "校验输入数据准确性按钮", type: "normal" },
+            { id: "solve-btn", description: "执行单纯形法求解按钮", type: "normal" }
+        ],
+        GUIDEBOOK: `这是线性规划——单纯形法教学实验页面。
+        
+        页面主要由左侧控制面板和右侧结果展示区组成：
+        - 左侧面板：用于配置线性规划问题的具体参数。
+            1. **示例加载**：可以快速选择并加载几种典型的线性规划场景（如：最大化、无界解、退化解等）。
+            2. **问题规模设定**：调整变量数 (n) 和约束数 (m) 来构建问题模型。
+            3. **求解类型**：选择目标函数是要求极大值 (max) 还是极小值 (min)。
+            4. **系数输入**：根据设定的规模，在动态生成的表格中填入目标函数系数、约束方程系数以及右端项 (b)。
+            5. **操作按钮**：包含重置数据、检查输入、以及最核心的“求解”功能。
+            
+        - 右侧展示区：展示算法的执行结果。
+            1. **二维可视化**：当决策变量数为 2 时，会通过 D3.js 绘制出可行域几何图形，并实时追踪单纯形法的顶点迭代过程。
+            2. **单纯形表迭代**：逐步展示单纯形法从初始基可行解到最优解的每一张单纯形表。
+            
+        使用流程：
+        1. 设定或加载线性规划问题。
+        2. 确认输入数据无误后点击“求解”。
+        3. 观察单纯形表的基变换过程及其在几何空间中的对应路径。`
+    };
+</script>
+<script src="/static/js/courses/linear-programming/simplex.js"></script>
+{% endblock %}

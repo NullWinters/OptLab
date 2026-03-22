@@ -24,6 +24,7 @@ pip-wheel-metadata/
 .coverage
 .coverage.*
 htmlcov/
+tests/
 
 # Jupyter
 .ipynb_checkpoints/

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}点搜索 - 流程观察{% endblock %}
+{% block title %}点搜索 - OptLab{% endblock %}
 {% block head %}
 <!-- D3.js 可视化库 -->
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
@@ -178,18 +178,10 @@
             </div>
         </section>
     </div>
-
-    <!-- 实验笔记区域 -->
-    <section class="questions">
-        <h2>实验笔记</h2>
-
-        <div class="question-item">
-            <h4>点此设置标题</h4>
-            <label for="observation-q1"></label>
-            <textarea class="answer-input" placeholder="在此记录你的思考..." id="observation-q1"></textarea>
-        </div>
-    </section>
 </div>
+<footer>
+    一维搜索方法 · OptLab 教学资源
+</footer>
 {% endblock %}
 
 {% block scripts %}
@@ -210,18 +202,7 @@
             {id: "step-btn", description: "单步迭代按钮", type: "normal"},
             {id: "reset-btn", description: "重置实验按钮", type: "normal"}
         ],
-        GUIDEBOOK: `这是点搜索流程观察页面。
-        页面布局：
-        - 顶部为导航栏
-        - 左侧为函数可视化画布和参数调节区（初始点、学习率、迭代次数）
-        - 右侧为算法选择和实时参数状态显示
-        - 底部为实验笔记区
-        
-        使用流程：
-        1. 在右侧选择想要观察的算法（梯度下降、牛顿、割线）。
-        2. 在左侧调节初始参数，或点击“自定义函数”输入新函数。
-        3. 点击“单步”或“播放”观察点在函数曲线上的移动过程。
-        4. 观察右侧实时更新的迭代k、函数值f(x)和导数值。`
+        GUIDEBOOK: '这是点搜索流程观察页面。'
     };
 </script>
 
