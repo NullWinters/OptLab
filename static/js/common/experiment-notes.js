@@ -1,0 +1,444 @@
+/* 实验页笔记：挂载 UI、Markdown、行为记录、生成笔记 */
+(function (global) {
+'use strict';
+
+function isLoggedIn() {
+    return (typeof getStoredToken === 'function') && !!getStoredToken();
+}
+async function apiSafe(fn) {
+    if (!isLoggedIn()) return null;
+    try { return await fn(); } catch (e) { console.debug('[Notes]', e); return null; }
+}
+function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtTime(d) {
+    return [d.getHours(),d.getMinutes(),d.getSeconds()].map(function(n){return String(n).padStart(2,'0');}).join(':');
+}
+
+/* Markdown + LaTeX：先占位公式再 marked，再还原 */
+function renderMd(text) {
+    if (!text) return '';
+    var latexStore = [];
+    function storeTex(raw) {
+        var idx = latexStore.length;
+        latexStore.push(raw);
+        return '\x00TEX' + idx + '\x00';
+    }
+    var s = text;
+    // 块级 $$ ... $$
+    s = s.replace(/\$\$([\s\S]+?)\$\$/g, function(m) { return storeTex(m); });
+    // 行内 $ ... $
+    s = s.replace(/\$([^\$\n]+?)\$/g, function(m) { return storeTex(m); });
+    // \( ... \)
+    s = s.replace(/\\\(([\s\S]+?)\\\)/g, function(m) { return storeTex(m); });
+    // \[ ... \]
+    s = s.replace(/\\\[([\s\S]+?)\\\]/g, function(m) { return storeTex(m); });
+    // 将 【章节标题】 转为带样式的 div
+    s = s.replace(/^(【[^】]+】)\s*$/gm, function(_, h) {
+        return '<div class="exp-note-section-header">' + h + '</div>';
+    });
+    // Markdown 解析
+    var html;
+    if (typeof marked !== 'undefined' && marked.parse) {
+        if (!renderMd._configured) {
+            marked.setOptions({ breaks: true, gfm: true });
+            renderMd._configured = true;
+        }
+        html = marked.parse(s);
+    } else {
+        var escaped = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        html = escaped.split(/\n{2}/).map(function(p) {
+            if (p.startsWith('<div class=')) return p;
+            return '<p>' + p.replace(/\n/g,'<br>') + '</p>';
+        }).join('');
+    }
+    // 还原 LaTeX
+    html = html.replace(/\x00TEX(\d+)\x00/g, function(_, i) {
+        return latexStore[parseInt(i, 10)] || '';
+    });
+    return html;
+}
+
+function renderTitleHtml(text) {
+    if (!text) return '';
+    var latexStore = [];
+    function storeTex(raw) {
+        var idx = latexStore.length;
+        latexStore.push(raw);
+        return '\x00TEX' + idx + '\x00';
+    }
+    var s = String(text);
+    s = s.replace(/\$\$([\s\S]+?)\$\$/g, function(m) { return storeTex(m); });
+    s = s.replace(/\$([^\$\n]+?)\$/g, function(m) { return storeTex(m); });
+    s = s.replace(/\\\(([\s\S]+?)\\\)/g, function(m) { return storeTex(m); });
+    s = esc(s);
+    return s.replace(/\x00TEX(\d+)\x00/g, function(_, i) {
+        return latexStore[parseInt(i, 10)] || '';
+    });
+}
+
+function retypeset() {
+    var els = [];
+    for (var i = 0; i < arguments.length; i++) {
+        if (arguments[i]) els.push(arguments[i]);
+    }
+    if (!els.length) return;
+    if (window.MathJax) {
+        if (typeof MathJax.typesetPromise === 'function') {
+            MathJax.typesetPromise(els).catch(function(err) {
+                console.debug('[Notes] MathJax typeset error:', err);
+            });
+        } else if (MathJax.Hub) {
+            MathJax.Hub.Queue(['Typeset', MathJax.Hub, els[0]]);
+        }
+    } else {
+        var waited = 0;
+        var args = els;
+        var poll = setInterval(function() {
+            waited += 100;
+            if (window.MathJax) {
+                clearInterval(poll);
+                retypeset.apply(null, args);
+            } else if (waited >= 3000) {
+                clearInterval(poll);
+            }
+        }, 100);
+    }
+}
+
+function setSt(el, cls, msg) {
+    if (!el) return;
+    el.className = 'exp-note-status '+(cls||''); el.textContent = msg||'';
+}
+function setGSt(el, cls, msg) {
+    if (!el) return;
+    el.className = 'exp-notes-global-status '+(cls||''); el.textContent = msg||'';
+}
+
+function confirmDialog(msg) {
+    return new Promise(function(resolve) {
+        var ov = document.createElement('div');
+        ov.className = 'exp-notes-confirm-overlay';
+        ov.innerHTML = '<div class="exp-notes-confirm-box"><p>'+msg+'</p>'+
+            '<div class="exp-notes-confirm-actions">'+
+            '<button class="exp-notes-confirm-cancel">取消</button>'+
+            '<button class="exp-notes-confirm-delete">确认删除</button>'+
+            '</div></div>';
+        document.body.appendChild(ov);
+        ov.querySelector('.exp-notes-confirm-cancel').onclick = function(){ ov.remove(); resolve(false); };
+        ov.querySelector('.exp-notes-confirm-delete').onclick = function(){ ov.remove(); resolve(true); };
+        ov.onclick = function(e){ if(e.target===ov){ov.remove();resolve(false);} };
+    });
+}
+
+// ─── 行为追踪器 ────────────────────────────────────────────────
+var _tracker = {
+    _events: [],
+    _startTime: null,
+    _maxEvents: 200,
+    start: function() { this._startTime = Date.now(); this._events = []; },
+    push: function(type, data) {
+        if (!this._startTime) return;
+        if (this._events.length >= this._maxEvents) { this._events.shift(); }
+        this._events.push({ t: Math.round((Date.now() - this._startTime) / 1000), type: type, data: data || null });
+    },
+    export: function() {
+        return {
+            session_duration_s: this._startTime ? Math.round((Date.now() - this._startTime) / 1000) : 0,
+            event_count: this._events.length,
+            events: this._events.slice()
+        };
+    },
+    clear: function() { this._events = []; this._startTime = Date.now(); }
+};
+
+function _autoBindTracker() {
+    setTimeout(function() {
+        var algoBtns = [
+            {id:'golden-section-btn', algo:'黄金分割法'},
+            {id:'fibonacci-btn',      algo:'斐波那契数列法'},
+            {id:'bisection-btn',      algo:'二分法'},
+            {id:'gd-btn',             algo:'梯度下降法'},
+            {id:'newton-btn',         algo:'牛顿法'},
+            {id:'secant-btn',         algo:'割线法'}
+        ];
+        algoBtns.forEach(function(b) {
+            var el = document.getElementById(b.id);
+            if (el) el.addEventListener('click', function() {
+                _tracker.push('algorithm_switch', {algorithm: b.algo});
+            }, {capture: true});
+        });
+        ['play-btn','pause-btn','step-btn','reset-btn'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', function() {
+                _tracker.push('control', {action: id.replace('-btn','')});
+            }, {capture: true});
+        });
+        var funcSel = document.getElementById('function-select');
+        if (funcSel) funcSel.addEventListener('change', function() {
+            _tracker.push('function_change', {value: funcSel.value});
+        }, {capture: true});
+        var confirmBtn = document.getElementById('confirm-custom-func');
+        if (confirmBtn) confirmBtn.addEventListener('click', function() {
+            var inp = document.getElementById('custom-expr-input');
+            _tracker.push('custom_function', {expr: inp ? inp.value : ''});
+        }, {capture: true});
+        var sliders = [
+            'initial-a','initial-b','precision','iterations',
+            'initial-x0','initial-x_prev','learning-rate',
+            'golden-epsilon','fib-n','fib-epsilon','bis-epsilon',
+            'initial-point0-slider','initial-point-1-slider'
+        ];
+        sliders.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('change', function() {
+                _tracker.push('param_change', {param: id, value: el.value});
+            }, {capture: true});
+        });
+        document.querySelectorAll('.viz-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                _tracker.push('view_switch', {view: tab.dataset.view || tab.textContent.trim()});
+            }, {capture: true});
+        });
+    }, 500);
+}
+
+var _cfg={}, _notes=[], _saveTimers={}, _listEl=null, _gStEl=null;
+
+function init(cfg) {
+    _cfg = cfg||{};
+    if (!_cfg.experimentKey) { console.warn('[Notes] experimentKey required'); return; }
+    var mount = document.querySelector(_cfg.mountSelector||'#exp-notes-mount');
+    if (!mount) { console.warn('[Notes] mount not found'); return; }
+    _tracker.start();
+    _tracker.push('session_start', {experiment_key: _cfg.experimentKey, url: location.pathname});
+    _autoBindTracker();
+    _shell(mount);
+    _load();
+}
+
+function _shell(mount) {
+    mount.innerHTML =
+        '<section class="exp-notes-section">'+
+        '<div class="exp-notes-header">'+
+        '  <div class="exp-notes-header-left">'+
+        '    <h2>实验笔记</h2>'+
+        '    <span class="exp-notes-login-hint" id="_enHint" style="display:none">（<a href="/auth/login" style="color:inherit;text-decoration:underline;">登录</a>后保存笔记）</span>'+
+        '  </div>'+
+        '  <div class="exp-notes-actions">'+
+        '    <button class="exp-notes-action-btn secondary" id="_enSave">保存</button>'+
+        '    <button class="exp-notes-action-btn secondary" id="_enExp">导出笔记</button>'+
+        '    <button class="exp-notes-action-btn ai" id="_enAI">AI 生成笔记</button>'+
+        '  </div>'+
+        '</div>'+
+        '<p class="exp-notes-global-status" id="_enGSt"></p>'+
+        '<div class="exp-notes-list" id="_enList"></div>'+
+        '</section>';
+    _listEl = mount.querySelector('#_enList');
+    _gStEl  = mount.querySelector('#_enGSt');
+    if (!isLoggedIn()) mount.querySelector('#_enHint').style.display='inline';
+    mount.querySelector('#_enSave').addEventListener('click', _saveAll);
+    mount.querySelector('#_enExp').addEventListener('click',  _export);
+    mount.querySelector('#_enAI').addEventListener('click',   _aiGen);
+}
+
+function _renderList() {
+    if (!_listEl) return;
+    _listEl.innerHTML='';
+    if (!_notes.length) {
+        var em=document.createElement('div'); em.className='exp-notes-empty';
+        em.innerHTML='<p>暂无笔记，点击下方按钮开始记录</p>'+'<button class="exp-notes-add-btn">＋ 添加实验笔记</button>';
+        em.querySelector('button').addEventListener('click',_addNote);
+        _listEl.appendChild(em);
+    } else {
+        _notes.forEach(function(n){ _listEl.appendChild(_card(n)); });
+        var ab=document.createElement('button'); ab.className='exp-notes-add-btn'; ab.style.marginTop='4px'; ab.textContent='＋ 添加实验笔记';
+        ab.addEventListener('click',_addNote); _listEl.appendChild(ab);
+    }
+}
+
+function _card(note) {
+    var c=document.createElement('div'); c.className='exp-note-card';
+    c.innerHTML=
+        '<div class="exp-note-card-header">'+
+        '  <div class="exp-note-title-wrap">'+
+        '    <input class="exp-note-title-input" type="text" placeholder="笔记标题…" value="'+esc(note.title||'')+'">'+
+        '    <div class="exp-note-title-render" style="display:none"></div>'+
+        '  </div>'+
+        '  <button class="exp-note-delete-btn" title="删除">&#10005;</button>'+
+        '</div>'+
+        '<div class="exp-note-body">'+
+        '  <textarea class="exp-note-content-input" placeholder="支持 Markdown 和 LaTeX 公式…" rows="5"></textarea>'+
+        '  <div class="exp-note-render-view"></div>'+
+        '</div>'+
+        '<div class="exp-note-footer">'+
+        '  <span class="exp-note-status"></span>'+
+        '  <div class="exp-note-footer-actions"><button class="exp-note-toggle-btn">预览</button></div>'+
+        '</div>';
+    var ti=c.querySelector('.exp-note-title-input'),
+        tr=c.querySelector('.exp-note-title-render'),
+        ci=c.querySelector('.exp-note-content-input'),
+        rv=c.querySelector('.exp-note-render-view'),
+        st=c.querySelector('.exp-note-status'),
+        tb=c.querySelector('.exp-note-toggle-btn'),
+        db=c.querySelector('.exp-note-delete-btn');
+    ci.value=note.content||'';
+    var prev=false;
+    tb.addEventListener('click',function(){
+        prev=!prev;
+        if(prev){
+            rv.innerHTML=renderMd(ci.value);
+            if(tr){ tr.innerHTML=renderTitleHtml(ti.value); tr.style.display='block'; tr.classList.add('active'); }
+            ti.style.display='none';
+            retypeset(rv, tr);
+            rv.classList.add('active');
+            ci.style.display='none';
+            tb.textContent='编辑';
+        } else {
+            rv.classList.remove('active');
+            if(tr){ tr.classList.remove('active'); tr.style.display='none'; tr.innerHTML=''; }
+            ti.style.display='block';
+            ci.style.display='block';
+            tb.textContent='预览';
+        }
+    });
+    rv.addEventListener('click',function(){ if(prev) tb.click(); });
+    function sched(){
+        var k=note.id||note._lid;
+        if(_saveTimers[k]) clearTimeout(_saveTimers[k]);
+        _saveTimers[k]=setTimeout(function(){ _saveOne(note,c,st); },0);
+    }
+    ti.addEventListener('blur',function(){ if(ti.value!==note.title){note.title=ti.value;sched();} });
+    ci.addEventListener('blur',function(){ if(ci.value!==note.content){note.content=ci.value;sched();} });
+    db.addEventListener('click',async function(){
+        var ok=await confirmDialog('确定要删除这条笔记吗？<br><strong>此操作不可撤销。</strong>');
+        if(ok) _del(note);
+    });
+    return c;
+}
+
+async function _load() {
+    if(!isLoggedIn()){_renderList();return;}
+    var d=await apiSafe(function(){ return apiGet('/notes/'+encodeURIComponent(_cfg.experimentKey)); });
+    _notes=Array.isArray(d)?d:[];
+    _renderList();
+}
+
+async function _addNote() {
+    var n={_lid:'l'+Date.now(),id:null,title:'',content:'',sort_order:_notes.length,experiment_key:_cfg.experimentKey};
+        if(isLoggedIn()){
+        var d=await apiSafe(function(){
+            return apiRequest('/notes/'+encodeURIComponent(_cfg.experimentKey),{
+                method:'POST',body:JSON.stringify({experiment_key:_cfg.experimentKey,title:'',content:'',sort_order:n.sort_order})});
+        });
+        if(d&&d.id){n.id=d.id;n.created_at=d.created_at;n.updated_at=d.updated_at;}
+    }
+    _notes.push(n); _renderList();
+    var cs=_listEl?_listEl.querySelectorAll('.exp-note-card'):[];
+    if(cs.length){var l=cs[cs.length-1];l.scrollIntoView({behavior:'smooth',block:'center'});var t=l.querySelector('.exp-note-title-input');if(t)setTimeout(function(){t.focus();},200);}
+}
+
+async function _saveOne(note,card,stEl) {
+    if(card){var ti=card.querySelector('.exp-note-title-input'),ci=card.querySelector('.exp-note-content-input');if(ti)note.title=ti.value;if(ci)note.content=ci.value;}
+    if(!isLoggedIn()||!note.id) return;
+    setSt(stEl,'saving','保存中...');
+    var d=await apiSafe(function(){
+        return apiRequest('/notes/item/'+note.id,{method:'PUT',body:JSON.stringify({title:note.title,content:note.content,sort_order:note.sort_order})});
+    });
+    if(d&&d.id){note.updated_at=d.updated_at;setSt(stEl,'saved','已保存 '+fmtTime(new Date()));}
+    else setSt(stEl,'error','保存失败');
+}
+
+async function _saveAll() {
+    setGSt(_gStEl,'saving','保存中...');
+    var cs=_listEl?_listEl.querySelectorAll('.exp-note-card'):[];
+    for(var i=0;i<_notes.length;i++) await _saveOne(_notes[i],cs[i]||null,cs[i]?cs[i].querySelector('.exp-note-status'):null);
+    setGSt(_gStEl,'saved','全部已保存 '+fmtTime(new Date()));
+}
+
+async function _del(note) {
+    if(note.id&&isLoggedIn()) await apiSafe(function(){ return apiRequest('/notes/item/'+note.id,{method:'DELETE'}); });
+    _notes=_notes.filter(function(n){return (n.id||n._lid)!==(note.id||note._lid);});
+    _renderList();
+}
+
+async function _export() {
+    if(!isLoggedIn()){alert('请先登录后再导出笔记。');return;}
+    if(!_notes.length){alert('暂无笔记可导出。');return;}
+    await _saveAll();
+    try{
+        var tk=(typeof getStoredToken==='function')?getStoredToken():'';
+        var res=await fetch('/notes/'+encodeURIComponent(_cfg.experimentKey)+'/export',{headers:{Authorization:'Bearer '+tk}});
+        if(!res.ok){var b=await res.json().catch(function(){return{};});alert(b.detail||'导出失败');return;}
+        var blob=await res.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
+        a.href=url;a.download=_cfg.experimentKey+'-notes.md';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+    }catch(e){alert('导出错误：'+e.message);}
+}
+
+async function _aiGen() {
+    if(!isLoggedIn()){alert('请先登录后再使用 AI 生成笔记。');return;}
+    var btn=document.querySelector('#_enAI');
+    if(btn){btn.disabled=true;btn.innerHTML='<span class="exp-notes-ai-spinner"></span>生成中…';}   
+    setGSt(_gStEl,'saving','AI 正在生成实验笔记，请稍候…');
+    try{
+        var pd={};
+        if(typeof _cfg.getPageData==='function'){
+            try{
+                pd=_cfg.getPageData()||{};
+                console.log('[Notes] Page data collected:', pd);
+            }catch(e){
+                console.error('[Notes] Error collecting page data:', e);
+            }
+        }
+        pd._behavior = _tracker.export();
+        console.log('[Notes] Sending AI request with data keys:', Object.keys(pd));
+        
+        var d=await apiRequest('/notes/'+encodeURIComponent(_cfg.experimentKey)+'/ai-generate',{
+            method:'POST',
+            body:JSON.stringify(pd)
+        });
+        
+        console.log('[Notes] AI response:', d);
+        
+        if(d&&d.id){
+            _notes.push(d);_renderList();
+            var cs=_listEl?_listEl.querySelectorAll('.exp-note-card'):[];
+            if(cs.length) {
+                var lastCard = cs[cs.length-1];
+                lastCard.scrollIntoView({behavior:'smooth',block:'center'});
+                var tb = lastCard.querySelector('.exp-note-toggle-btn');
+                if (tb) setTimeout(function(){ tb.click(); }, 300);
+            }
+            setGSt(_gStEl,'saved','AI 笔记已生成并保存 '+fmtTime(new Date()));
+        } else {
+            console.error('[Notes] AI response missing id:', d);
+            setGSt(_gStEl,'error','AI 生成失败：响应数据无效。请检查浏览器控制台。');
+        }
+    }catch(e){
+        console.error('[Notes] AI generation error:', e);
+        setGSt(_gStEl,'error','AI 生成失败：'+(e.message||'未知错误')+' 请检查浏览器控制台。');
+    }finally{
+        if(btn){btn.disabled=false;btn.textContent='AI 生成笔记';}
+    }
+}
+
+// 公开接口
+function getNotes() { return _notes.slice(); }
+function appendNote(note) {
+    if(note&&(note.id||note._lid)) { _notes.push(note); _renderList(); }
+}
+function trackEvent(type, data) {
+    _tracker.push(type, data);
+}
+
+global.ExperimentNotes = { init:init, getNotes:getNotes, appendNote:appendNote, trackEvent:trackEvent };
+
+// 自动初始化逻辑：若页面定义了 EXPERIMENT_NOTES_CONFIG 则自动执行
+document.addEventListener('DOMContentLoaded', function () {
+    if (global.EXPERIMENT_NOTES_CONFIG) {
+        init(global.EXPERIMENT_NOTES_CONFIG);
+    }
+});
+
+}(window));

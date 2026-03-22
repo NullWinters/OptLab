@@ -272,3 +272,24 @@ footer {
     color: #a1887f;
     font-size: 14px;
 }
+
+/* 播放速度：在当前栏内水平居中，轨道随栏宽伸缩 */
+.playback-speed-group {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.playback-speed-group > label {
+    width: 100%;
+    text-align: center;
+}
+
+.playback-speed-group .range-slider-wrap {
+    width: 100%;
+}

@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 {% block title %}点搜索 - OptLab{% endblock %}
+
+{% block experiment_notes %}{% endblock %}
+
 {% block head %}
 <!-- D3.js 可视化库 -->
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
@@ -8,6 +11,49 @@
 <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
 <link rel="stylesheet" href="/static/css/courses/line-search/comparison.css">
 <style>
+    /* range-slider.js：滑块渐变；保存至个人中心下拉 */
+    :root {
+        --range-fill: #2563eb;
+        --range-fill-soft: #3b82f6;
+        --range-track: #e8edf3;
+    }
+
+    .iteration-log-entry {
+        overflow: visible;
+    }
+
+    /* —— 滑块容器：在 align-items:center 的 control-group 内仍占满一行 */
+    .range-slider-wrap {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        display: block;
+        align-self: stretch;
+    }
+
+    .control-group .range-slider-wrap,
+    .algorithm-panel .range-slider-wrap,
+    .global-controls .range-slider-wrap,
+    .visualization-section .range-slider-wrap,
+    .sliders-panel .range-slider-wrap,
+    .speed-control .range-slider-wrap {
+        width: 100%;
+        max-width: 100%;
+        align-self: stretch;
+    }
+
+    .triple-control-panel .algorithm-panel .control-group {
+        align-items: stretch;
+        width: 100%;
+    }
+
+    /* 网格/弹性布局中避免子项 min-width:auto 把滑块挤短 */
+    .slider-row .control-group,
+    .visualization-section .control-group {
+        min-width: 0;
+    }
+
+
     /* 三算法状态面板布局 */
     .triple-status-panel {
         display: grid;
@@ -50,17 +96,6 @@
     }
 
     /* 响应式适配 */
-    @media (max-width: 1200px) {
-        .triple-status-panel {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (max-width: 992px) {
-        .triple-status-panel {
-            grid-template-columns: 1fr;
-        }
-    }
 </style>
 {% endblock %}
 {% block content %}
@@ -130,50 +165,53 @@
         </div>
     </div>
 
-    <!-- 主区：左侧全局控制 + 右侧三画布 -->
+    <!-- 主区：左侧多面板 + 右侧三画布 -->
     <div class="comparison-main-layout">
-        <div class="global-controls">
-            <h3>全局控制</h3>
-            <div class="control-group">
-                <label for="function-select">测试函数:</label>
-                <div style="display: flex; gap: 5px;">
-                    <select id="function-select" style="width: 180px;">
-                        <!-- 动态填充 -->
-                    </select>
-                    <button id="custom-func-btn" class="control-btn btn-primary"
-                            style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
-                    </button>
+        <div class="left-column">
+            <!-- 全局控制面板 -->
+            <div class="control-panel">
+                <h3>全局控制</h3>
+                <div class="control-group">
+                    <label for="function-select">测试函数:</label>
+                    <div style="display: flex; gap: 5px;">
+                        <select id="function-select" style="width: 180px;">
+                            <!-- 动态填充 -->
+                        </select>
+                        <button id="custom-func-btn" class="control-btn btn-primary"
+                                style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
+                        </button>
+                    </div>
+                </div>
+
+                <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                    <div class="control-group" style="flex: 1; min-width: 150px;">
+                        <label for="initial-point0-slider">初始点 x<sub>0</sub>:</label>
+                        <input type="range" id="initial-point0-slider" min="-10" max="10" step="0.1" value="1"
+                               style="width: 100%;">
+                        <span id="initial-point0-value">1</span>
+                    </div>
+                    <div class="control-group" style="flex: 1; min-width: 150px;">
+                        <label for="initial-point-1-slider">初始点 x<sub>-1</sub>:</label>
+                        <input type="range" id="initial-point-1-slider" min="-10" max="10" step="0.1" value="2"
+                               style="width: 100%;">
+                        <span id="initial-point-1-value">2</span>
+                    </div>
+                    <div class="control-group" style="flex: 1; min-width: 150px;">
+                        <label for="iterations">迭代次数 N:</label>
+                        <input type="range" id="iterations" min="2" max="30" step="1" value="10" style="width: 100%;">
+                        <span id="iterations-value">10</span>
+                    </div>
+                    <div class="control-group" style="flex: 1; min-width: 150px;">
+                        <label for="learning-rate">学习率 α:</label>
+                        <input type="range" id="learning-rate" min="0.001" max="1" step="0.001" value="0.01"
+                               style="width: 100%;">
+                        <span id="learning-rate-value">0.01</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                <div class="control-group" style="flex: 1; min-width: 150px;">
-                    <label for="initial-point0-slider">初始点 x<sub>0</sub>:</label>
-                    <input type="range" id="initial-point0-slider" min="-10" max="10" step="0.1" value="1"
-                           style="width: 100%;">
-                    <span id="initial-point0-value">1</span>
-                </div>
-                <div class="control-group" style="flex: 1; min-width: 150px;">
-                    <label for="initial-point-1-slider">初始点 x<sub>-1</sub>:</label>
-                    <input type="range" id="initial-point-1-slider" min="-10" max="10" step="0.1" value="2"
-                           style="width: 100%;">
-                    <span id="initial-point-1-value">2</span>
-                </div>
-                <div class="control-group" style="flex: 1; min-width: 150px;">
-                    <label for="iterations">迭代次数 N:</label>
-                    <input type="range" id="iterations" min="2" max="30" step="1" value="10" style="width: 100%;">
-                    <span id="iterations-value">10</span>
-                </div>
-                <div class="control-group" style="flex: 1; min-width: 150px;">
-                    <label for="learning-rate">学习率 α:</label>
-                    <input type="range" id="learning-rate" min="0.001" max="1" step="0.001" value="0.01"
-                           style="width: 100%;">
-                    <span id="learning-rate-value">0.01</span>
-                </div>
-            </div>
-
-            <div class="panel-section"
-                 style="margin: 15px 0 0 0; padding: 0; box-shadow: none; background: transparent;">
+            <!-- 算法控制面板 -->
+            <div class="control-panel">
                 <h3>算法控制</h3>
                 <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
                     <button class="control-btn btn-primary" id="play-btn">播放</button>
@@ -182,6 +220,53 @@
                     <button class="control-btn btn-accent" id="reset-btn">重置</button>
                 </div>
 
+                <div class="control-group">
+                    <label for="speed-control">播放速度：</label>
+                    <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
+                           style="width: 100%;">
+                    <span id="speed-value">正常</span>
+                </div>
+            </div>
+
+            <!-- 实验数据面板 -->
+            <div class="control-panel">
+                <h3>实验数据</h3>
+                <div class="iteration-log-toolbar">
+                    <button type="button" class="control-btn btn-primary"
+                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
+                        查看实验数据
+                    </button>
+                    <button type="button" class="control-btn btn-secondary"
+                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-export-csv-btn">
+                        导出实验数据
+                    </button>
+                    <div class="dropdown-wrap" style="width: 100%;">
+                        <button type="button" class="control-btn btn-accent"
+                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                                id="save-profile-dropdown-trigger">
+                            保存至个人中心 ▾
+                        </button>
+                        <div id="save-profile-dropdown" class="dropdown-panel hidden">
+                            <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                    data-algo="梯度下降法">梯度下降法
+                            </button>
+                            <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                    data-algo="牛顿法">牛顿法
+                            </button>
+                            <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                    data-algo="割线法">割线法
+                            </button>
+                            <button type="button" class="dropdown-option save-profile-option" data-type="all">
+                                总体对比数据
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 画布控制面板 -->
+            <div class="control-panel">
+                <h3>画布控制</h3>
                 <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
                     <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
                     </button>
@@ -192,16 +277,10 @@
                     <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
                     </button>
                 </div>
-
-                <div class="control-group">
-                    <label for="speed-control">播放速度：</label>
-                    <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000">
-                    <span id="speed-value">正常</span>
-                </div>
             </div>
         </div>
 
-        <section class="canvas-column" style="flex: 1; min-width: 0;">
+        <section class="canvas-column">
             <div class="canvas-card">
                 <h3 class="canvas-title">梯度下降法</h3>
                 <div id="function-canvas-gd"></div>
@@ -248,6 +327,47 @@
             </div>
         </div>
     </div>
+    <!-- 实验笔记组件 -->
+    {% include 'components/_experiment_notes.html' %}
+</div>
+<!-- 迭代数据查看模态框 -->
+<div id="iteration-log-modal" class="modal" style="display: none;">
+    <div class="modal-content"
+         style="max-width: 920px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;" id="iteration-log-modal-title">点搜索性质对比 · 本次实验迭代数据</h3>
+            <span id="iteration-log-close" class="close-modal" style="cursor: pointer;">&times;</span>
+        </div>
+        <div class="modal-body" style="margin-top: 10px; overflow: auto;">
+            <div style="font-size: 13px; color: #555; margin-bottom: 8px;">
+                <div>实验函数：<span id="iteration-log-summary-func">--</span></div>
+                <div>初始点设置：x₀ = <span id="iteration-log-summary-x0">--</span>，
+                    x₋₁ = <span id="iteration-log-summary-x-prev">--</span>
+                </div>
+                <div>学习率/算法参数：<span id="iteration-log-summary-alpha">--</span></div>
+                <div>终止条件：<span id="iteration-log-summary-target">--</span></div>
+                <div>总迭代记录条数：<span id="iteration-log-summary-count">--</span></div>
+            </div>
+            <div id="iteration-log-final-summary"
+                 style="font-size: 13px; color: #b71c1c; background: #fff3e0; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: none;">
+                <!-- 最终收敛结果由脚本填充 -->
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                <tr>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号 k</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">当前点 xₖ</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">函数值 f(xₖ)</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">导数/近似导数</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">二阶导 (如适用)</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">状态</th>
+                </tr>
+                </thead>
+                <tbody id="iteration-log-body"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 <footer>
     一维搜索方法 · OptLab 教学资源
@@ -255,6 +375,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/range-slider.js"></script>
 <script>
     window.AI_CONFIG = {
         PAGE_ID: 'point_search_comparison',
@@ -268,12 +389,20 @@
             {id: "play-btn", description: "播放按钮", type: "normal"},
             {id: "pause-btn", description: "暂停按钮", type: "normal"},
             {id: "step-btn", description: "单步按钮", type: "normal"},
-            {id: "reset-btn", description: "重置按钮", type: "normal"}
+            {id: "reset-btn", description: "重置按钮", type: "normal"},
+            {id: "pan-left-btn", description: "向左平移按钮", type: "normal"},
+            {id: "pan-right-btn", description: "向右平移按钮", type: "normal"},
+            {id: "zoom-in-btn", description: "放大按钮", type: "normal"},
+            {id: "zoom-out-btn", description: "缩小按钮", type: "normal"}
         ],
         GUIDEBOOK: `这是点搜索性质对比页面。
         页面布局：
         - 顶部为算法状态汇总面板，实时显示梯度下降、牛顿、割线三种算法的参数。
-        - 左侧为全局控制面板，可调节测试函数、初始点、学习率等参数。
+        - 左侧为多级控制面板，包括：
+          1. 全局控制：调节测试函数、初始点、学习率等参数。
+          2. 算法控制：控制播放、暂停、单步运行和重置。
+          3. 实验数据：查看、导出及保存实验历史。
+          4. 画布控制：对可视化画布进行平移和缩放。
         - 右侧为三个算法的可视化画布，纵向排列，方便直观对比它们的收敛轨迹。
         
         使用流程：
@@ -341,8 +470,16 @@
             gd: '未运行',
             newton: '未运行',
             secant: '未运行'
-        }
+        },
+        // 本次实验的初始设置与迭代日志
+        initialX0: 1.0,
+        initialXPrev: 2.0,
+        initialAlpha: 0.01,
+        initialN: 10,
+        functionExpr: '',
+        iterationLog: []
     };
+    window.AppState = AppState;
 
     document.addEventListener('DOMContentLoaded', () => {
         initFunctionSelect();
@@ -400,7 +537,7 @@
         });
 
         document.getElementById('speed-control').addEventListener('input', (e) => {
-            AppState.speed = 2100 - parseInt(e.target.value);
+            AppState.speed = Math.round(2100 - Number(e.target.value));
             const speedText = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
             document.getElementById('speed-value').textContent = speedText;
             if (AppState.isPlaying) {
@@ -413,6 +550,16 @@
         document.getElementById('pan-right-btn').addEventListener('click', () => panAll(1));
         document.getElementById('zoom-in-btn').addEventListener('click', () => zoomAll(1.2));
         document.getElementById('zoom-out-btn').addEventListener('click', () => zoomAll(0.8));
+
+        window.addEventListener('resize', () => {
+            if (AppState.visualizers) {
+                Object.values(AppState.visualizers).forEach(viz => {
+                    if (viz && typeof viz.resize === 'function') {
+                        viz.resize();
+                    }
+                });
+            }
+        });
 
         document.getElementById('function-select').addEventListener('change', (e) => {
             if (e.target.value === 'custom_trigger') {
@@ -457,6 +604,268 @@
                 document.getElementById('expr-error').textContent = '错误: ' + e.message;
             }
         });
+
+        // 迭代数据查看/导出（三算法集成一界面，用不同颜色区分）
+        const logModal = document.getElementById('iteration-log-modal');
+        const logCloseBtn = document.getElementById('iteration-log-close');
+        const logOpenBtn = document.getElementById('iteration-log-open-btn');
+        const logExportCsvBtn = document.getElementById('iteration-log-export-csv-btn');
+
+        function renderIterationLog() {
+            const tbody = document.getElementById('iteration-log-body');
+            const funcSpan = document.getElementById('iteration-log-summary-func');
+            const x0Span = document.getElementById('iteration-log-summary-x0');
+            const xPrevSpan = document.getElementById('iteration-log-summary-x-prev');
+            const alphaSpan = document.getElementById('iteration-log-summary-alpha');
+            const targetSpan = document.getElementById('iteration-log-summary-target');
+            const countSpan = document.getElementById('iteration-log-summary-count');
+            const finalBox = document.getElementById('iteration-log-final-summary');
+
+            const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+
+            if (!log.length) {
+                if (tbody) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="7" style="padding: 8px 4px; color: #777;">当前尚无迭代数据，请先运行一次实验。</td></tr>';
+                }
+                if (funcSpan) funcSpan.textContent = '--';
+                if (x0Span) x0Span.textContent = '--';
+                if (xPrevSpan) xPrevSpan.textContent = '--';
+                if (alphaSpan) alphaSpan.textContent = '--';
+                if (targetSpan) targetSpan.textContent = '--';
+                if (countSpan) countSpan.textContent = '0';
+                if (finalBox) {
+                    finalBox.style.display = 'none';
+                    finalBox.textContent = '';
+                }
+                return;
+            }
+
+            const first = log[0];
+            if (funcSpan) funcSpan.textContent = first.function || '当前选择的测试函数';
+            if (x0Span) x0Span.textContent =
+                typeof first.initial_x0 === 'number' ? Number(first.initial_x0).toFixed(6) : '--';
+            if (xPrevSpan) xPrevSpan.textContent =
+                typeof first.initial_x_prev === 'number' ? Number(first.initial_x_prev).toFixed(6) : '—';
+            if (alphaSpan) alphaSpan.textContent = first.initial_alpha != null
+                ? String(first.initial_alpha)
+                : '—';
+            if (targetSpan) targetSpan.textContent = first.target || '--';
+            if (countSpan) countSpan.textContent = String(log.length);
+
+            const final =
+                [...log].reverse().find(row => row.is_complete && row.result != null) || null;
+            if (final && finalBox) {
+                const xStar = Number(final.result).toFixed(6);
+                const gradStr = final.df_x != null ? Number(final.df_x).toFixed(6) : '—';
+                finalBox.style.display = 'block';
+                finalBox.textContent =
+                    `根据记录的迭代数据，"${final.algorithm}" 在第 ${final.iteration} 次迭代附近收敛到近似最优点 x* ≈ ${xStar}，对应 f(x*) ≈ ${Number(final.f_x).toFixed(6)}，导数/近似导数 ≈ ${gradStr}。`;
+            } else if (finalBox) {
+                finalBox.style.display = 'none';
+                finalBox.textContent = '';
+            }
+
+            if (tbody) {
+                tbody.innerHTML = log.map(row => {
+                    let statusLabel;
+                    if (!row.is_complete) {
+                        statusLabel = '进行中';
+                    } else if (row.has_converged) {
+                        statusLabel = '已收敛';
+                    } else {
+                        switch (row.termination_reason) {
+                            case 'max_iter':
+                                statusLabel = '已终止（迭代次数用完，未收敛）';
+                                break;
+                            case 'grad_zero':
+                                statusLabel = '已终止（梯度≈0，未满足精度）';
+                                break;
+                            case 'hessian_zero':
+                                statusLabel = '已终止（二阶导≈0，无法更新）';
+                                break;
+                            case 'secant_den_zero':
+                                statusLabel = '已终止（割线分母≈0）';
+                                break;
+                            default:
+                                statusLabel = '已终止（未收敛）';
+                        }
+                    }
+                    const algo = row.algorithm || '';
+                    const algoClass =
+                        algo.indexOf('梯度下降') !== -1
+                            ? 'algo-gd'
+                            : algo.indexOf('牛顿') !== -1
+                                ? 'algo-newton'
+                                : algo.indexOf('割线') !== -1
+                                    ? 'algo-secant'
+                                    : '';
+                    const isFinal = final &&
+                        row.algorithm === final.algorithm &&
+                        row.iteration === final.iteration;
+                    const extraClass = isFinal ? ' algo-final' : '';
+                    return `<tr class="${algoClass}${extraClass}">
+    <td>${row.algorithm}</td>
+    <td>${row.iteration}</td>
+    <td>${Number(row.x).toFixed(6)}</td>
+    <td>${Number(row.f_x).toFixed(6)}</td>
+    <td>${row.df_x != null ? Number(row.df_x).toFixed(6) : '—'}</td>
+    <td>${row.ddf_x != null ? Number(row.ddf_x).toFixed(6) : '—'}</td>
+    <td>${statusLabel}</td>
+</tr>`;
+                }).join('');
+            }
+        }
+
+        function getLogFilteredByAlgo(algoName) {
+            const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+            return !algoName ? log : log.filter(row => row.algorithm === algoName);
+        }
+
+        function buildPayloadForAlgo(algoName) {
+            const log = getLogFilteredByAlgo(algoName);
+            const first = log[0];
+            const initial_state = algoName === '梯度下降法' ? {
+                x_0: AppState.initialX0,
+                N: AppState.initialN,
+                alpha: AppState.initialAlpha
+            } : algoName === '牛顿法' ? {
+                x_0: AppState.initialX0,
+                N: AppState.initialN
+            } : {x_prev: AppState.initialXPrev, x_0: AppState.initialX0, N: AppState.initialN};
+            return {
+                algorithm_name: algoName,
+                test_function: AppState.functionExpr || (first && first.function),
+                initial_state,
+                iteration_data: log
+            };
+        }
+
+        function buildPayloadForAll() {
+            const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+            return {
+                algorithm_name: '点搜索三算法对比',
+                test_function: AppState.functionExpr || '--',
+                initial_state: {
+                    x_0: AppState.initialX0,
+                    x_prev: AppState.initialXPrev,
+                    N: AppState.initialN,
+                    alpha: AppState.initialAlpha
+                },
+                iteration_data: log
+            };
+        }
+
+        function exportFullLogAsCsv() {
+            const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+            if (!log.length) {
+                alert('当前尚无迭代数据，请先运行一次实验。');
+                return;
+            }
+            const first = log[0];
+            const esc = function (v) {
+                const s = String(v ?? '');
+                return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+            };
+            const summary = [
+                ['项目', '值'],
+                ['原函数/目标', AppState.functionExpr || (first && first.function) || ''],
+                ['算法', (first && first.algorithm) || '点搜索三算法对比'],
+                ['初始参数', JSON.stringify({
+                    x_0: AppState.initialX0,
+                    x_prev: AppState.initialXPrev,
+                    N: AppState.initialN,
+                    alpha: AppState.initialAlpha
+                })],
+                []
+            ];
+            const header = ['algorithm', 'iteration', 'function', 'x', 'f_x', 'df_x', 'ddf_x', 'target', 'initial_x0', 'initial_x_prev', 'initial_alpha', 'initial_n', 'is_complete', 'has_converged', 'termination_reason', 'result', 'timestamp'];
+            const rows = log.map(row => [row.algorithm, row.iteration, row.function, row.x, row.f_x, row.df_x != null ? row.df_x : '', row.ddf_x != null ? row.ddf_x : '', row.target || '', row.initial_x0, row.initial_x_prev != null ? row.initial_x_prev : '', row.initial_alpha != null ? row.initial_alpha : '', row.initial_n, row.is_complete ? 'true' : 'false', row.has_converged ? 'true' : 'false', row.termination_reason || '', row.result != null ? row.result : '', row.timestamp || '']);
+            const csvLines = [...summary, header, ...rows].map(cols => cols.map(esc).join(',')).join('\n');
+            const blob = new Blob([csvLines], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'line-search.point_search.comparison-iterations.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        if (logOpenBtn && logModal) {
+            logOpenBtn.addEventListener('click', () => {
+                renderIterationLog();
+                logModal.style.display = 'flex';
+            });
+        }
+        if (logExportCsvBtn) logExportCsvBtn.addEventListener('click', exportFullLogAsCsv);
+
+        const saveTrigger = document.getElementById('save-profile-dropdown-trigger');
+        const savePanel = document.getElementById('save-profile-dropdown');
+        const dropdownWrap = savePanel ? savePanel.closest('.dropdown-wrap') : null;
+
+        function closeSaveDropdown() {
+            if (savePanel) savePanel.classList.add('hidden');
+        }
+
+        function isClickInsideDropdown(target) {
+            return dropdownWrap && dropdownWrap.contains(target);
+        }
+
+        if (saveTrigger && savePanel) {
+            saveTrigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                savePanel.classList.toggle('hidden');
+            });
+        }
+        document.addEventListener('mousedown', (e) => {
+            if (savePanel && !savePanel.classList.contains('hidden') && !isClickInsideDropdown(e.target)) closeSaveDropdown();
+        });
+
+        document.querySelectorAll('.save-profile-option').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeSaveDropdown();
+                if (typeof apiPost !== 'function' || !getStoredToken()) {
+                    alert('请先登录后再保存至个人中心。');
+                    return;
+                }
+                const type = btn.getAttribute('data-type');
+                const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
+                if (alias == null || String(alias).trim() === '') return;
+                let payload;
+                if (type === 'all') {
+                    const fullLog = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+                    if (!fullLog.length) {
+                        alert('当前尚无迭代数据，请先运行一次实验。');
+                        return;
+                    }
+                    payload = buildPayloadForAll();
+                } else {
+                    const algo = btn.getAttribute('data-algo');
+                    const log = getLogFilteredByAlgo(algo);
+                    if (!log.length) {
+                        alert('当前尚无该算法的迭代数据。');
+                        return;
+                    }
+                    payload = buildPayloadForAlgo(algo);
+                }
+                apiPost('/experiments/records', {
+                    alias: String(alias).trim(),
+                    source_page: 'line-search.point_search.comparison',
+                    payload
+                }).then(() => alert('已保存至个人中心。')).catch(() => alert('保存失败，请重试。'));
+            });
+        });
+
+        if (logCloseBtn) logCloseBtn.addEventListener('click', () => {
+            logModal.style.display = 'none';
+        });
+        if (logModal) logModal.addEventListener('click', (e) => {
+            if (e.target === logModal) logModal.style.display = 'none';
+        });
     }
 
     function buildSolvers(expr) {
@@ -478,6 +887,15 @@
         buildSolvers(expr);
         // 状态重置为未运行
         AppState.statuses = {gd: '未运行', newton: '未运行', secant: '未运行'};
+
+        // 记录本次实验的初始设置与函数表达式
+        AppState.initialX0 = AppState.x0;
+        AppState.initialXPrev = AppState.x_prev;
+        AppState.initialAlpha = AppState.alpha;
+        AppState.initialN = AppState.n;
+        const meta = FunctionLibrary[AppState.functionType];
+        AppState.functionExpr = meta && meta.formula ? meta.formula : String(expr || AppState.functionType);
+        AppState.iterationLog = [];
 
         // 注意：不再手动调用 updateHistory([], ...)，由 updateUI 内部的 data join 平滑处理
 
@@ -555,18 +973,42 @@
         let moved = false;
         if (gd && !gd.isComplete) {
             moved = gd.iterate();
+            const justCompleted = !moved && gd.isComplete;
             movedAny = moved || movedAny;
-            AppState.statuses.gd = gd.isComplete ? '已完成' : (moved ? '已暂停' : AppState.statuses.gd);
+            if (moved || justCompleted) {
+                recordIteration('gd', gd);
+            }
+            if (gd.isComplete) {
+                AppState.statuses.gd = gd.hasConverged ? '已收敛' : '已终止';
+            } else if (moved) {
+                AppState.statuses.gd = '已暂停';
+            }
         }
         if (newton && !newton.isComplete) {
             moved = newton.iterate();
+            const justCompleted = !moved && newton.isComplete;
             movedAny = moved || movedAny;
-            AppState.statuses.newton = newton.isComplete ? '已完成' : (moved ? '已暂停' : AppState.statuses.newton);
+            if (moved || justCompleted) {
+                recordIteration('newton', newton);
+            }
+            if (newton.isComplete) {
+                AppState.statuses.newton = newton.hasConverged ? '已收敛' : '已终止';
+            } else if (moved) {
+                AppState.statuses.newton = '已暂停';
+            }
         }
         if (secant && !secant.isComplete) {
             moved = secant.iterate();
+            const justCompleted = !moved && secant.isComplete;
             movedAny = moved || movedAny;
-            AppState.statuses.secant = secant.isComplete ? '已完成' : (moved ? '已暂停' : AppState.statuses.secant);
+            if (moved || justCompleted) {
+                recordIteration('secant', secant);
+            }
+            if (secant.isComplete) {
+                AppState.statuses.secant = secant.hasConverged ? '已收敛' : '已终止';
+            } else if (moved) {
+                AppState.statuses.secant = '已暂停';
+            }
         }
 
         if (movedAny) {
@@ -578,11 +1020,50 @@
         const allComplete = gd.isComplete && newton.isComplete && secant.isComplete;
         if (allComplete) {
             ['gd', 'newton', 'secant'].forEach(key => {
-                AppState.statuses[key] = '已完成';
+                const solver = AppState.solvers[key];
+                AppState.statuses[key] = solver.hasConverged ? '已收敛' : '已终止';
             });
         }
         updateUI();
         return movedAny && !allComplete;
+    }
+
+    function recordIteration(algoKey, solver) {
+        if (!solver || !solver.history || !solver.history.length) return;
+        const last = solver.history[solver.history.length - 1];
+        const algoLabel =
+            algoKey === 'gd'
+                ? '梯度下降法'
+                : algoKey === 'newton'
+                    ? '牛顿法'
+                    : '割线法';
+
+        let targetLabel;
+        if (algoKey === 'gd') {
+            targetLabel = `学习率 α = ${AppState.initialAlpha}；最大迭代次数 N = ${AppState.initialN}`;
+        } else {
+            targetLabel = `最大迭代次数 N = ${AppState.initialN}`;
+        }
+
+        AppState.iterationLog.push({
+            algorithm: algoLabel,
+            iteration: solver.currentIteration,
+            function: AppState.functionExpr,
+            x: typeof last.x === 'number' ? last.x : solver.xk,
+            f_x: typeof last.y === 'number' ? last.y : solver.evaluate(solver.xk),
+            df_x: typeof last.df === 'number' ? last.df : null,
+            ddf_x: typeof last.ddf === 'number' ? last.ddf : null,
+            target: targetLabel,
+            initial_x0: AppState.initialX0,
+            initial_x_prev: AppState.initialXPrev,
+            initial_alpha: AppState.initialAlpha,
+            initial_n: AppState.initialN,
+            is_complete: solver.isComplete,
+            has_converged: !!solver.hasConverged,
+            termination_reason: solver.terminationReason || null,
+            result: solver.isComplete && solver.hasConverged ? solver.result : null,
+            timestamp: new Date().toISOString()
+        });
     }
 
     function panAll(direction) {
@@ -660,5 +1141,22 @@
         ];
         tbody.innerHTML = data.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
     }
+</script>
+<script>
+    window.EXPERIMENT_NOTES_CONFIG = {
+        experimentKey: 'line-search.point_search.comparison',
+        getPageData: function () {
+            var st = window.AppState;
+            if (!st) return {};
+            return {
+                function: st.functionExpr,
+                initial_x0: st.initialX0,
+                initial_x_prev: st.initialXPrev,
+                alpha: st.initialAlpha,
+                n: st.initialN,
+                iteration_log: st.iterationLog || []
+            };
+        }
+    };
 </script>
 {% endblock %}

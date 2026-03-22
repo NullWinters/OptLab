@@ -2,6 +2,8 @@
 
 {% block title %}区间收缩法 - OptLab{% endblock %}
 
+{% block experiment_notes %}{% endblock %}
+
 {% block head %}
 <!-- D3.js 可视化库 -->
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
@@ -10,6 +12,7 @@
 <!-- 自定义样式 -->
 <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
 <link rel="stylesheet" href="/static/css/courses/line-search/comparison.css">
+<link rel="stylesheet" href="/static/css/courses/line-search/range-controls.css">
 <style>
     /* 三算法控制面板布局 */
     .triple-control-panel {
@@ -195,7 +198,7 @@
             flex-direction: column;
         }
 
-        .global-controls {
+        .left-column {
             width: 100% !important;
         }
 
@@ -294,62 +297,132 @@
 
     <!-- 对比可视化区域布局 -->
     <div class="comparison-main-layout">
-        <!-- 全局控制面板 (移至侧边) -->
-        <div class="global-controls">
-            <h3>全局控制</h3>
-            <div class="control-group">
-                <label for="function-select">测试函数:</label>
-                <div style="display: flex; gap: 5px;">
-                    <select id="function-select" style="width: 180px;">
-                        <!-- 动态填充 -->
-                    </select>
-                    <button id="custom-func-btn" class="control-btn btn-primary"
-                            style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
-                    </button>
+        <!-- 左侧多面板 -->
+        <div class="left-column">
+            <!-- 全局控制面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>全局控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-group">
+                        <label for="function-select">测试函数:</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="function-select" style="width: 180px;">
+                                <!-- 动态填充 -->
+                            </select>
+                            <button id="custom-func-btn" class="control-btn btn-primary"
+                                    style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                        <div class="control-group" style="flex: 1; min-width: 120px;">
+                            <label for="initial-a">初始区间左端点 a:</label>
+                            <input type="range" id="initial-a" min="-10" max="10" step="0.1" value="0"
+                                   style="width: 100%;">
+                            <span id="a-value">0.0</span>
+                        </div>
+
+                        <div class="control-group" style="flex: 1; min-width: 120px;">
+                            <label for="initial-b">初始区间右端点 b:</label>
+                            <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10"
+                                   style="width: 100%;">
+                            <span id="b-value">10.0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <div class="control-group" style="flex: 1; min-width: 120px;">
-                    <label for="initial-a">初始区间左端点 a:</label>
-                    <input type="range" id="initial-a" min="-10" max="10" step="0.1" value="0" style="width: 100%;">
-                    <span id="a-value">0.0</span>
+            <!-- 算法控制面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>算法控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
                 </div>
+                <div class="panel-content">
+                    <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
+                        <button id="play-btn" class="control-btn btn-primary">播放</button>
+                        <button id="pause-btn" class="control-btn btn-secondary">暂停</button>
+                        <button id="step-btn" class="control-btn btn-primary">单步</button>
+                        <button id="reset-btn" class="control-btn btn-accent">重置</button>
+                    </div>
 
-                <div class="control-group" style="flex: 1; min-width: 120px;">
-                    <label for="initial-b">初始区间右端点 b:</label>
-                    <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10"
-                           style="width: 100%;">
-                    <span id="b-value">10.0</span>
+                    <div class="control-group" style="margin-top: 5px;">
+                        <label for="speed-control">播放速度:</label>
+                        <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
+                               style="width: 100%;">
+                        <span id="speed-value">正常</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
-                <button id="play-btn" class="control-btn btn-primary">播放</button>
-                <button id="pause-btn" class="control-btn btn-secondary">暂停</button>
-                <button id="step-btn" class="control-btn btn-primary">单步</button>
-                <button id="reset-btn" class="control-btn btn-accent">重置</button>
+            <!-- 实验数据面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>实验数据</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="iteration-log-toolbar">
+                        <button type="button" class="control-btn btn-primary"
+                                style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
+                            查看实验数据
+                        </button>
+                        <button type="button" class="control-btn btn-secondary"
+                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                                id="iteration-log-export-csv-btn">
+                            导出实验数据
+                        </button>
+                        <div class="dropdown-wrap" style="width: 100%;">
+                            <button type="button" class="control-btn btn-accent"
+                                    style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                                    id="save-profile-dropdown-trigger">
+                                保存至个人中心 ▾
+                            </button>
+                            <div id="save-profile-dropdown" class="dropdown-panel hidden">
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                        data-algo="黄金分割法">黄金分割法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                        data-algo="斐波那契法">斐波那契法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                        data-algo="二分法">二分法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="all">
+                                    总体对比数据
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
-                <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
-                </button>
-                <button id="pan-right-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向右
-                </button>
-                <button id="zoom-in-btn" class="control-btn btn-primary" style="background-color: #795548;">放大
-                </button>
-                <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
-                </button>
-            </div>
-
-            <div class="control-group" style="margin-top: 5px;">
-                <label for="speed-control">播放速度:</label>
-                <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000">
-                <span id="speed-value">正常</span>
+            <!-- 画布控制面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>画布控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
+                        <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
+                        </button>
+                        <button id="pan-right-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向右
+                        </button>
+                        <button id="zoom-in-btn" class="control-btn btn-primary" style="background-color: #795548;">放大
+                        </button>
+                        <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <section class="comparison-visualization-section">
+        <section class="comparison-visualization-section" style="display: flex; flex-direction: column;">
             <div class="viz-header">
                 <h2>性能可视化对比</h2>
                 <div class="viz-tabs">
@@ -357,7 +430,7 @@
                     <button class="viz-tab" data-view="convergence">收敛速度</button>
                 </div>
             </div>
-            <div id="comparison-canvas"></div>
+            <div id="comparison-canvas" style="flex-grow: 1; height: auto; min-height: 500px;"></div>
         </section>
     </div>
 
@@ -436,6 +509,38 @@
         </div>
     </section>
 
+    {% include 'components/_experiment_notes.html' %}
+</div>
+<!-- 迭代数据查看模态框 -->
+<div id="iteration-log-modal" class="modal" style="display: none;">
+    <div class="modal-content"
+         style="max-width: 920px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;" id="iteration-log-modal-title">区间收缩性质对比 · 本次实验迭代数据</h3>
+            <span id="iteration-log-close" class="close-modal" style="cursor: pointer;">&times;</span>
+        </div>
+        <div class="modal-body" style="margin-top: 10px; overflow: auto;">
+            <div style="font-size: 13px; color: #555; margin-bottom: 8px;">
+                <div>实验函数：<span id="iteration-log-summary-func">--</span></div>
+                <div>初始区间：[<span id="iteration-log-summary-a">--</span>, <span
+                        id="iteration-log-summary-b">--</span>]
+                </div>
+                <div>总迭代记录条数：<span id="iteration-log-summary-count">--</span></div>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                <tr>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号 k</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">左端点 aₖ</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">右端点 bₖ</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">区间长度</th>
+                </tr>
+                </thead>
+                <tbody id="iteration-log-body"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 <footer>
     一维搜索方法 · OptLab 教学资源
@@ -706,6 +811,184 @@
                 AppState.visualizer.zoomConvergence(0.8);
             }
         });
+
+        // 实验数据相关
+        document.getElementById('iteration-log-open-btn').addEventListener('click', () => {
+            renderIterationLog();
+            document.getElementById('iteration-log-modal').style.display = 'flex';
+        });
+        document.getElementById('iteration-log-close').addEventListener('click', () => {
+            document.getElementById('iteration-log-modal').style.display = 'none';
+        });
+        document.getElementById('iteration-log-export-csv-btn').addEventListener('click', exportIterationLog);
+
+        // 保存至个人中心下拉
+        const dropdownTrigger = document.getElementById('save-profile-dropdown-trigger');
+        const dropdownPanel = document.getElementById('save-profile-dropdown');
+        if (dropdownTrigger && dropdownPanel) {
+            dropdownTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownPanel.classList.toggle('hidden');
+            });
+            document.addEventListener('click', () => dropdownPanel.classList.add('hidden'));
+        }
+
+        document.querySelectorAll('.save-profile-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.type;
+                const algo = btn.dataset.algo;
+                saveToProfile(type, algo);
+            });
+        });
+
+        // 面板折叠逻辑
+        document.querySelectorAll('.collapse-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const panel = btn.closest('.control-panel');
+                panel.classList.toggle('collapsed');
+
+                // 折叠动画结束后重新计算画布尺寸
+                setTimeout(() => {
+                    if (AppState.visualizer && AppState.visualizer.onResize) {
+                        AppState.visualizer.onResize();
+                    }
+                }, 310);
+            });
+        });
+    }
+
+    function renderIterationLog() {
+        const tbody = document.getElementById('iteration-log-body');
+        const histories = AppState.controller.histories;
+        const func = AppState.controller.expr || '当前测试函数';
+
+        document.getElementById('iteration-log-summary-func').textContent = func;
+        document.getElementById('iteration-log-summary-a').textContent = AppState.a.toFixed(2);
+        document.getElementById('iteration-log-summary-b').textContent = AppState.b.toFixed(2);
+
+        let allLogs = [];
+        const algoNames = {
+            golden: '黄金分割法',
+            fibonacci: '斐波那契法',
+            bisection: '二分法'
+        };
+
+        ['golden', 'fibonacci', 'bisection'].forEach(key => {
+            const history = histories[key] || [];
+            history.forEach(step => {
+                allLogs.push({
+                    algo: algoNames[key],
+                    iter: step.iter,
+                    a: step.a,
+                    b: step.b,
+                    len: Math.abs(step.b - step.a)
+                });
+            });
+        });
+
+        // 按迭代次数和算法排序
+        allLogs.sort((x, y) => x.iter - y.iter || x.algo.localeCompare(y.algo));
+
+        document.getElementById('iteration-log-summary-count').textContent = allLogs.length;
+
+        if (allLogs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">暂无实验数据，请先运行实验</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = allLogs.map(row => `
+            <tr>
+                <td>${row.algo}</td>
+                <td>${row.iter}</td>
+                <td>${row.a.toFixed(6)}</td>
+                <td>${row.b.toFixed(6)}</td>
+                <td>${row.len.toFixed(6)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function exportIterationLog() {
+        const histories = AppState.controller.histories;
+        const algoNames = {
+            golden: '黄金分割法',
+            fibonacci: '斐波那契法',
+            bisection: '二分法'
+        };
+
+        let csvContent = "\ufeff"; // UTF-8 BOM
+        csvContent += "算法,迭代步数,a,b,区间长度\n";
+
+        ['golden', 'fibonacci', 'bisection'].forEach(key => {
+            const history = histories[key] || [];
+            history.forEach(step => {
+                const len = Math.abs(step.b - step.a);
+                csvContent += `${algoNames[key]},${step.iter},${step.a},${step.b},${len}\n`;
+            });
+        });
+
+        const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `experiment_data_range_search_${new Date().getTime()}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async function saveToProfile(type, algoName) {
+        if (!window.api || !window.api.saveExperimentRecord) {
+            alert('系统正在维护中，请稍后再试');
+            return;
+        }
+
+        const histories = AppState.controller.histories;
+        let dataToSave = {};
+
+        if (type === 'all') {
+            dataToSave = {
+                title: `区间收缩性质对比 - 总体数据`,
+                experiment_type: 'range_search_comparison',
+                parameters: {
+                    function: AppState.controller.expr,
+                    initial_a: AppState.a,
+                    initial_b: AppState.b,
+                    golden_eps: AppState.goldenEps,
+                    fib_n: AppState.fibN,
+                    fib_eps: AppState.fibEps,
+                    bis_eps: AppState.bisEps
+                },
+                results: histories
+            };
+        } else {
+            const keyMap = {'黄金分割法': 'golden', '斐波那契法': 'fibonacci', '二分法': 'bisection'};
+            const key = keyMap[algoName];
+            dataToSave = {
+                title: `区间收缩性质对比 - ${algoName}`,
+                experiment_type: 'range_search_comparison',
+                parameters: {
+                    algorithm: algoName,
+                    function: AppState.controller.expr,
+                    initial_a: AppState.a,
+                    initial_b: AppState.b,
+                    epsilon: key === 'golden' ? AppState.goldenEps : (key === 'fibonacci' ? AppState.fibEps : AppState.bisEps)
+                },
+                results: histories[key]
+            };
+        }
+
+        try {
+            const res = await window.api.saveExperimentRecord(dataToSave);
+            if (res.success) {
+                alert('实验数据已保存至个人中心');
+            } else {
+                alert('保存失败：' + (res.message || '未知错误'));
+            }
+        } catch (e) {
+            console.error(e);
+            alert('保存出错，请检查网络或登录状态');
+        }
     }
 
     function doInit() {
@@ -951,7 +1234,34 @@
             {id: "reset-btn", description: "重置按钮", type: "normal"},
             {id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal"}
         ],
-        GUIDEBOOK: '这是一个区间收缩法性质对比页面。你可以同时运行三种算法并对比它们的搜索轨迹和收敛速度。'
+        GUIDEBOOK: `这是区间收缩法性质对比页面。
+        页面布局：
+        - 顶部为算法控制面板，可单独调节黄金分割法、斐波那契法及二分法的特定参数。
+        - 左侧为多级控制面板，包括：
+          1. 全局控制：调节测试函数和初始搜索区间。
+          2. 算法控制：控制播放、暂停、单步运行和重置，以及调节速度。
+          3. 实验数据：查看、导出及保存实验历史。
+          4. 画布控制：对可视化画布进行平移和缩放。
+        - 右侧为性能可视化对比区，支持“搜索轨迹”和“收敛速度”两种视图切换。`
+    };
+
+    window.EXPERIMENT_NOTES_CONFIG = {
+        experimentKey: 'line-search.range_search.comparison',
+        getPageData: function () {
+            var st = window.AppState;
+            if (!st || !st.controller) return {};
+            return {
+                function: st.controller.expr,
+                initial_range: [st.controller.a, st.controller.b],
+                params: {
+                    golden_epsilon: st.goldenEps,
+                    fibonacci_n: st.fibN,
+                    fibonacci_epsilon: st.fibEps,
+                    bisection_epsilon: st.bisEps
+                },
+                histories: st.controller.histories
+            };
+        }
     };
 </script>
 {% endblock %}

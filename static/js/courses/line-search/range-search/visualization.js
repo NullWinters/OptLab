@@ -1,7 +1,3 @@
-/**
- * 可视化引擎 - 基于 D3.js
- */
-
 import {smartSampling, detectDiscontinuities} from './function-utils.js';
 
 export class OptimizationVisualizer {
@@ -18,62 +14,24 @@ export class OptimizationVisualizer {
         this.currentDomain = [-5, 5];
 
         this.initSvg();
-
-        // 监听 resize 事件
-        window.addEventListener('resize', () => this.handleResize());
-    }
-
-    handleResize() {
-        const container = document.getElementById(this.containerId);
-        if (!container) return;
-
-        const newWidth = container.clientWidth;
-        if (newWidth === 0 || newWidth === this.width) return;
-
-        this.width = newWidth;
-        this.plotWidth = this.width - this.margin.left - this.margin.right;
-
-        // 更新 SVG 视图和比例尺范围
-        this.svg
-            .attr('width', this.width)
-            .attr('viewBox', `0 0 ${this.width} ${this.height}`);
-
-        this.xScale.range([0, this.plotWidth]);
-
-        // 更新固定的 UI 元素位置
-        this.labelLayer.select('text:nth-child(1)') // x 轴标签
-            .attr('x', this.plotWidth / 2);
-
-        // 重绘函数和坐标轴
-        if (this.currentFunc) {
-            this.drawFunction();
-        }
-
-        // 如果设置了回调，通知重绘子类特有内容
-        if (this.onResize) {
-            this.onResize();
-        }
     }
 
     initSvg() {
-        // 清除容器
         d3.select(`#${this.containerId}`).selectAll("*").remove();
 
         this.svg = d3.select(`#${this.containerId}`)
             .append('svg')
-            .attr('width', this.width)
-            .attr('height', this.height)
+            .attr('width', '100%')
+            .attr('height', '100%')
             .attr('viewBox', `0 0 ${this.width} ${this.height}`)
             .attr('preserveAspectRatio', 'xMidYMid meet');
 
         this.plot = this.svg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
-        // 比例尺定义域暂设为默认，后面通过 drawFunction 更新
         this.xScale = d3.scaleLinear().range([0, this.plotWidth]);
         this.yScale = d3.scaleLinear().range([this.plotHeight, 0]);
 
-        // 初始化各图层
         this.gridLayer = this.plot.append('g').attr('class', 'grid-layer');
         this.gridX = this.gridLayer.append('g').attr('class', 'grid-x');
         this.gridY = this.gridLayer.append('g').attr('class', 'grid-y');
@@ -94,7 +52,6 @@ export class OptimizationVisualizer {
         this.intervalLayer = this.plot.append('g').attr('class', 'interval-layer');
         this.trialPointsLayer = this.plot.append('g').attr('class', 'trial-points-layer');
 
-        // 初始化坐标轴标签
         this.labelLayer = this.plot.append('g').attr('class', 'label-layer');
         this.labelLayer.append('text')
             .attr('x', this.plotWidth / 2)
@@ -112,6 +69,31 @@ export class OptimizationVisualizer {
             .text('f(x)');
     }
 
+    resize() {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+        this.width = container.clientWidth;
+        this.height = container.clientHeight || 500;
+        
+        this.plotWidth = this.width - this.margin.left - this.margin.right;
+        this.plotHeight = this.height - this.margin.top - this.margin.bottom;
+
+        this.svg.attr('viewBox', `0 0 ${this.width} ${this.height}`);
+
+        this.xScale.range([0, this.plotWidth]);
+        this.yScale.range([this.plotHeight, 0]);
+
+        this.xAxisG.attr('transform', `translate(0,${this.plotHeight})`);
+        
+        // 更新网格等依赖 plotHeight 的元素
+        this.gridX.call(d3.axisBottom(this.xScale).tickSize(this.plotHeight).tickFormat(''));
+        this.gridY.call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
+
+        if (this.currentFunc) {
+            this.drawFunction(this.currentFunc, this.currentDomain);
+        }
+    }
+
     drawFunction(funcIdOrExpr, domain) {
         if (funcIdOrExpr) this.currentFunc = funcIdOrExpr;
         if (domain) this.currentDomain = [...domain];
@@ -121,10 +103,8 @@ export class OptimizationVisualizer {
 
         if (!func) return;
 
-        // 使用智能采样获取分段数据
         const segments = smartSampling(func, dom[0], dom[1], 1000);
 
-        // 计算全局 y 轴范围，限制异常值
         let minY = Infinity, maxY = -Infinity;
         segments.forEach(segment => {
             segment.forEach(d => {
@@ -133,19 +113,16 @@ export class OptimizationVisualizer {
             });
         });
 
-        // 限制 Y 轴范围，避免无穷大导致绘制失败
-        const yLimit = 65535;
+        const yLimit = 1000;
         minY = Math.max(minY, -yLimit);
         maxY = Math.min(maxY, yLimit);
 
-        // 更新比例尺
         this.xScale.domain(dom);
         const yPadding = (maxY - minY) * 0.2 || 1;
         this.yScale.domain([minY - yPadding, maxY + yPadding]);
 
         const duration = 400;
 
-        // 更新网格
         this.gridX.transition().duration(duration)
             .attr('stroke', '#e0e0e0')
             .attr('stroke-opacity', 0.5)
@@ -156,18 +133,15 @@ export class OptimizationVisualizer {
             .attr('stroke-opacity', 0.5)
             .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
 
-        // 更新坐标轴
         this.xAxisG.transition().duration(duration).call(d3.axisBottom(this.xScale));
         this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
 
-        // 绘制多段曲线
         const line = d3.line()
             .x(d => this.xScale(d.x))
             .y(d => this.yScale(d.y))
             .curve(d3.curveMonotoneX)
             .defined(d => Math.abs(d.y) <= yLimit); // 过滤超出范围的点
 
-        // 数据绑定与绘制
         const paths = this.functionLayer.selectAll('path.curve').data(segments);
 
         paths.exit().remove();
@@ -181,10 +155,8 @@ export class OptimizationVisualizer {
             .transition().duration(duration)
             .attr('d', line);
 
-        // 隐藏旧的 functionPath (如果有)
         if (this.functionPath) this.functionPath.style('display', 'none');
 
-        // 间断点检测与标识
         this.drawDiscontinuities(func, dom);
     }
 

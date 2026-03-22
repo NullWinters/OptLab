@@ -1,6 +1,6 @@
 from models import AsyncSession
 from models.user import User
-from sqlalchemy import select, exists
+from sqlalchemy import exists, select
 from schemas.user import UserCreateSchema
 
 
@@ -25,4 +25,14 @@ class UserRepository:
     async def email_is_exist(self, email: str) -> bool:
         async with self.session.begin():
             stmt = select(exists().where(User.email == email))
+            return await self.session.scalar(stmt)
+
+    async def get_by_username(self, username: str) -> User | None:
+        async with self.session.begin():
+            stmt = select(User).where(User.username == username)
+            return await self.session.scalar(stmt)
+
+    async def username_is_exist(self, username: str) -> bool:
+        async with self.session.begin():
+            stmt = select(exists().where(User.username == username))
             return await self.session.scalar(stmt)

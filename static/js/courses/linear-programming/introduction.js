@@ -8,11 +8,9 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("width", width)
         .attr("height", height);
 
-    // 比例尺
     const xScale = d3.scaleLinear().domain([-1, 7]).range([margin.left, width - margin.right]);
     const yScale = d3.scaleLinear().domain([-1, 6]).range([height - margin.bottom, margin.top]);
 
-    // 坐标轴
     const xAxis = d3.axisBottom(xScale).ticks(5);
     const yAxis = d3.axisLeft(yScale).ticks(5);
 
@@ -24,9 +22,6 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("transform", `translate(${xScale(0)}, 0)`)
         .call(yAxis);
 
-    // 可行域多边形点
-    // 约束: x1 + 2x2 <= 8; 2x1 + x2 <= 10; x1,x2 >= 0
-    // 顶点: (0,0), (5,0), (4,2), (0,4)
     const points = [
         {x: 0, y: 0},
         {x: 5, y: 0},
@@ -36,7 +31,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const polyStr = points.map(p => `${xScale(p.x)},${yScale(p.y)}`).join(" ");
 
-    // 绘制可行域
     svg.append("polygon")
         .attr("points", polyStr)
         .attr("fill", "#FFE0B2")
@@ -44,8 +38,6 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("stroke", "#FF8F00")
         .attr("stroke-width", 2);
 
-    // 绘制约束线 (延长线)
-    // L1: x1 + 2x2 = 8 => x2 = (8 - x1)/2
     svg.append("line")
         .attr("x1", xScale(-0.5))
         .attr("y1", yScale(4.25))
@@ -55,7 +47,6 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("stroke-width", 1)
         .attr("stroke-dasharray", "4");
 
-    // L2: 2x1 + x2 = 10 => x2 = 10 - 2x1
     svg.append("line")
         .attr("x1", xScale(2.5))
         .attr("y1", yScale(5))
@@ -65,7 +56,6 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("stroke-width", 1)
         .attr("stroke-dasharray", "4");
 
-    // 绘制极点
     svg.selectAll(".dot")
         .data(points)
         .enter().append("circle")
@@ -76,9 +66,6 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("stroke", "#fff")
         .attr("stroke-width", 2);
 
-    // 目标函数等值线示例 z = 2x1 + 3x2
-    // z = 6 => 2x1 + 3x2 = 6 => x2 = 2 - (2/3)x1
-    // z = 12 => 2x1 + 3x2 = 12 => x2 = 4 - (2/3)x1
     const objectiveColor = "#2E7D32";
 
     svg.append("line")
@@ -99,7 +86,6 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "5,5");
 
-    // 箭头表示优化方向
     svg.append("defs").append("marker")
         .attr("id", "arrow")
         .attr("viewBox", "0 -5 10 10")
@@ -129,7 +115,6 @@ document.addEventListener("DOMContentLoaded", function() {
         .attr("font-weight", "bold")
         .text("max z");
 
-    // === 交互演示逻辑 (来自 observation.js) ===
     initObservationViz();
 });
 
@@ -148,14 +133,12 @@ function initObservationViz() {
         { x: 0, y: 8, basic: [2, 4, 5], nonBasic: [1, 3], sigma: { 1: 2, 3: -1 } }
     ];
 
-    // 顶点相邻矩阵，定义在某个顶点下，选择某个非基变量入基后会移动到哪个顶点
-    // 结构: { currentIndex: { enteringVarIndex: nextIndex } }
     const vertexAdjacency = {
-        0: { 1: 1, 2: 4 }, // (0,0): x1入基 -> (10,0); x2入基 -> (0,8)
-        1: { 2: 2, 4: 0 }, // (10,0): x2入基 -> (8,4); x4入基 -> (0,0)
-        2: { 4: 3, 5: 1 }, // (8,4): x4入基 -> (5,7); x5入基 -> (10,0)
-        3: { 3: 2, 5: 4 }, // (5,7): x3入基 -> (8,4); x5入基 -> (0,8)
-        4: { 1: 3, 3: 0 }  // (0,8): x1入基 -> (5,7); x3入基 -> (0,0)
+        0: { 1: 1, 2: 4 },
+        1: { 2: 2, 4: 0 },
+        2: { 4: 3, 5: 1 },
+        3: { 3: 2, 5: 4 },
+        4: { 1: 3, 3: 0 }
     };
 
     let currentStateIndex = 0;
@@ -163,8 +146,6 @@ function initObservationViz() {
 
     const container = d3.select("#observation-viz");
     if (container.empty()) return;
-
-    // 移除 initObservationViz 中原来的动态生成逻辑（已移至 updateUI）
 
     const width = container.node().getBoundingClientRect().width || 400;
     const height = 400;
@@ -299,7 +280,7 @@ function initObservationViz() {
             }
         }
 
-        if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+        if (window.MathJax) MathJax.typesetPromise();
     }
 
     window.iterate = function(enteringVar) {
@@ -331,9 +312,7 @@ function initObservationViz() {
             document.getElementById("algebraic-steps").innerHTML = stepInfo;
             updateUI();
         }
-    }
-
-    // 动态生成按钮的逻辑已在 updateUI 中处理
+    };
 
     document.getElementById("reset-btn").onclick = function() {
         currentStateIndex = 0;
@@ -371,8 +350,6 @@ function initObservationViz() {
 
             if (bestVarIdx === -1) break; // 已无更优方向
 
-            // 执行迭代，但手动通过 window.iterate 调用以利用其逻辑
-            // 由于 iterate 中有 isAnimating 检查，我们需要暂时放开
             isAnimating = false;
             window.iterate(`x${bestVarIdx}`);
             isAnimating = true;

@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}注册 - OptLab{% endblock %}
+
+{% block head %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #fffaf0;
+            color: #5d4037;
+        }
+        .text-amber-primary { color: #d84315; }
+        .bg-amber-primary { background-color: #d84315; }
+        .border-amber-primary { border-color: #d84315; }
+        .hover-amber-primary:hover { background-color: #bf360c; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
+        <div class="text-2xl font-bold text-amber-primary flex items-center">
+            <a href="/" class="flex items-center"><i class="fas fa-flask mr-2"></i> OptLab</a>
+        </div>
+        <div class="flex items-center space-x-8">
+            <div class="space-x-8 hidden md:flex">
+                <a href="/" class="hover:text-amber-primary transition">首页</a>
+                <a href="/courses/" class="hover:text-amber-primary transition">课程中心</a>
+                <a href="/profile" class="hover:text-amber-primary transition">个人中心</a>
+            </div>
+            <div id="auth-status" class="hidden md:flex items-center space-x-4"></div>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center px-6 py-12">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-amber-100 p-8">
+            <h1 class="text-2xl font-bold mb-6 text-center text-amber-primary">注册新账号</h1>
+            <p class="text-sm text-gray-600 mb-6 text-center">
+                使用邮箱、用户名和密码完成注册
+            </p>
+
+            <div id="auth-error" class="hidden mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2"></div>
+            <div id="auth-success" class="hidden mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2"></div>
+
+            <form id="register-form" class="space-y-5">
+                <div>
+                    <label for="email" class="block text-sm font-medium mb-1">邮箱</label>
+                    <input type="email" id="email" name="email" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                </div>
+                <div>
+                    <label for="username" class="block text-sm font-medium mb-1">用户名</label>
+                    <input type="text" id="username" name="username" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-1">密码</label>
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                    <p class="mt-1 text-xs text-gray-500">密码长度需在 8-50 个字符之间。</p>
+                </div>
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium mb-1">确认密码</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                </div>
+                <button type="submit"
+                        class="w-full bg-amber-primary text-white py-2.5 rounded-lg font-semibold shadow hover:bg-amber-700 transition">
+                    注册
+                </button>
+            </form>
+
+            <p class="mt-6 text-sm text-center text-gray-600">
+                已有账号？
+                <a href="/auth/login" class="text-amber-primary font-semibold hover:underline">前往登录</a>
+            </p>
+        </div>
+    </main>
+
+    <footer class="bg-gray-100 py-8 px-6">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/auth.js"></script>
+{% endblock %}
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - OptLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #fffaf0;
+            color: #5d4037;
+        }
+        .text-amber-primary { color: #d84315; }
+        .bg-amber-primary { background-color: #d84315; }
+        .border-amber-primary { border-color: #d84315; }
+        .hover-amber-primary:hover { background-color: #bf360c; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 导航栏 -->
+    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
+        <div class="text-2xl font-bold text-amber-primary flex items-center">
+            <a href="/" class="flex items-center"><i class="fas fa-flask mr-2"></i> OptLab</a>
+        </div>
+        <div class="flex items-center space-x-8">
+            <div class="space-x-8 hidden md:flex">
+                <a href="/" class="hover:text-amber-primary transition">首页</a>
+                <a href="/courses/" class="hover:text-amber-primary transition">课程中心</a>
+                <a href="/profile" class="hover:text-amber-primary transition">个人中心</a>
+            </div>
+            <div id="auth-status" class="hidden md:flex items-center space-x-4"></div>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center px-6 py-12">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-amber-100 p-8">
+            <h1 class="text-2xl font-bold mb-6 text-center text-amber-primary">注册新账号</h1>
+            <p class="text-sm text-gray-600 mb-6 text-center">
+                使用邮箱、用户名和密码完成注册
+            </p>
+
+            <div id="auth-error" class="hidden mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2"></div>
+            <div id="auth-success" class="hidden mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2"></div>
+
+            <form id="register-form" class="space-y-5">
+                <div>
+                    <label for="email" class="block text-sm font-medium mb-1">邮箱</label>
+                    <input type="email" id="email" name="email" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                </div>
+                <div>
+                    <label for="username" class="block text-sm font-medium mb-1">用户名</label>
+                    <input type="text" id="username" name="username" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-1">密码</label>
+                    <input type="password" id="password" name="password" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                    <p class="mt-1 text-xs text-gray-500">密码长度需在 8-50 个字符之间。</p>
+                </div>
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium mb-1">确认密码</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
+                </div>
+                <button type="submit"
+                        class="w-full bg-amber-primary text-white py-2.5 rounded-lg font-semibold shadow hover:bg-amber-700 transition">
+                    注册
+                </button>
+            </form>
+
+            <p class="mt-6 text-sm text-center text-gray-600">
+                已有账号？
+                <a href="/auth/login" class="text-amber-primary font-semibold hover:underline">前往登录</a>
+            </p>
+        </div>
+    </main>
+
+    <footer class="bg-gray-100 py-8 px-6">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+        </div>
+    </footer>
+
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/auth.js"></script>
+</body>
+</html>
+

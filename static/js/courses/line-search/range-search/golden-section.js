@@ -16,6 +16,8 @@ export class GoldenSectionSearch {
         this.currentIteration = 0;
         this.history = [];
         this.isComplete = false;
+        this.hasConverged = false;
+        this.terminationReason = null; // 'converged'
         this.result = null;
     }
 
@@ -30,6 +32,8 @@ export class GoldenSectionSearch {
         // 检查停止条件
         if (Math.abs(l) < this.epsilon) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
             this.result = (this.a + this.b) / 2;
             return false;
         }
