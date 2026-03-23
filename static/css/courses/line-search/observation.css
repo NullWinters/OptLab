@@ -236,7 +236,7 @@ select {
 .examples-section ul {
     margin-left: 20px;
     margin-top: 5px;
-    color: #8d6e63;
+    color: var(--text-light);
 }
 
 /* 响应式 */

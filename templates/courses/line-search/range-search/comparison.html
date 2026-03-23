@@ -12,7 +12,6 @@
 <!-- 自定义样式 -->
 <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
 <link rel="stylesheet" href="/static/css/courses/line-search/comparison.css">
-<link rel="stylesheet" href="/static/css/courses/line-search/range-controls.css">
 <style>
     /* 三算法控制面板布局 */
     .triple-control-panel {
@@ -242,13 +241,14 @@
             <h3>黄金分割法</h3>
             <div class="control-group">
                 <label for="golden-epsilon">精度 ε :</label>
-                <input type="range" id="golden-epsilon" min="0.001" max="1" step="0.001" value="0.5">
+                <input type="range" id="golden-epsilon" min="0.001" max="1" step="0.001" value="0.5"
+                    style="width: 100%;">
                 <span id="golden-epsilon-value">0.500</span>
             </div>
             <div class="parameter-display">
                 <table class="param-table">
                     <tbody id="golden-param-body">
-                    <!-- 动态填充 -->
+                        <!-- 动态填充 -->
                     </tbody>
                 </table>
             </div>
@@ -265,14 +265,14 @@
                 <div class="control-group" style="flex: 1; min-width: 150px;">
                     <label for="fib-epsilon">修正系数 ε :</label>
                     <input type="range" id="fib-epsilon" min="0.001" max="0.1" step="0.001" value="0.01"
-                           style="width: 100%;">
+                        style="width: 100%;">
                     <span id="fib-epsilon-value">0.010</span>
                 </div>
             </div>
             <div class="parameter-display">
                 <table class="param-table">
                     <tbody id="fib-param-body">
-                    <!-- 动态填充 -->
+                        <!-- 动态填充 -->
                     </tbody>
                 </table>
             </div>
@@ -282,13 +282,13 @@
             <h3>二分法</h3>
             <div class="control-group">
                 <label for="bis-epsilon">精度 ε :</label>
-                <input type="range" id="bis-epsilon" min="0.001" max="1" step="0.001" value="0.5">
+                <input type="range" id="bis-epsilon" min="0.001" max="1" step="0.001" value="0.5" style="width: 100%;">
                 <span id="bis-epsilon-value">0.500</span>
             </div>
             <div class="parameter-display">
                 <table class="param-table">
                     <tbody id="bis-param-body">
-                    <!-- 动态填充 -->
+                        <!-- 动态填充 -->
                     </tbody>
                 </table>
             </div>
@@ -313,7 +313,7 @@
                                 <!-- 动态填充 -->
                             </select>
                             <button id="custom-func-btn" class="control-btn btn-primary"
-                                    style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
+                                style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
                             </button>
                         </div>
                     </div>
@@ -322,14 +322,14 @@
                         <div class="control-group" style="flex: 1; min-width: 120px;">
                             <label for="initial-a">初始区间左端点 a:</label>
                             <input type="range" id="initial-a" min="-10" max="10" step="0.1" value="0"
-                                   style="width: 100%;">
+                                style="width: 100%;">
                             <span id="a-value">0.0</span>
                         </div>
 
                         <div class="control-group" style="flex: 1; min-width: 120px;">
                             <label for="initial-b">初始区间右端点 b:</label>
                             <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10"
-                                   style="width: 100%;">
+                                style="width: 100%;">
                             <span id="b-value">10.0</span>
                         </div>
                     </div>
@@ -353,7 +353,7 @@
                     <div class="control-group" style="margin-top: 5px;">
                         <label for="speed-control">播放速度:</label>
                         <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
-                               style="width: 100%;">
+                            style="width: 100%;">
                         <span id="speed-value">正常</span>
                     </div>
                 </div>
@@ -368,29 +368,28 @@
                 <div class="panel-content">
                     <div class="iteration-log-toolbar">
                         <button type="button" class="control-btn btn-primary"
-                                style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
+                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
                             查看实验数据
                         </button>
                         <button type="button" class="control-btn btn-secondary"
-                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
-                                id="iteration-log-export-csv-btn">
+                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-export-csv-btn">
                             导出实验数据
                         </button>
                         <div class="dropdown-wrap" style="width: 100%;">
                             <button type="button" class="control-btn btn-accent"
-                                    style="padding: 10px 16px; font-size: 14px; width: 100%;"
-                                    id="save-profile-dropdown-trigger">
+                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                                id="save-profile-dropdown-trigger">
                                 保存至个人中心 ▾
                             </button>
                             <div id="save-profile-dropdown" class="dropdown-panel hidden">
                                 <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                        data-algo="黄金分割法">黄金分割法
+                                    data-algo="黄金分割法">黄金分割法
                                 </button>
                                 <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                        data-algo="斐波那契法">斐波那契法
+                                    data-algo="斐波那契法">斐波那契法
                                 </button>
                                 <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                        data-algo="二分法">二分法
+                                    data-algo="二分法">二分法
                                 </button>
                                 <button type="button" class="dropdown-option save-profile-option" data-type="all">
                                     总体对比数据
@@ -445,7 +444,7 @@
                 <div class="input-group">
                     <label for="custom-expr-input">输入函数表达式 f(x):</label>
                     <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4"
-                           style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                        style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                     <div id="expr-error" style="color: red; font-size: 0.9em; margin-top: 5px; min-height: 1.2em;">
                     </div>
                 </div>
@@ -514,7 +513,7 @@
 <!-- 迭代数据查看模态框 -->
 <div id="iteration-log-modal" class="modal" style="display: none;">
     <div class="modal-content"
-         style="max-width: 920px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
+        style="max-width: 920px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0;" id="iteration-log-modal-title">区间收缩性质对比 · 本次实验迭代数据</h3>
             <span id="iteration-log-close" class="close-modal" style="cursor: pointer;">&times;</span>
@@ -522,20 +521,19 @@
         <div class="modal-body" style="margin-top: 10px; overflow: auto;">
             <div style="font-size: 13px; color: #555; margin-bottom: 8px;">
                 <div>实验函数：<span id="iteration-log-summary-func">--</span></div>
-                <div>初始区间：[<span id="iteration-log-summary-a">--</span>, <span
-                        id="iteration-log-summary-b">--</span>]
+                <div>初始区间：[<span id="iteration-log-summary-a">--</span>, <span id="iteration-log-summary-b">--</span>]
                 </div>
                 <div>总迭代记录条数：<span id="iteration-log-summary-count">--</span></div>
             </div>
             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                 <thead>
-                <tr>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号 k</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">左端点 aₖ</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">右端点 bₖ</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">区间长度</th>
-                </tr>
+                    <tr>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号 k</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">左端点 aₖ</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">右端点 bₖ</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">区间长度</th>
+                    </tr>
                 </thead>
                 <tbody id="iteration-log-body"></tbody>
             </table>
@@ -549,10 +547,10 @@
 
 {% block scripts %}
 <script type="module">
-    import {FunctionLibrary, calculateFunction} from '/static/js/courses/line-search/range-search/function-utils.js';
-    import {ComparisonController} from '/static/js/courses/line-search/range-search/comparison-controller.js';
-    import {ComparisonVisualizer} from '/static/js/courses/line-search/range-search/comparison-visualizer.js';
-    import {PerformanceMetrics} from '/static/js/courses/line-search/range-search/performance-metrics.js';
+    import { FunctionLibrary, calculateFunction } from '/static/js/courses/line-search/range-search/function-utils.js';
+    import { ComparisonController } from '/static/js/courses/line-search/range-search/comparison-controller.js';
+    import { ComparisonVisualizer } from '/static/js/courses/line-search/range-search/comparison-visualizer.js';
+    import { PerformanceMetrics } from '/static/js/courses/line-search/range-search/performance-metrics.js';
 
     // 状态管理
     const AppState = {
@@ -578,7 +576,7 @@
         bisEps: 0.5,
 
         subStep: 0, // 0: 初始, 1: a_try, 2: b_try, 3: compare, 4: update
-        currentTrialPoints: {golden: null, fibonacci: null, bisection: null}
+        currentTrialPoints: { golden: null, fibonacci: null, bisection: null }
     };
 
     // 初始化
@@ -658,7 +656,7 @@
                     return;
                 }
 
-                const result = math.evaluate(expr, {x: 1});
+                const result = math.evaluate(expr, { x: 1 });
                 if (typeof result !== 'number' && typeof result !== 'object') {
                     throw new Error("表达式计算结果无效");
                 }
@@ -926,7 +924,7 @@
             });
         });
 
-        const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'});
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
@@ -962,7 +960,7 @@
                 results: histories
             };
         } else {
-            const keyMap = {'黄金分割法': 'golden', '斐波那契法': 'fibonacci', '二分法': 'bisection'};
+            const keyMap = { '黄金分割法': 'golden', '斐波那契法': 'fibonacci', '二分法': 'bisection' };
             const key = keyMap[algoName];
             dataToSave = {
                 title: `区间收缩性质对比 - ${algoName}`,
@@ -1002,7 +1000,7 @@
 
         AppState.runStatus = '未运行';
         AppState.subStep = 0;
-        AppState.currentTrialPoints = {golden: null, fibonacci: null, bisection: null};
+        AppState.currentTrialPoints = { golden: null, fibonacci: null, bisection: null };
 
         const funcType = AppState.selectedFuncId;
         const expr = FunctionLibrary[funcType].expression;
@@ -1200,14 +1198,14 @@
             document.getElementById('metric-iter-fib').textContent = metrics.iterations.fibonacci;
             document.getElementById('metric-iter-bis').textContent = metrics.iterations.bisection;
 
-            const iterWinnerMap = {golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法'};
+            const iterWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
             document.getElementById('winner-iter').textContent = iterWinnerMap[metrics.iterations.winner] + '胜出';
 
             document.getElementById('metric-prec-golden').textContent = metrics.precision.golden;
             document.getElementById('metric-prec-fib').textContent = metrics.precision.fibonacci;
             document.getElementById('metric-prec-bis').textContent = metrics.precision.bisection;
 
-            const precWinnerMap = {golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法'};
+            const precWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
             document.getElementById('winner-prec').textContent = precWinnerMap[metrics.precision.winner] + '更精确';
         }
     }
@@ -1217,22 +1215,22 @@
     window.AI_CONFIG = {
         PAGE_ID: 'range_search_comparison',
         BUTTON_REGISTRY: [
-            {id: "function-select", description: "测试函数选择下拉框", type: "normal"},
-            {id: "initial-a", description: "初始区间左端点 a 滑块", type: "normal"},
-            {id: "initial-b", description: "初始区间右端点 b 滑块", type: "normal"},
-            {id: "golden-epsilon", description: "黄金分割法精度 ε 滑块", type: "normal"},
-            {id: "fib-n", description: "斐波那契数列法迭代次数 N 滑块", type: "normal"},
-            {id: "fib-epsilon", description: "斐波那契数列法修正系数 ε 滑块", type: "normal"},
-            {id: "bis-epsilon", description: "二分法精度 ε 滑块", type: "normal"},
-            {id: "pan-left-btn", description: "向左平移按钮，将可视化视图向左移动", type: "normal"},
-            {id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal"},
-            {id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal"},
-            {id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal"},
-            {id: "play-btn", description: "播放按钮", type: "normal"},
-            {id: "pause-btn", description: "暂停按钮", type: "normal"},
-            {id: "step-btn", description: "单步按钮", type: "normal"},
-            {id: "reset-btn", description: "重置按钮", type: "normal"},
-            {id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal"}
+            { id: "function-select", description: "测试函数选择下拉框", type: "normal" },
+            { id: "initial-a", description: "初始区间左端点 a 滑块", type: "normal" },
+            { id: "initial-b", description: "初始区间右端点 b 滑块", type: "normal" },
+            { id: "golden-epsilon", description: "黄金分割法精度 ε 滑块", type: "normal" },
+            { id: "fib-n", description: "斐波那契数列法迭代次数 N 滑块", type: "normal" },
+            { id: "fib-epsilon", description: "斐波那契数列法修正系数 ε 滑块", type: "normal" },
+            { id: "bis-epsilon", description: "二分法精度 ε 滑块", type: "normal" },
+            { id: "pan-left-btn", description: "向左平移按钮，将可视化视图向左移动", type: "normal" },
+            { id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal" },
+            { id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal" },
+            { id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal" },
+            { id: "play-btn", description: "播放按钮", type: "normal" },
+            { id: "pause-btn", description: "暂停按钮", type: "normal" },
+            { id: "step-btn", description: "单步按钮", type: "normal" },
+            { id: "reset-btn", description: "重置按钮", type: "normal" },
+            { id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal" }
         ],
         GUIDEBOOK: `这是区间收缩法性质对比页面。
         页面布局：

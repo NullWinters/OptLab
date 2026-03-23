@@ -239,7 +239,7 @@ class SecantMethod {
             this.margin = { top: 40, right: 40, bottom: 50, left: 70 };
             this.container = document.getElementById(containerId);
             this.width = this.container.clientWidth;
-            this.height = 350; // 固定高度
+            this.height = this.container.clientHeight || 350;
             
             this.plotWidth = this.width - this.margin.left - this.margin.right;
             this.plotHeight = this.height - this.margin.top - this.margin.bottom;
@@ -274,14 +274,30 @@ class SecantMethod {
             this.initSvg();
         }
 
+        resize() {
+            this.width = this.container.clientWidth;
+            this.height = this.container.clientHeight;
+            this.plotWidth = Math.max(0, this.width - this.margin.left - this.margin.right);
+            this.plotHeight = Math.max(0, this.height - this.margin.top - this.margin.bottom);
+            
+            // 只有在尺寸有效时才初始化 SVG
+            if (this.width > 0 && this.height > 0) {
+                this.initSvg();
+                if (this.lastArgs) {
+                    this.update(this.lastArgs.func, this.lastArgs.domain, this.lastArgs.history, this.lastArgs.type, this.lastArgs.algo, this.lastArgs.subStep);
+                }
+            }
+        }
+
         initSvg() {
             d3.select(`#${this.containerId}`).selectAll("*").remove();
             this.svg = d3.select(`#${this.containerId}`)
                 .append("svg")
                 .attr("width", this.width)
                 .attr("height", this.height)
-                .attr("viewBox", `0 0 ${this.width} ${this.height}`);
-            
+                .attr("viewBox", `0 0 ${this.width} ${this.height}`)
+                .style("display", "block"); // 防止 inline 元素的额外底部间距导致高度无限增长
+
             this.plot = this.svg.append("g")
                 .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
             
@@ -380,9 +396,11 @@ class SecantMethod {
             this.currentFunc = func;
             
             // 检测并修复隐藏容器导致的尺寸为0问题
-            if (this.width <= 0 && this.container.clientWidth > 0) {
+            if ((this.width <= 0 || this.height <= 0) && this.container.clientWidth > 0 && this.container.clientHeight > 0) {
                 this.width = this.container.clientWidth;
-                this.plotWidth = this.width - this.margin.left - this.margin.right;
+                this.height = this.container.clientHeight;
+                this.plotWidth = Math.max(0, this.width - this.margin.left - this.margin.right);
+                this.plotHeight = Math.max(0, this.height - this.margin.top - this.margin.bottom);
                 this.initSvg();
             }
             
@@ -759,6 +777,24 @@ class SecantMethod {
         const lsExportBtn = document.getElementById('ls-iteration-log-export-csv-btn');
         const lsModal = document.getElementById('ls-iteration-log-modal');
         const lsCloseBtn = document.getElementById('ls-iteration-log-close');
+
+        // 面板折叠
+        document.querySelectorAll('.panel-header').forEach(header => {
+            header.addEventListener('click', () => {
+                const panel = header.parentElement;
+                panel.classList.toggle('collapsed');
+                // 动画结束后触发重绘
+                setTimeout(() => {
+                    if (lsViz) lsViz.resize();
+                    if (profitViz) profitViz.resize();
+                }, 310);
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            if (lsViz) lsViz.resize();
+            if (profitViz) profitViz.resize();
+        });
 
         function renderLsIterationLog() {
             const tbody = document.getElementById('ls-iteration-log-body');
@@ -1350,6 +1386,7 @@ class SecantMethod {
         const method = document.getElementById(`${type}MethodSelect`).value;
         const container = document.getElementById(`${type}Sliders`);
         container.innerHTML = '';
+
         const cost = parseFloat(document.getElementById('costInput').value) || 0;
         const optVal = (type === 'ls') ? b_fit : p_opt_val;
         const configs = {
@@ -1385,6 +1422,14 @@ class SecantMethod {
             ]
         };
         const currentConfigs = configs[method] || [];
+        
+        // 根据是否有配置项显示或隐藏滑块面板
+        if (currentConfigs.length > 0) {
+            container.style.display = 'grid';
+        } else {
+            container.style.display = 'none';
+        }
+
         currentConfigs.forEach(conf => {
             const group = document.createElement('div');
             group.className = 'control-group';
@@ -1399,8 +1444,13 @@ class SecantMethod {
                 resetAlgo(type);
             });
         });
-        // 动态插入的进度条需重新初始化，才能正确显示「已覆盖蓝 / 未覆盖灰」轨道
-        if (typeof window.initRangeSliders === 'function') window.initRangeSliders();
+        // 延时等待 DOM 更新和 CSS :empty 生效后重新调整画布
+        setTimeout(() => {
+            const viz = type === 'ls' ? lsViz : profitViz;
+            if (viz && typeof viz.resize === 'function') {
+                viz.resize();
+            }
+        }, 50);
     }
 
     function resetAlgo(type) {
@@ -1649,6 +1699,7 @@ class SecantMethod {
                     document.getElementById('bDisplayForProfit').textContent = Math.abs(b_search).toFixed(2);
                     
                     // 立即触发第二部分画布的有效重绘
+                    if (profitViz) profitViz.resize();
                     updateViz('profit');
                 }
             } else {

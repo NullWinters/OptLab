@@ -126,10 +126,10 @@
             <div class="parameter-display">
                 <table class="param-table">
                     <thead>
-                    <tr>
-                        <th>参数</th>
-                        <th>当前值</th>
-                    </tr>
+                        <tr>
+                            <th>参数</th>
+                            <th>当前值</th>
+                        </tr>
                     </thead>
                     <tbody id="gd-param-body"></tbody>
                 </table>
@@ -140,10 +140,10 @@
             <div class="parameter-display">
                 <table class="param-table">
                     <thead>
-                    <tr>
-                        <th>参数</th>
-                        <th>当前值</th>
-                    </tr>
+                        <tr>
+                            <th>参数</th>
+                            <th>当前值</th>
+                        </tr>
                     </thead>
                     <tbody id="newton-param-body"></tbody>
                 </table>
@@ -154,10 +154,10 @@
             <div class="parameter-display">
                 <table class="param-table">
                     <thead>
-                    <tr>
-                        <th>参数</th>
-                        <th>当前值</th>
-                    </tr>
+                        <tr>
+                            <th>参数</th>
+                            <th>当前值</th>
+                        </tr>
                     </thead>
                     <tbody id="secant-param-body"></tbody>
                 </table>
@@ -178,7 +178,7 @@
                             <!-- 动态填充 -->
                         </select>
                         <button id="custom-func-btn" class="control-btn btn-primary"
-                                style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
+                            style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
                         </button>
                     </div>
                 </div>
@@ -187,13 +187,13 @@
                     <div class="control-group" style="flex: 1; min-width: 150px;">
                         <label for="initial-point0-slider">初始点 x<sub>0</sub>:</label>
                         <input type="range" id="initial-point0-slider" min="-10" max="10" step="0.1" value="1"
-                               style="width: 100%;">
+                            style="width: 100%;">
                         <span id="initial-point0-value">1</span>
                     </div>
                     <div class="control-group" style="flex: 1; min-width: 150px;">
                         <label for="initial-point-1-slider">初始点 x<sub>-1</sub>:</label>
                         <input type="range" id="initial-point-1-slider" min="-10" max="10" step="0.1" value="2"
-                               style="width: 100%;">
+                            style="width: 100%;">
                         <span id="initial-point-1-value">2</span>
                     </div>
                     <div class="control-group" style="flex: 1; min-width: 150px;">
@@ -204,7 +204,7 @@
                     <div class="control-group" style="flex: 1; min-width: 150px;">
                         <label for="learning-rate">学习率 α:</label>
                         <input type="range" id="learning-rate" min="0.001" max="1" step="0.001" value="0.01"
-                               style="width: 100%;">
+                            style="width: 100%;">
                         <span id="learning-rate-value">0.01</span>
                     </div>
                 </div>
@@ -223,7 +223,7 @@
                 <div class="control-group">
                     <label for="speed-control">播放速度：</label>
                     <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
-                           style="width: 100%;">
+                        style="width: 100%;">
                     <span id="speed-value">正常</span>
                 </div>
             </div>
@@ -233,28 +233,28 @@
                 <h3>实验数据</h3>
                 <div class="iteration-log-toolbar">
                     <button type="button" class="control-btn btn-primary"
-                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
+                        style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
                         查看实验数据
                     </button>
                     <button type="button" class="control-btn btn-secondary"
-                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-export-csv-btn">
+                        style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-export-csv-btn">
                         导出实验数据
                     </button>
                     <div class="dropdown-wrap" style="width: 100%;">
                         <button type="button" class="control-btn btn-accent"
-                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
-                                id="save-profile-dropdown-trigger">
+                            style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                            id="save-profile-dropdown-trigger">
                             保存至个人中心 ▾
                         </button>
                         <div id="save-profile-dropdown" class="dropdown-panel hidden">
                             <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                    data-algo="梯度下降法">梯度下降法
+                                data-algo="梯度下降法">梯度下降法
                             </button>
                             <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                    data-algo="牛顿法">牛顿法
+                                data-algo="牛顿法">牛顿法
                             </button>
                             <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                    data-algo="割线法">割线法
+                                data-algo="割线法">割线法
                             </button>
                             <button type="button" class="dropdown-option save-profile-option" data-type="all">
                                 总体对比数据
@@ -297,9 +297,9 @@
     </div>
     <!-- 自定义函数模态框 -->
     <div id="custom-func-modal" class="modal"
-         style="display: none; position: fixed; top:0; left:0; right:0; bottom:0; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index: 1000;">
+        style="display: none; position: fixed; top:0; left:0; right:0; bottom:0; align-items:center; justify-content:center; background: rgba(0,0,0,0.4); z-index: 1000;">
         <div class="modal-content"
-             style="background:#fff; padding:16px; border-radius:8px; width: 520px; max-width: 92%; box-shadow: 0 6px 24px rgba(0,0,0,.2);">
+            style="background:#fff; padding:16px; border-radius:8px; width: 520px; max-width: 92%; box-shadow: 0 6px 24px rgba(0,0,0,.2);">
             <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between;">
                 <h3 style="margin:0;">自定义函数解析器 (math.js)</h3>
                 <span class="close-modal" style="cursor:pointer; font-size: 20px;">&times;</span>
@@ -308,7 +308,7 @@
                 <div class="input-group" style="display:flex; flex-direction:column; gap:6px;">
                     <label for="custom-expr-input">输入函数表达式 f(x):</label>
                     <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4"
-                           style="padding: 8px; font-size: 14px;">
+                        style="padding: 8px; font-size: 14px;">
                     <div id="expr-error" style="color:#d32f2f; font-size: 13px;"></div>
                 </div>
                 <div class="examples-section" style="margin-top: 10px;">
@@ -333,7 +333,7 @@
 <!-- 迭代数据查看模态框 -->
 <div id="iteration-log-modal" class="modal" style="display: none;">
     <div class="modal-content"
-         style="max-width: 920px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
+        style="max-width: 920px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
         <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0;" id="iteration-log-modal-title">点搜索性质对比 · 本次实验迭代数据</h3>
             <span id="iteration-log-close" class="close-modal" style="cursor: pointer;">&times;</span>
@@ -349,20 +349,20 @@
                 <div>总迭代记录条数：<span id="iteration-log-summary-count">--</span></div>
             </div>
             <div id="iteration-log-final-summary"
-                 style="font-size: 13px; color: #b71c1c; background: #fff3e0; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: none;">
+                style="font-size: 13px; color: #b71c1c; background: #fff3e0; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: none;">
                 <!-- 最终收敛结果由脚本填充 -->
             </div>
             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                 <thead>
-                <tr>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号 k</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">当前点 xₖ</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">函数值 f(xₖ)</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">导数/近似导数</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">二阶导 (如适用)</th>
-                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">状态</th>
-                </tr>
+                    <tr>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号 k</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">当前点 xₖ</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">函数值 f(xₖ)</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">导数/近似导数</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">二阶导 (如适用)</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">状态</th>
+                    </tr>
                 </thead>
                 <tbody id="iteration-log-body"></tbody>
             </table>
@@ -375,25 +375,25 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/range-slider.js"></script>
+<script src="/static/js/api.js"></script>
 <script>
     window.AI_CONFIG = {
         PAGE_ID: 'point_search_comparison',
         BUTTON_REGISTRY: [
-            {id: "function-select", description: "测试函数选择下拉框", type: "normal"},
-            {id: "custom-func-btn", description: "自定义函数按钮", type: "normal"},
-            {id: "initial-point0-slider", description: "初始点x0滑动条", type: "normal"},
-            {id: "initial-point-1-slider", description: "初始点x-1滑动条", type: "normal"},
-            {id: "iterations", description: "迭代次数滑动条", type: "normal"},
-            {id: "learning-rate", description: "学习率滑动条", type: "normal"},
-            {id: "play-btn", description: "播放按钮", type: "normal"},
-            {id: "pause-btn", description: "暂停按钮", type: "normal"},
-            {id: "step-btn", description: "单步按钮", type: "normal"},
-            {id: "reset-btn", description: "重置按钮", type: "normal"},
-            {id: "pan-left-btn", description: "向左平移按钮", type: "normal"},
-            {id: "pan-right-btn", description: "向右平移按钮", type: "normal"},
-            {id: "zoom-in-btn", description: "放大按钮", type: "normal"},
-            {id: "zoom-out-btn", description: "缩小按钮", type: "normal"}
+            { id: "function-select", description: "测试函数选择下拉框", type: "normal" },
+            { id: "custom-func-btn", description: "自定义函数按钮", type: "normal" },
+            { id: "initial-point0-slider", description: "初始点x0滑动条", type: "normal" },
+            { id: "initial-point-1-slider", description: "初始点x-1滑动条", type: "normal" },
+            { id: "iterations", description: "迭代次数滑动条", type: "normal" },
+            { id: "learning-rate", description: "学习率滑动条", type: "normal" },
+            { id: "play-btn", description: "播放按钮", type: "normal" },
+            { id: "pause-btn", description: "暂停按钮", type: "normal" },
+            { id: "step-btn", description: "单步按钮", type: "normal" },
+            { id: "reset-btn", description: "重置按钮", type: "normal" },
+            { id: "pan-left-btn", description: "向左平移按钮", type: "normal" },
+            { id: "pan-right-btn", description: "向右平移按钮", type: "normal" },
+            { id: "zoom-in-btn", description: "放大按钮", type: "normal" },
+            { id: "zoom-out-btn", description: "缩小按钮", type: "normal" }
         ],
         GUIDEBOOK: `这是点搜索性质对比页面。
         页面布局：
@@ -418,7 +418,7 @@
         NewtonsMethod,
         SecantMethod
     } from '/static/js/courses/line-search/point-search/algorithms.js';
-    import {PointSearchVisualizer} from '/static/js/courses/line-search/point-search/visualization.js';
+    import { PointSearchVisualizer } from '/static/js/courses/line-search/point-search/visualization.js';
 
     const FunctionLibrary = {
         quadratic: {
@@ -581,7 +581,7 @@
             const expr = document.getElementById('custom-expr-input').value.trim();
             if (!expr) return;
             try {
-                math.evaluate(expr, {x: 1});
+                math.evaluate(expr, { x: 1 });
                 const customId = 'custom_' + Date.now();
                 FunctionLibrary[customId] = {
                     id: customId,
@@ -732,7 +732,7 @@
             } : algoName === '牛顿法' ? {
                 x_0: AppState.initialX0,
                 N: AppState.initialN
-            } : {x_prev: AppState.initialXPrev, x_0: AppState.initialX0, N: AppState.initialN};
+            } : { x_prev: AppState.initialXPrev, x_0: AppState.initialX0, N: AppState.initialN };
             return {
                 algorithm_name: algoName,
                 test_function: AppState.functionExpr || (first && first.function),
@@ -782,7 +782,7 @@
             const header = ['algorithm', 'iteration', 'function', 'x', 'f_x', 'df_x', 'ddf_x', 'target', 'initial_x0', 'initial_x_prev', 'initial_alpha', 'initial_n', 'is_complete', 'has_converged', 'termination_reason', 'result', 'timestamp'];
             const rows = log.map(row => [row.algorithm, row.iteration, row.function, row.x, row.f_x, row.df_x != null ? row.df_x : '', row.ddf_x != null ? row.ddf_x : '', row.target || '', row.initial_x0, row.initial_x_prev != null ? row.initial_x_prev : '', row.initial_alpha != null ? row.initial_alpha : '', row.initial_n, row.is_complete ? 'true' : 'false', row.has_converged ? 'true' : 'false', row.termination_reason || '', row.result != null ? row.result : '', row.timestamp || '']);
             const csvLines = [...summary, header, ...rows].map(cols => cols.map(esc).join(',')).join('\n');
-            const blob = new Blob([csvLines], {type: 'text/csv;charset=utf-8;'});
+            const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -886,7 +886,7 @@
         const expr = funcInfo.expression;
         buildSolvers(expr);
         // 状态重置为未运行
-        AppState.statuses = {gd: '未运行', newton: '未运行', secant: '未运行'};
+        AppState.statuses = { gd: '未运行', newton: '未运行', secant: '未运行' };
 
         // 记录本次实验的初始设置与函数表达式
         AppState.initialX0 = AppState.x0;
@@ -905,23 +905,23 @@
             AppState.visualizers.secant.updateHistory([], 'secant', false);
             drawAll(expr, funcInfo.domain);
             // 初始点若在当前范围外，自动聚焦到历史范围
-            const {gd, newton, secant} = AppState.solvers;
+            const { gd, newton, secant } = AppState.solvers;
             AppState.visualizers.gd.autoZoom(gd.history);
             AppState.visualizers.newton.autoZoom(newton.history);
             AppState.visualizers.secant.autoZoom(secant.history);
             updateUI();
         } else {
             // 拖动时：仅在超出边界时 autoZoom
-            const {gd, newton, secant} = AppState.solvers;
-            AppState.visualizers.gd.autoZoom(gd.history, {dragging: true});
-            AppState.visualizers.newton.autoZoom(newton.history, {dragging: true});
-            AppState.visualizers.secant.autoZoom(secant.history, {dragging: true});
+            const { gd, newton, secant } = AppState.solvers;
+            AppState.visualizers.gd.autoZoom(gd.history, { dragging: true });
+            AppState.visualizers.newton.autoZoom(newton.history, { dragging: true });
+            AppState.visualizers.secant.autoZoom(secant.history, { dragging: true });
             updateUI(true);
         }
     }
 
     function play() {
-        const {gd, newton, secant} = AppState.solvers;
+        const { gd, newton, secant } = AppState.solvers;
         const allCompleteInit = gd?.isComplete && newton?.isComplete && secant?.isComplete;
         if (AppState.isPlaying || allCompleteInit) return;
         AppState.isPlaying = true;
@@ -936,7 +936,7 @@
         AppState.timer = setInterval(() => {
             const cont = step();
             if (!cont) {
-                const {gd, newton, secant} = AppState.solvers;
+                const { gd, newton, secant } = AppState.solvers;
                 const allComplete = gd.isComplete && newton.isComplete && secant.isComplete;
                 if (allComplete) {
                     AppState.isPlaying = false;
@@ -968,7 +968,7 @@
     }
 
     function step() {
-        const {gd, newton, secant} = AppState.solvers;
+        const { gd, newton, secant } = AppState.solvers;
         let movedAny = false;
         let moved = false;
         if (gd && !gd.isComplete) {
@@ -1079,7 +1079,7 @@
     }
 
     function updateUI(isDragging = false) {
-        const {gd, newton, secant} = AppState.solvers;
+        const { gd, newton, secant } = AppState.solvers;
         if (!gd || !newton || !secant) return;
 
         // update histories on canvases
