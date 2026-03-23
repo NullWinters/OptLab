@@ -8,9 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
 <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
 <link rel="stylesheet" href="/static/css/courses/line-search/application.css">
-    <link rel="stylesheet" href="/static/css/courses/line-search/application-custom.css">
-    <link rel="stylesheet" href="/static/css/courses/line-search/range-controls.css">
-    <link rel="stylesheet" href="/static/css/components/experiment-notes.css">
+<link rel="stylesheet" href="/static/css/components/experiment-notes.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -35,8 +34,7 @@
                 1. 无偏估计: \( E(y) = \beta E(x) + \alpha \implies \bar{y} = \beta \bar{x} + \alpha \)<br>
                 2. 消除变量 \( \alpha \): \( \alpha = \bar{y} - \beta \bar{x} \)<br>
                 3. 优化目标: \( \min L = \sum (y_i - (\beta x_i + \alpha))^2 = \beta^2 \sum (x_i - \bar{x})^2 - 2\beta
-                \sum
-                (y_i - \bar{y})(x_i - \bar{x}) + \text{常数} \)
+                \sum (y_i - \bar{y})(x_i - \bar{x}) + \text{常数} \)
             </div>
             <div class="btn-group">
                 <input type="file" id="dataFile" accept=".csv,.txt,.text/csv" style="display: none;">
@@ -69,7 +67,22 @@
         <div class="visualization-container">
             <div class="canvas-column">
                 <div class="card">
-                    <h3>可视化搜索过程 (目标函数 \( L(\beta) \))</h3>
+                    <div class="canvas-header">
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <h3>可视化搜索过程 (目标函数 \( L(\beta) \))</h3>
+                            <div class="control-group" style="flex-direction: row; align-items: center; gap: 8px;">
+                                <label style="white-space: nowrap;">选择搜索方法：</label>
+                                <select id="lsMethodSelect">
+                                    <option value="golden">黄金分割法</option>
+                                    <option value="fib">斐波那契数列法</option>
+                                    <option value="bisect">二分法</option>
+                                    <option value="gd">梯度下降法</option>
+                                    <option value="newton">牛顿法</option>
+                                    <option value="secant">割线法</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                     <div id="lsCanvas" class="canvas-container"></div>
                     <div id="lsSliders" class="sliders-panel">
                         <!-- 动态参数滑动条将在此插入 -->
@@ -77,47 +90,90 @@
                 </div>
             </div>
             <div class="control-column">
-                <div class="card">
-                    <h3>算法控制</h3>
-                    <div class="control-group">
-                        <label>选择搜索方法：</label>
-                        <select id="lsMethodSelect">
-                            <option value="golden">黄金分割法</option>
-                            <option value="fib">斐波那契数列法</option>
-                            <option value="bisect">二分法</option>
-                            <option value="gd">梯度下降法</option>
-                            <option value="newton">牛顿法</option>
-                            <option value="secant">割线法</option>
-                        </select>
+                <!-- 算法控制面板 -->
+                <div class="control-panel" id="lsAlgoPanel">
+                    <div class="panel-header">
+                        <h3>算法控制</h3>
+                        <button class="collapse-btn">▼</button>
                     </div>
-                    <div class="playback-controls">
-                        <button class="btn btn-primary" id="lsPlayBtn">播放</button>
-                        <button class="btn btn-secondary" id="lsPauseBtn" disabled>暂停</button>
-                        <button class="btn btn-outline" id="lsStepBtn">单步</button>
-                        <button class="btn btn-outline" id="lsResetBtn" disabled>重置</button>
-                    </div>
-                    <div class="speed-control">
-                        <label>播放速度：</label>
-                        <input type="range" id="lsSpeedSlider" min="100" max="2000" step="100" value="1000">
-                    </div>
-                    <div class="zoom-controls">
-                        <button class="btn btn-small" id="lsZoomIn">放大</button>
-                        <button class="btn btn-small" id="lsZoomOut">缩小</button>
-                        <button class="btn btn-small" id="lsPanLeft">向左</button>
-                        <button class="btn btn-small" id="lsPanRight">向右</button>
-                    </div>
-                    <div class="status-display">
-                        <div class="status-item">状态: <span id="lsStepInfo" class="value-display">未开始</span></div>
-                        <div class="status-item">搜索解 \(\beta^*\): <span id="lsSearchRes" class="value-display"
-                                                                           style="color: var(--danger-color);">--</span>
+                    <div class="panel-content">
+                        <div class="control-buttons">
+                            <button class="btn btn-primary" id="lsPlayBtn">播放</button>
+                            <button class="btn btn-secondary" id="lsPauseBtn" disabled>暂停</button>
+                            <button class="btn btn-outline" id="lsStepBtn">单步</button>
+                            <button class="btn btn-outline" id="lsResetBtn" disabled>重置</button>
                         </div>
-                        <div class="status-item">对应 \(\alpha\): <span id="lsInterceptRes"
-                                                                        class="value-display">--</span>
+                        <div class="speed-control">
+                            <div class="speed-title-row">
+                                <label for="lsSpeedSlider">播放速度</label>
+                                <span id="lsSpeedValue" class="value-display">正常</span>
+                            </div>
+                            <input type="range" id="lsSpeedSlider" min="100" max="2000" step="1" value="1000">
                         </div>
                     </div>
-                    <div class="result-box">
-                        <strong>拟合函数:</strong><br>
-                        <span id="funcDisplay" class="value-display">--</span>
+                </div>
+
+                <!-- 画布控制面板 -->
+                <div class="control-panel" id="lsCanvasPanel">
+                    <div class="panel-header">
+                        <h3>画布控制</h3>
+                        <button class="collapse-btn">▼</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="pan-zoom-row">
+                            <div class="pan-buttons">
+                                <button class="btn btn-small" id="lsPanLeft">向左</button>
+                                <button class="btn btn-small" id="lsPanRight">向右</button>
+                            </div>
+                            <div class="zoom-buttons">
+                                <button class="btn btn-small" id="lsZoomIn">放大</button>
+                                <button class="btn btn-small" id="lsZoomOut">缩小</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 参数状态面板 -->
+                <div class="control-panel" id="lsStatusPanel">
+                    <div class="panel-header">
+                        <h3>参数状态</h3>
+                        <button class="collapse-btn">▼</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="status-display">
+                            <div class="status-item">状态: <span id="lsStepInfo" class="value-display">未开始</span></div>
+                            <div class="status-item">搜索解 \(\beta^*\): <span id="lsSearchRes" class="value-display"
+                                                                               style="color: var(--danger-color);">--</span>
+                            </div>
+                            <div class="status-item">对应 \(\alpha\): <span id="lsInterceptRes"
+                                                                            class="value-display">--</span>
+                            </div>
+                        </div>
+                        <div class="result-box">
+                            <strong>拟合函数:</strong><br>
+                            <span id="funcDisplay" class="value-display">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 实验数据面板 -->
+                <div class="control-panel" id="lsDataPanel">
+                    <div class="panel-header">
+                        <h3>实验数据</h3>
+                        <button class="collapse-btn">▼</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="data-buttons">
+                            <button id="ls-iteration-log-open-btn" class="btn btn-primary">
+                                查看实验数据
+                            </button>
+                            <button id="ls-iteration-log-export-csv-btn" class="btn btn-outline">
+                                导出实验数据
+                            </button>
+                            <button id="ls-iteration-log-save-to-profile-btn" class="btn btn-primary">
+                                保存至个人中心
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -127,17 +183,18 @@
     <hr>
 
     <section id="profitSection" class="experiment-section" style="display: none;">
-        <div class="card" style="grid-column: 1 / -1;">
+        <div class="card profit-config-card">
             <h2>定价与利润最大化 (负利润最小化)</h2>
-            <div class="control-group" style="margin-bottom: 15px;">
-                <label>单位成本 \( c \):</label>
-                <input type="number" id="costInput" value="10" step="0.1" min="0"
-                       style="width: 100px; padding: 5px; border: 1px solid var(--border-color); border-radius: 4px;">
-            </div>
-            <div class="derivation-box" style="background: #fff3e0; padding: 15px; border-radius: 8px;">
-                <strong>利润函数:</strong><br>
-                \( \pi(p) = (p - \) <span id="cDisplay">10</span> \( ) \cdot ( \) <span id="aDisplayForProfit">--</span>
-                <span id="signDisplayForProfit">--</span> <span id="bDisplayForProfit">--</span> \( \cdot p ) \)
+            <div class="profit-config-container">
+                <div class="control-group">
+                    <label>单位成本 \( c \):</label>
+                    <input type="number" id="costInput" value="10" step="0.1" min="0">
+                </div>
+                <div class="derivation-box">
+                    <strong>利润函数:</strong><br>
+                    \( \pi(p) = (p - \) <span id="cDisplay">10</span> \( ) \cdot ( \) <span id="aDisplayForProfit">--</span>
+                    <span id="signDisplayForProfit">--</span> <span id="bDisplayForProfit">--</span> \( \cdot p ) \)
+                </div>
             </div>
         </div>
 
@@ -145,7 +202,22 @@
         <div class="visualization-container">
             <div class="canvas-column">
                 <div class="card">
-                    <h3>可视化搜索过程 (目标函数 \( -\pi(p) \))</h3>
+                    <div class="canvas-header">
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <h3>可视化搜索过程 (目标函数 \( -\pi(p) \))</h3>
+                            <div class="control-group" style="flex-direction: row; align-items: center; gap: 8px;">
+                                <label style="white-space: nowrap;">选择搜索方法：</label>
+                                <select id="profitMethodSelect">
+                                    <option value="golden">黄金分割法</option>
+                                    <option value="fib">斐波那契数列法</option>
+                                    <option value="bisect">二分法</option>
+                                    <option value="gd">梯度下降法</option>
+                                    <option value="newton">牛顿法</option>
+                                    <option value="secant">割线法</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                     <div id="profitCanvas" class="canvas-container"></div>
                     <div id="profitSliders" class="sliders-panel">
                         <!-- 动态参数滑动条将在此插入 -->
@@ -153,63 +225,173 @@
                 </div>
             </div>
             <div class="control-column">
-                <div class="card">
-                    <h3>算法控制</h3>
-                    <div class="control-group">
-                        <label>选择搜索方法：</label>
-                        <select id="profitMethodSelect">
-                            <option value="golden">黄金分割法</option>
-                            <option value="fib">斐波那契数列法</option>
-                            <option value="bisect">二分法</option>
-                            <option value="gd">梯度下降法</option>
-                            <option value="newton">牛顿法</option>
-                            <option value="secant">割线法</option>
-                        </select>
+                <!-- 算法控制面板 -->
+                <div class="control-panel" id="profitAlgoPanel">
+                    <div class="panel-header">
+                        <h3>算法控制</h3>
+                        <button class="collapse-btn">▼</button>
                     </div>
-                    <div class="playback-controls">
-                        <button class="btn btn-primary" id="profitPlayBtn">播放</button>
-                        <button class="btn btn-secondary" id="profitPauseBtn" disabled>暂停</button>
-                        <button class="btn btn-outline" id="profitStepBtn">单步</button>
-                        <button class="btn btn-outline" id="profitResetBtn" disabled>重置</button>
-                    </div>
-                    <div class="speed-control">
-                        <label>播放速度：</label>
-                        <input type="range" id="profitSpeedSlider" min="100" max="2000" step="100" value="1000">
-                    </div>
-                    <div class="zoom-controls">
-                        <button class="btn btn-small" id="profitZoomIn">放大</button>
-                        <button class="btn btn-small" id="profitZoomOut">缩小</button>
-                        <button class="btn btn-small" id="profitPanLeft">向左</button>
-                        <button class="btn btn-small" id="profitPanRight">向右</button>
-                    </div>
-                    <div class="status-display">
-                        <div class="status-item">状态: <span id="profitStepInfo" class="value-display">未开始</span>
+                    <div class="panel-content">
+                        <div class="control-buttons">
+                            <button class="btn btn-primary" id="profitPlayBtn">播放</button>
+                            <button class="btn btn-secondary" id="profitPauseBtn" disabled>暂停</button>
+                            <button class="btn btn-outline" id="profitStepBtn">单步</button>
+                            <button class="btn btn-outline" id="profitResetBtn" disabled>重置</button>
                         </div>
-                        <div class="status-item">搜索解 \( p^* \): <span id="profitSearchRes" class="value-display"
-                                                                         style="color: var(--danger-color);">--</span>
+                        <div class="speed-control">
+                            <div class="speed-title-row">
+                                <label for="profitSpeedSlider">播放速度</label>
+                                <span id="profitSpeedValue" class="value-display">正常</span>
+                            </div>
+                            <input type="range" id="profitSpeedSlider" min="100" max="2000" step="1" value="1000">
                         </div>
-                        <div class="status-item">对应利润: <span id="profitRes" class="value-display">--</span></div>
                     </div>
                 </div>
-                <div class="card">
-                    <h4>实验提示</h4>
-                    <p style="font-size: 0.9em; color: #666;">
-                        目标是最大化利润 \(\pi(p)\)，等价于最小化 \(-\pi(p)\)。可视化图中展示的是 \(-\pi(p)\)
-                        曲线，极小值点即为最优定价。价格的最小取值限制为 0。
-                    </p>
+
+                <!-- 画布控制面板 -->
+                <div class="control-panel" id="profitCanvasPanel">
+                    <div class="panel-header">
+                        <h3>画布控制</h3>
+                        <button class="collapse-btn">▼</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="pan-zoom-row">
+                            <div class="pan-buttons">
+                                <button class="btn btn-small" id="profitPanLeft">向左</button>
+                                <button class="btn btn-small" id="profitPanRight">向右</button>
+                            </div>
+                            <div class="zoom-buttons">
+                                <button class="btn btn-small" id="profitZoomIn">放大</button>
+                                <button class="btn btn-small" id="profitZoomOut">缩小</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 参数状态面板 -->
+                <div class="control-panel" id="profitStatusPanel">
+                    <div class="panel-header">
+                        <h3>参数状态</h3>
+                        <button class="collapse-btn">▼</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="status-display">
+                            <div class="status-item">状态: <span id="profitStepInfo" class="value-display">未开始</span>
+                            </div>
+                            <div class="status-item">搜索解 \( p^* \): <span id="profitSearchRes" class="value-display"
+                                                                             style="color: var(--danger-color);">--</span>
+                            </div>
+                            <div class="status-item">对应利润: <span id="profitRes" class="value-display">--</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 实验数据面板 -->
+                <div class="control-panel" id="profitDataPanel">
+                    <div class="panel-header">
+                        <h3>实验数据</h3>
+                        <button class="collapse-btn">▼</button>
+                    </div>
+                    <div class="panel-content">
+                        <div class="data-buttons">
+                            <button id="profit-iteration-log-open-btn" class="btn btn-primary">
+                                查看实验数据
+                            </button>
+                            <button id="profit-iteration-log-export-csv-btn" class="btn btn-outline">
+                                导出实验数据
+                            </button>
+                            <button id="profit-iteration-log-save-to-profile-btn" class="btn btn-primary">
+                                保存至个人中心
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-
+    <div id="exp-notes-mount"></div>
 </div>
+<!-- 最小二乘迭代数据查看模态框 -->
+<div id="ls-iteration-log-modal" class="modal modal-overlay">
+    <div class="modal-content modal-panel">
+        <div class="modal-header">
+            <h3>最小二乘拟合 · 本次实验迭代数据</h3>
+            <span id="ls-iteration-log-close" class="modal-close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-summary">
+                <div>目标函数：<span id="ls-iteration-log-summary-func">L(β)</span></div>
+                <div>搜索方法：<span id="ls-iteration-log-summary-method">--</span></div>
+                <div>初始参数：<span id="ls-iteration-log-summary-init">--</span></div>
+                <div>终止条件：<span id="ls-iteration-log-summary-target">--</span></div>
+                <div>总迭代记录条数：<span id="ls-iteration-log-summary-count">--</span></div>
+            </div>
+            <div id="ls-iteration-log-final-summary" class="modal-final-box" style="display: none;">
+                <!-- 最终收敛结果由脚本填充 -->
+            </div>
+            <table class="modal-table">
+                <thead>
+                <tr>
+                    <th>迭代编号</th>
+                    <th>当前 βₖ</th>
+                    <th>L(βₖ)</th>
+                    <th>L'(βₖ) / 近似量</th>
+                    <th>L''(βₖ) / 近似量</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody id="ls-iteration-log-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 利润优化迭代数据查看模态框 -->
+<div id="profit-iteration-log-modal" class="modal modal-overlay">
+    <div class="modal-content modal-panel">
+        <div class="modal-header">
+            <h3>利润优化 · 本次实验迭代数据</h3>
+            <span id="profit-iteration-log-close" class="modal-close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-summary">
+                <div>目标函数：<span id="profit-iteration-log-summary-func">-π(p)</span></div>
+                <div>搜索方法：<span id="profit-iteration-log-summary-method">--</span></div>
+                <div>单位成本 c：<span id="profit-iteration-log-summary-cost">--</span></div>
+                <div>初始参数：<span id="profit-iteration-log-summary-init">--</span></div>
+                <div>终止条件：<span id="profit-iteration-log-summary-target">--</span></div>
+                <div>总迭代记录条数：<span id="profit-iteration-log-summary-count">--</span></div>
+            </div>
+            <div id="profit-iteration-log-final-summary" class="modal-final-box" style="display: none;">
+                <!-- 最终收敛结果由脚本填充 -->
+            </div>
+            <table class="modal-table">
+                <thead>
+                <tr>
+                    <th>迭代编号</th>
+                    <th>当前价格 pₖ</th>
+                    <th>-π(pₖ)</th>
+                    <th>(-π)'(pₖ) / 近似量</th>
+                    <th>(-π)''(pₖ) / 近似量</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody id="profit-iteration-log-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <footer>
     一维搜索方法 · OptLab 教学资源
 </footer>
 {% endblock %}
 
 {% block scripts %}
+<script src="/static/js/api.js"></script>
+<script src="/static/js/courses/line-search/application.js"></script>
+<script src="/static/js/common/experiment-notes.js"></script>
 <script>
     window.AI_CONFIG = {
         PAGE_ID: 'line_search_application',
@@ -224,10 +406,38 @@
         ],
         GUIDEBOOK: `这是一维搜索方法应用实验页面。
         实验流程：
-        1. 拟合阶段：上传价格-需求数据，或使用默认数据。选择算法（如黄金分割法），观察算法如何拟合需求曲线 D(p) = βp + α。
-        2. 定价阶段：设定单位成本 c。算法会根据拟合出的需求函数，寻找使利润 π(p) = (p - c)D(p) 最大化的最优定价 p*。
-        你可以对比不同算法在处理这两个实际问题时的表现。`
+        1. 拟合阶段：上传价格-需求数据，或使用默认数据。在左侧可视化区域选择搜索方法，利用右侧“算法控制”面板观察算法如何拟合需求曲线 D(p) = βp + α。
+        2. 定价阶段：设定单位成本 c。在左侧可视化区域选择搜索方法，算法会根据拟合出的需求函数，寻找使利润 π(p) = (p - c)D(p) 最大化的最优定价 p*。
+        右侧面板（算法控制、画布控制、参数状态、实验数据）均可折叠，方便调整可视化视角。`
     };
+    document.addEventListener('DOMContentLoaded', function () {
+        ExperimentNotes.init({
+            experimentKey: 'line-search.application.main',
+            mountSelector: '#exp-notes-mount',
+            getPageData: function () {
+                var s = window.AppState;
+                if (!s) return {};
+                return {
+                    ls: {
+                        method: s.ls.method,
+                        status: s.ls.status,
+                        initial_params: s.ls.initialParams,
+                        target: s.ls.targetLabel,
+                        iteration_log: s.ls.iterationLog || []
+                    },
+                    profit: {
+                        method: s.profit.method,
+                        status: s.profit.status,
+                        initial_params: s.profit.initialParams,
+                        target: s.profit.targetLabel,
+                        iteration_log: s.profit.iterationLog || []
+                    },
+                    fitted_alpha: window.a_fit,
+                    fitted_beta: window.b_fit,
+                    optimal_price: window.p_opt_val
+                };
+            }
+        });
+    });
 </script>
-<script src="/static/js/courses/line-search/application.js"></script>
 {% endblock %}
