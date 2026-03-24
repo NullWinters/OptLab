@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.auth import create_access_token, get_current_user
@@ -46,7 +47,15 @@ async def register_user(
         username=register_in.username,
         password=register_in.password,
     )
-    user = await repo.create(user_create)
+
+    try:
+        user = await repo.create(user_create)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="邮箱或用户名已存在，请更换后重试。",
+        )
+
     return UserSchema(id=user.id, email=user.email, username=user.username)
 
 
@@ -97,7 +106,7 @@ async def update_username(
 ) -> UserSchema:
     repo = UserRepository(session)
 
-    if payload.username != current_user.username and await repo.username_is_exist(payload.username):
+    if await repo.username_is_exist(payload.username, exclude_user_id=current_user.id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="该用户名已被占用，请更换用户名。",
@@ -134,4 +143,3 @@ async def update_password(
     await session.commit()
 
     return ActionOut(message="密码修改成功，请重新登录。")
-
