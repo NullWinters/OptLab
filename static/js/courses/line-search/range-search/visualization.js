@@ -3,9 +3,10 @@ import {smartSampling, detectDiscontinuities} from './function-utils.js';
 export class OptimizationVisualizer {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
+        const container = document.getElementById(containerId);
         this.margin = options.margin || {top: 40, right: 40, bottom: 60, left: 60};
-        this.width = options.width || document.getElementById(containerId).clientWidth;
-        this.height = options.height || 500;
+        this.width = options.width || (container ? container.clientWidth : 800);
+        this.height = options.height || (container ? container.clientHeight : 500);
 
         this.plotWidth = this.width - this.margin.left - this.margin.right;
         this.plotHeight = this.height - this.margin.top - this.margin.bottom;
@@ -54,18 +55,22 @@ export class OptimizationVisualizer {
 
         this.labelLayer = this.plot.append('g').attr('class', 'label-layer');
         this.labelLayer.append('text')
+            .attr('class', 'x-label')
             .attr('x', this.plotWidth / 2)
             .attr('y', this.plotHeight + 40)
             .attr('text-anchor', 'middle')
             .attr('fill', '#5d4037')
+            .attr('font-size', '16px')
             .text('x');
 
         this.labelLayer.append('text')
+            .attr('class', 'y-label')
             .attr('transform', 'rotate(-90)')
             .attr('x', -this.plotHeight / 2)
             .attr('y', -45)
             .attr('text-anchor', 'middle')
             .attr('fill', '#5d4037')
+            .attr('font-size', '16px')
             .text('f(x)');
     }
 
@@ -83,11 +88,15 @@ export class OptimizationVisualizer {
         this.xScale.range([0, this.plotWidth]);
         this.yScale.range([this.plotHeight, 0]);
 
-        this.xAxisG.attr('transform', `translate(0,${this.plotHeight})`);
-        
-        // 更新网格等依赖 plotHeight 的元素
-        this.gridX.call(d3.axisBottom(this.xScale).tickSize(this.plotHeight).tickFormat(''));
-        this.gridY.call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
+        const duration = 400;
+
+        // 更新标签位置
+        this.labelLayer.select('.x-label').transition().duration(duration)
+            .attr('x', this.plotWidth / 2)
+            .attr('y', this.plotHeight + 40);
+
+        this.labelLayer.select('.y-label').transition().duration(duration)
+            .attr('x', -this.plotHeight / 2);
 
         if (this.currentFunc) {
             this.drawFunction(this.currentFunc, this.currentDomain);
@@ -133,8 +142,13 @@ export class OptimizationVisualizer {
             .attr('stroke-opacity', 0.5)
             .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
 
-        this.xAxisG.transition().duration(duration).call(d3.axisBottom(this.xScale));
-        this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
+        this.xAxisG.transition().duration(duration)
+            .attr('transform', `translate(0,${this.plotHeight})`)
+            .call(d3.axisBottom(this.xScale))
+            .selectAll('text').style('font-size', '12px');
+        this.yAxisG.transition().duration(duration)
+            .call(d3.axisLeft(this.yScale))
+            .selectAll('text').style('font-size', '12px');
 
         const line = d3.line()
             .x(d => this.xScale(d.x))
@@ -217,7 +231,7 @@ export class OptimizationVisualizer {
         this.drawFunction();
     }
 
-    updateInterval(a, b) {
+    updateInterval(a, b, iteration = 0) {
         const xA = this.xScale(a);
         const xB = this.xScale(b);
         const xMin = Math.min(xA, xB);
@@ -240,12 +254,13 @@ export class OptimizationVisualizer {
             .transition().duration(duration)
             .attr('x', xMin)
             .attr('width', Math.max(0, xMax - xMin))
+            .attr('height', this.plotHeight)
             .style('opacity', 1);
 
         // 2. 绘制/更新边界线
         const lineData = (a !== undefined && b !== undefined) ? [
-            {val: a, id: 'a', label: 'a'},
-            {val: b, id: 'b', label: 'b'}
+            {val: a, id: 'a', label: 'a', iteration: iteration},
+            {val: b, id: 'b', label: 'b', iteration: iteration}
         ] : [];
 
         let lines = this.intervalLayer.selectAll('line.interval-line').data(lineData, d => d.id);
@@ -264,6 +279,7 @@ export class OptimizationVisualizer {
             .transition().duration(duration)
             .attr('x1', d => this.xScale(d.val))
             .attr('x2', d => this.xScale(d.val))
+            .attr('y2', this.plotHeight)
             .style('opacity', 1);
 
         // 3. 绘制/更新标签
@@ -274,14 +290,16 @@ export class OptimizationVisualizer {
             .attr('x', d => this.xScale(d.val))
             .attr('y', -10)
             .attr('text-anchor', 'middle')
-            .attr('font-size', '12px')
+            .attr('font-size', '14px')
             .attr('font-weight', 'bold')
             .attr('fill', '#e53935')
             .style('opacity', 0)
             .merge(texts)
+            .each(function(d) {
+                d3.select(this).html(`${d.label}<tspan baseline-shift="sub" font-size="0.7em">${d.iteration}</tspan>=${d.val.toFixed(3)}`);
+            })
             .transition().duration(duration)
             .attr('x', d => this.xScale(d.val))
-            .text(d => `${d.label}=${d.val.toFixed(3)}`)
             .style('opacity', 1);
     }
 
@@ -311,6 +329,7 @@ export class OptimizationVisualizer {
             .attr('y', 20)
             .attr('text-anchor', 'middle')
             .attr('font-weight', 'bold')
+            .attr('font-size', '14px')
             .attr('x', d => this.xScale((d.a_try + d.b_try) / 2))
             .style('opacity', 0)
             .merge(compareText)
@@ -335,7 +354,7 @@ export class OptimizationVisualizer {
             points.push({id: `bis-b${prefix}`, label: "f'(b)", x: b, color: color});
         }
         if (options.showMidDeriv) {
-            points.push({id: `bis-m${prefix}`, label: "f'(m)", x: m, color: '#d84315'}); // 中点通常突出显示
+            points.push({id: `bis-m${prefix}`, label: "f'(m)", x: m, color: color}); // 中点通常突出显示
         }
 
         this.renderPoints(points, calculateY, duration, x => getDerivative(x).toFixed(4), prefix);
@@ -347,7 +366,7 @@ export class OptimizationVisualizer {
         compareText.enter().append('text')
             .attr('class', `compare-text${prefix}`)
             .attr('text-anchor', 'middle')
-            .attr('font-size', '11px')
+            .attr('font-size', '14px')
             .attr('font-weight', 'bold')
             .attr('x', d => this.xScale(d.m))
             .attr('y', 20 + yOffset)
@@ -389,6 +408,7 @@ export class OptimizationVisualizer {
             .transition().duration(duration)
             .attr('x1', d => this.xScale(d.x))
             .attr('x2', d => this.xScale(d.x))
+            .attr('y1', this.plotHeight)
             .attr('y2', d => this.yScale(calculateY(d.x)))
             .style('opacity', 1);
 
@@ -415,7 +435,7 @@ export class OptimizationVisualizer {
         labels.enter().append('text')
             .attr('class', `trial-label${classSuffix}`)
             .attr('text-anchor', 'middle')
-            .attr('font-size', '11px')
+            .attr('font-size', '14px')
             .attr('fill', d => d.color)
             .attr('x', d => this.xScale(d.x))
             .attr('y', d => this.yScale(calculateY(d.x)) - 5)

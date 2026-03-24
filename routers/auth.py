@@ -5,7 +5,16 @@ from core.auth import create_access_token, get_current_user
 from dependencies import get_session
 from models.user import User
 from repository.user_repo import UserRepository
-from schemas.user import LoginIn, LoginOut, RegisterIn, UserCreateSchema, UserSchema
+from schemas.user import (
+    ActionOut,
+    LoginIn,
+    LoginOut,
+    RegisterIn,
+    UpdatePasswordIn,
+    UpdateUsernameIn,
+    UserCreateSchema,
+    UserSchema,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -78,4 +87,51 @@ async def read_current_user(current_user: User = Depends(get_current_user)) -> U
         email=current_user.email,
         username=current_user.username,
     )
+
+
+@router.patch("/username", response_model=UserSchema)
+async def update_username(
+    payload: UpdateUsernameIn,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> UserSchema:
+    repo = UserRepository(session)
+
+    if payload.username != current_user.username and await repo.username_is_exist(payload.username):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="该用户名已被占用，请更换用户名。",
+        )
+
+    current_user.username = payload.username
+    session.add(current_user)
+    await session.commit()
+    await session.refresh(current_user)
+
+    return UserSchema(id=current_user.id, email=current_user.email, username=current_user.username)
+
+
+@router.patch("/password", response_model=ActionOut)
+async def update_password(
+    payload: UpdatePasswordIn,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ActionOut:
+    if not current_user.check_password(payload.current_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="当前密码不正确。",
+        )
+
+    if payload.current_password == payload.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密码不能与当前密码相同。",
+        )
+
+    current_user.password = payload.new_password
+    session.add(current_user)
+    await session.commit()
+
+    return ActionOut(message="密码修改成功，请重新登录。")
 

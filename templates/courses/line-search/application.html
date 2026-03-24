@@ -15,26 +15,61 @@
 {% block content %}
 <div class="container">
     <a href="index.html" class="back-btn">返回</a>
-    <h1>一维搜索方法应用实验：最小二乘拟合 + 定价利润优化</h1>
+    <h1>一维搜索方法应用实践</h1>
 
     <div class="description">
-        <p>本实验包含两个经典优化问题：<strong>① 最小二乘法线性拟合</strong>（根据价格–需求数据估计需求函数）；<strong>②
-            基于需求函数的最大利润定价</strong>。</p>
-        <p>你可以选择不同的一维搜索方法来观察算法如何收敛到最优解。</p>
+        <p><strong>实验目标</strong>：通过一维搜索方法求解两个最小化问题——最小二乘损失函数 \( L(\beta) \) 与负利润函数 \(
+            -\pi(p) \)，从而完成需求函数拟合与最优定价决策。</p>
+        <p><strong>实验流程</strong>：</p>
+        <ol style="padding-left: 1.5rem; margin: 0.5rem 0;">
+            <li><strong>数据准备</strong>：上传价格-需求数据集，或使用内置示例数据；</li>
+            <li><strong>需求函数拟合</strong>：在左侧可视化区域选择一维搜索方法（黄金分割、斐波那契、二分、梯度下降、牛顿、割线），算法将对损失函数
+                \( L(\beta) = \sum (D_i - (\beta p_i + \alpha))^2 \) 进行迭代搜索，找到最优斜率 \( \beta^* \)（截距 \(
+                \alpha \) 由均值关系确定）；
+            </li>
+            <li><strong>设置成本</strong>：在下方输入单位成本 \( c \)；</li>
+            <li><strong>利润优化</strong>：基于拟合出的需求函数 \( D(p) = \beta^* p + \alpha \)，构建利润函数 \( \pi(p) =
+                (p - c)D(p) \)，并再次使用一维搜索方法最小化负利润 \( -\pi(p) \)，得到最优价格 \( p^* \)。
+            </li>
+        </ol>
+        <p><strong>教学要点</strong>：本实验所有优化问题均通过一维搜索算法数值求解，而非直接使用解析公式，旨在帮助理解搜索过程的迭代逻辑、收敛行为及参数影响。右侧面板可实时观察迭代步长、函数值变化，并支持导出实验数据。
+        </p>
     </div>
 
     <hr>
 
     <section class="experiment-section">
         <div class="card" style="grid-column: 1 / -1;">
-            <h2>需求函数拟合 \( D(p) = \beta p + \alpha \)</h2>
+            <h2>价格-需求函数拟合</h2>
             <div class="derivation-box"
                  style="background: #fff3e0; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                <strong>推导过程:</strong><br>
-                1. 无偏估计: \( E(y) = \beta E(x) + \alpha \implies \bar{y} = \beta \bar{x} + \alpha \)<br>
-                2. 消除变量 \( \alpha \): \( \alpha = \bar{y} - \beta \bar{x} \)<br>
-                3. 优化目标: \( \min L = \sum (y_i - (\beta x_i + \alpha))^2 = \beta^2 \sum (x_i - \bar{x})^2 - 2\beta
-                \sum (y_i - \bar{y})(x_i - \bar{x}) + \text{常数} \)
+                <p><strong>线性需求函数模型：</strong> \( D(p) = \beta p + \alpha \)，其中：</p>
+                <ul style="padding-left: 1.5rem; margin: 0.5rem 0;">
+                    <li>\( \beta \)：需求对价格的敏感度（斜率），通常 \( \beta < 0 \)，表示价格每增加一个单位，需求量减少 \(
+                        |\beta| \) 个单位；
+                    </li>
+                    <li>\( \alpha \)：截距，反映价格为零时的理论需求量，也可视为非价格因素的综合影响。</li>
+                </ul>
+                <p><strong>最小二乘估计的目标：</strong> 给定 \( n \) 组观测数据 \( (p_i, D_i) \)，我们希望找到 \( \beta,
+                    \alpha \) 使误差平方和最小：</p>
+                \[
+                L(\beta, \alpha) = \sum_{i=1}^{n} \left( D_i - (\beta p_i + \alpha) \right)^2.
+                \]
+                <p><strong>经典解析解（闭式解）：</strong> 对 \( L \) 求偏导可得：</p>
+                \[
+                \hat{\beta} = \frac{\sum (D_i - \bar{D})(p_i - \bar{p})}{\sum (p_i - \bar{p})^2}, \quad
+                \hat{\alpha} = \bar{D} - \hat{\beta} \bar{p}.
+                \]
+                <p><strong>本实验的一维搜索方法：</strong> 为了演示数值优化算法，我们并不直接使用上述公式，而是将问题转化为关于
+                    \( \beta \) 的一维无约束极小化问题。利用 \( \alpha = \bar{D} - \beta \bar{p} \) 消去 \( \alpha \)，得到：
+                </p>
+                \[
+                L(\beta) = \sum_{i=1}^{n} \left( (D_i - \bar{D}) - \beta (p_i - \bar{p}) \right)^2.
+                \]
+                <p>然后，在左侧选择搜索方法（黄金分割、斐波那契、二分、梯度下降、牛顿、割线），算法将迭代逼近最优 \( \beta^*
+                    \)。右侧面板可实时观察迭代过程与函数值变化。</p>
+                <p><strong>经济含义：</strong> \( \hat{\beta} \) 衡量了需求对价格的敏感度，其绝对值越大，需求弹性越高。利用该拟合函数，可进一步进行定价决策与利润优化。
+                </p>
             </div>
             <div class="btn-group">
                 <input type="file" id="dataFile" accept=".csv,.txt,.text/csv" style="display: none;">
@@ -141,7 +176,8 @@
                     </div>
                     <div class="panel-content">
                         <div class="status-display">
-                            <div class="status-item">状态: <span id="lsStepInfo" class="value-display">未开始</span></div>
+                            <div class="status-item">状态: <span id="lsStepInfo" class="value-display">未开始</span>
+                            </div>
                             <div class="status-item">搜索解 \(\beta^*\): <span id="lsSearchRes" class="value-display"
                                                                                style="color: var(--danger-color);">--</span>
                             </div>
@@ -192,7 +228,8 @@
                 </div>
                 <div class="derivation-box">
                     <strong>利润函数:</strong><br>
-                    \( \pi(p) = (p - \) <span id="cDisplay">10</span> \( ) \cdot ( \) <span id="aDisplayForProfit">--</span>
+                    \( \pi(p) = (p - \) <span id="cDisplay">10</span> \( ) \cdot ( \) <span
+                        id="aDisplayForProfit">--</span>
                     <span id="signDisplayForProfit">--</span> <span id="bDisplayForProfit">--</span> \( \cdot p ) \)
                 </div>
             </div>
@@ -281,7 +318,8 @@
                             <div class="status-item">搜索解 \( p^* \): <span id="profitSearchRes" class="value-display"
                                                                              style="color: var(--danger-color);">--</span>
                             </div>
-                            <div class="status-item">对应利润: <span id="profitRes" class="value-display">--</span></div>
+                            <div class="status-item">对应利润: <span id="profitRes" class="value-display">--</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -389,9 +427,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/api.js"></script>
 <script src="/static/js/courses/line-search/application.js"></script>
-<script src="/static/js/common/experiment-notes.js"></script>
 <script>
     window.AI_CONFIG = {
         PAGE_ID: 'line_search_application',
@@ -418,6 +454,7 @@
                 var s = window.AppState;
                 if (!s) return {};
                 return {
+                    dataset: s.data || {},
                     ls: {
                         method: s.ls.method,
                         status: s.ls.status,
@@ -434,7 +471,14 @@
                     },
                     fitted_alpha: window.a_fit,
                     fitted_beta: window.b_fit,
-                    optimal_price: window.p_opt_val
+                    optimal_price: window.p_opt_val,
+                    user_result_summary: {
+                        ls_status: document.getElementById('lsStepInfo') ? document.getElementById('lsStepInfo').textContent : '',
+                        ls_beta: document.getElementById('lsSearchRes') ? document.getElementById('lsSearchRes').textContent : '',
+                        profit_status: document.getElementById('profitStepInfo') ? document.getElementById('profitStepInfo').textContent : '',
+                        profit_price: document.getElementById('profitSearchRes') ? document.getElementById('profitSearchRes').textContent : '',
+                        profit_value: document.getElementById('profitRes') ? document.getElementById('profitRes').textContent : ''
+                    }
                 };
             }
         });

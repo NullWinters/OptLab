@@ -105,6 +105,10 @@
             </div>
         </main>
     </div>
+
+    {% block experiment_notes %}
+    {% include 'components/_experiment_notes.html' %}
+    {% endblock %}
 </div>
 
 <footer class="footer">
@@ -144,6 +148,99 @@
         2. 确认输入数据无误后点击“求解”。
         3. 观察单纯形表的基变换过程及其在几何空间中的对应路径。`
     };
+
+    window.EXPERIMENT_NOTES_CONFIG = {
+        experimentKey: 'linear-programming.simplex',
+        mountSelector: '#exp-notes-mount',
+        getPageData: function () {
+            var numVars = document.getElementById('num-vars');
+            var numConstraints = document.getElementById('num-constraints');
+            var solveType = document.querySelector('input[name="solve-type"]:checked');
+
+            var n = numVars ? parseInt(numVars.value) : null;
+            var m = numConstraints ? parseInt(numConstraints.value) : null;
+
+            function safeNum(v) {
+                var x = parseFloat(v);
+                return Number.isFinite(x) ? x : null;
+            }
+
+            var objective = [];
+            var constraints = [];
+            if (Number.isInteger(n) && Number.isInteger(m)) {
+                for (var j = 1; j <= n; j++) {
+                    var cEl = document.getElementById('c-' + j);
+                    objective.push(cEl ? safeNum(cEl.value) : null);
+                }
+                for (var i = 1; i <= m; i++) {
+                    var row = [];
+                    for (var k = 1; k <= n; k++) {
+                        var aEl = document.getElementById('a-' + i + '-' + k);
+                        row.push(aEl ? safeNum(aEl.value) : null);
+                    }
+                    var bEl = document.getElementById('b-' + i);
+                    constraints.push({ coeffs: row, b: bEl ? safeNum(bEl.value) : null });
+                }
+            }
+
+            var cards = document.querySelectorAll('#iteration-results .iteration-card');
+            var finalAlert = document.querySelector('#iteration-results .alert:last-child');
+
+            return {
+                num_vars: n,
+                num_constraints: m,
+                solve_type: solveType ? solveType.value : null,
+                objective_coeffs: objective,
+                constraints: constraints,
+                iteration_card_count: cards ? cards.length : 0,
+                result_text: finalAlert ? finalAlert.textContent : '',
+                user_result_summary: {
+                    has_2d_viz: document.getElementById('visualization-2d')
+                        ? !document.getElementById('visualization-2d').classList.contains('hidden')
+                        : false
+                }
+            };
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var btnMap = {
+            "solve-btn": "求解",
+            "check-btn": "检查输入",
+            "reset-btn": "重置",
+            "load-example-btn": "加载示例"
+        };
+        Object.keys(btnMap).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', function() {
+                ExperimentNotes.trackEvent('control', {action: btnMap[id]});
+            }, {capture: true});
+        });
+
+        var exampleSelect = document.getElementById('example-select');
+        if (exampleSelect) {
+            exampleSelect.addEventListener('change', function() {
+                ExperimentNotes.trackEvent('param_change', { param: 'example_select', value: exampleSelect.value });
+            }, {capture: true});
+        }
+        var numVars = document.getElementById('num-vars');
+        if (numVars) {
+            numVars.addEventListener('change', function() {
+                ExperimentNotes.trackEvent('param_change', { param: 'num_vars', value: numVars.value });
+            }, {capture: true});
+        }
+        var numConstraints = document.getElementById('num-constraints');
+        if (numConstraints) {
+            numConstraints.addEventListener('change', function() {
+                ExperimentNotes.trackEvent('param_change', { param: 'num_constraints', value: numConstraints.value });
+            }, {capture: true});
+        }
+        document.querySelectorAll('input[name="solve-type"]').forEach(function(el){
+            el.addEventListener('change', function(){
+                ExperimentNotes.trackEvent('param_change', { param: 'solve_type', value: el.value });
+            }, {capture: true});
+        });
+    });
 </script>
 <script src="/static/js/courses/linear-programming/simplex.js"></script>
 {% endblock %}

@@ -35,6 +35,14 @@ _EXPERIMENT_DOCS_MAP = {
         "label": "线性规划 · 单纯形法",
         "guide": "docs/实验指导书/单纯形法.txt",
     },
+    "svm-smo.kernel_trick.visualization": {
+        "label": "支持向量机与SMO · 核技巧三维可视化",
+        "guide": "docs/实验指导书/SVM-核技巧-三维可视化.txt",
+    },
+    "svm-smo.smo_iteration.observation": {
+        "label": "支持向量机与SMO · SMO迭代过程观察",
+        "guide": "docs/实验指导书/SVM-SMO-课程主页.txt",
+    },
 }
 
 
@@ -109,6 +117,32 @@ _EXPERIMENT_TEMPLATES: dict[str, str] = {
         "【操作记录】\n"
         "含「操作与现象对照」。"
     ),
+    "svm-smo.kernel_trick.visualization": (
+        "实验类型：支持向量机核技巧 · 三维可视化。\n\n"
+        "【实验参数】\n"
+        "数据来源（预设/上传）、样本量、列映射（$x,y,label$）、核映射表达式 $\phi(x,y)$、超平面参数（$z$ 平移与 yaw/pitch）。\n\n"
+        "【实验过程】\n"
+        "按时间顺序描述：数据加载、列映射确认、自定义映射应用、升维动画、超平面调节；结合过程日志与行为记录引用关键步骤。\n\n"
+        "【三维可分性与结果】\n"
+        "记录最终划分准确率、类别分布、映射前后可分性变化；若准确率变化明显，说明与映射表达式及平面参数的关系。\n\n"
+        "【综合分析】\n"
+        "结合核技巧理论解释为何升维后更易线性分割，指出本次数据与映射在几何层面的表现。\n\n"
+        "【操作记录】\n"
+        "给出关键交互时间序，并附「操作与现象对照」。"
+    ),
+    "svm-smo.smo_iteration.observation": (
+        "实验类型：SMO 算法 · 迭代过程观察。\n\n"
+        "【实验参数】\n"
+        "数据来源、样本量、列映射、超参数（$C$、$tol$、$max\_iter$）与播放速度设置。\n\n"
+        "【迭代过程】\n"
+        "基于迭代日志写出代表性步骤：$(i,j)$ 选择、$\alpha_i,\alpha_j$ 更新、$w,b$ 变化与准确率变化；标注达到终止条件的阶段。\n\n"
+        "【实验结果】\n"
+        "给出最终迭代次数、$w$、$b$、分类准确率、是否完成收敛；若未收敛，说明受限因素。\n\n"
+        "【机制分析】\n"
+        "结合 SMO 原理解释两变量子问题更新对分离超平面的影响，讨论超参数对收敛速度与稳定性的作用。\n\n"
+        "【操作记录】\n"
+        "按时间序列整理用户控制行为，并附「操作与现象对照」。"
+    ),
 }
 
 _DEFAULT_TEMPLATE = (
@@ -143,6 +177,14 @@ _TEMPLATE_ENRICHERS: dict[str, str] = {
     "linear-programming.simplex": (
         "\n\n【补充】\n"
         "【算法要点】至少 3 句；无矩阵时说明能依据行为记录推断什么。"
+    ),
+    "svm-smo.kernel_trick.visualization": (
+        "\n\n【补充】\n"
+        "必须引用数据集规模、至少 1 组映射表达式和最终准确率；分析中体现升维前后可分性变化。"
+    ),
+    "svm-smo.smo_iteration.observation": (
+        "\n\n【补充】\n"
+        "必须引用迭代日志中的具体数值（如 $\alpha$、$w$、$b$、准确率）；若未收敛需给出数据驱动原因。"
     ),
 }
 
@@ -218,6 +260,20 @@ def _summarize_behavior(behavior: dict) -> str:
                 lines.append(f"  [{t}s] {action_map.get(data.get('action', ''), data.get('action', ''))}")
             elif etype == "view_switch":
                 lines.append(f"  [{t}s] 切换视图 → {data.get('view', '')}")
+            elif etype == "upload_csv":
+                lines.append(f"  [{t}s] 上传数据文件 → {data.get('file_name', '')}")
+            elif etype == "dataset_preset_change":
+                lines.append(f"  [{t}s] 切换预设数据集 → {data.get('preset', '')}")
+            elif etype == "dataset_reset_default":
+                lines.append(f"  [{t}s] 重置为默认数据集（样本数 {data.get('sample_count', '')}）")
+            elif etype == "apply_columns":
+                lines.append(f"  [{t}s] 应用列映射（x={data.get('x_col', '')}, y={data.get('y_col', '')}, label={data.get('label_col', '')}）")
+            elif etype == "custom_map_apply":
+                lines.append("  [" + str(t) + "s] 应用自定义核映射表达式")
+            elif etype == "run_lift_animation":
+                lines.append("  [" + str(t) + "s] 执行升维动画")
+            elif etype == "plane_adjust":
+                lines.append(f"  [{t}s] 调整超平面参数 {data.get('control', '')} = {data.get('value', '')}")
             else:
                 lines.append(f"  [{t}s] {etype}")
         except Exception as e:

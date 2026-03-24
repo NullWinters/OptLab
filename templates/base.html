@@ -7,6 +7,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/components/ai-sidebar.css">
     <link rel="stylesheet" href="/static/css/components/experiment-notes.css">
+    <link rel="stylesheet" href="/static/css/components/top-nav.css">
+    <style>
+        body.modal-open {
+            overflow: hidden;
+            overscroll-behavior: none;
+            height: 100vh;
+        }
+
+        .modal,
+        .exp-notes-confirm-overlay {
+            overscroll-behavior: contain;
+        }
+    </style>
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -14,14 +27,51 @@
         {% block content %}{% endblock %}
     </div>
 
+    {% block ai_sidebar %}
     {% include 'components/_ai_sidebar.html' %}
-    {% block experiment_notes %}
-        {% include 'components/_experiment_notes.html' %}
     {% endblock %}
+    {% block experiment_notes %}{% endblock %}
 
     <script src="/static/js/api.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        window.MathJax = window.MathJax || {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="/static/js/common/ai-sidebar.js"></script>
     <script src="/static/js/common/experiment-notes.js"></script>
+    <script>
+        (function () {
+            function isVisibleModal(el) {
+                if (!el) return false;
+                if (el.classList.contains('exp-notes-confirm-overlay')) return true;
+                if (!el.classList.contains('modal')) return false;
+                var st = window.getComputedStyle(el);
+                return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
+            }
+
+            function refreshModalLock() {
+                var hasVisibleModal = false;
+                document.querySelectorAll('.modal, .exp-notes-confirm-overlay').forEach(function (el) {
+                    if (isVisibleModal(el)) hasVisibleModal = true;
+                });
+                document.body.classList.toggle('modal-open', hasVisibleModal);
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                refreshModalLock();
+                var observer = new MutationObserver(refreshModalLock);
+                observer.observe(document.body, {
+                    subtree: true,
+                    childList: true,
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+            });
+        })();
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>

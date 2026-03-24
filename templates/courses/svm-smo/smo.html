@@ -150,6 +150,10 @@
             </div>
         </aside>
     </div>
+
+    <div style="margin-top: 20px;">
+        {% include 'components/_experiment_notes.html' %}
+    </div>
 </div>
 <footer class="footer">
     支持向量机与 SMO · OptLab 教学资源
@@ -158,6 +162,20 @@
 
 {% block scripts %}
 <script src="/static/js/courses/svm-smo/smo.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        ExperimentNotes.init({
+            experimentKey: 'svm-smo.smo_iteration.observation',
+            mountSelector: '#exp-notes-mount',
+            getPageData: function () {
+                if (window.SMOApp && typeof window.SMOApp.getExperimentNoteData === 'function') {
+                    return window.SMOApp.getExperimentNoteData();
+                }
+                return {};
+            }
+        });
+    });
+</script>
 <script>
     window.AI_CONFIG = {
         PAGE_ID: 'svm_smo_interaction',

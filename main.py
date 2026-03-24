@@ -25,7 +25,8 @@ NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "n
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # starlette 的 TemplateResponse 签名为 (request, name, context)
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -35,7 +36,12 @@ async def read_favicon():
 
 @app.get("/profile", response_class=HTMLResponse)
 async def read_profile(request: Request):
-    return templates.TemplateResponse("profile.html", {"request": request})
+    return templates.TemplateResponse(request, "profile.html")
+
+
+@app.get("/settings", response_class=HTMLResponse)
+async def read_settings(request: Request):
+    return templates.TemplateResponse(request, "settings.html")
 
 
 @app.get("/courses", response_class=HTMLResponse)
@@ -45,17 +51,17 @@ async def redirect_courses_no_slash():
 
 @app.get("/courses/", response_class=HTMLResponse)
 async def read_courses(request: Request):
-    return templates.TemplateResponse("courses/index.html", {"request": request})
+    return templates.TemplateResponse(request, "courses/index.html")
 
 
 @app.get("/auth/login", response_class=HTMLResponse)
 async def read_login_page(request: Request):
-    return templates.TemplateResponse("auth/login.html", {"request": request})
+    return templates.TemplateResponse(request, "auth/login.html")
 
 
 @app.get("/auth/register", response_class=HTMLResponse)
 async def read_register_page(request: Request):
-    return templates.TemplateResponse("auth/register.html", {"request": request})
+    return templates.TemplateResponse(request, "auth/register.html")
 
 
 @app.get("/courses/{experiment_name}/", response_class=HTMLResponse)
@@ -63,11 +69,7 @@ async def read_experiment(request: Request, experiment_name: str):
     template_path = f"courses/{experiment_name}/index.html"
     file_path = os.path.join("templates", template_path)
     if os.path.exists(file_path):
-        return templates.TemplateResponse(
-            template_path,
-            {"request": request},
-            headers=NO_CACHE,
-        )
+        return templates.TemplateResponse(request, template_path, headers=NO_CACHE)
     placeholder_path = os.path.join("templates", "courses", "placeholder.html")
     if os.path.exists(placeholder_path):
         return templates.TemplateResponse(
@@ -99,11 +101,7 @@ async def read_course_subpage(request: Request, course_name: str, subpath: str):
         if ext == ".html":
             # 使用 TemplateResponse 渲染 Jinja 模板
             template_path = os.path.join("courses", course_name, subpath)
-            return templates.TemplateResponse(
-                template_path,
-                {"request": request},
-                headers=NO_CACHE,
-            )
+            return templates.TemplateResponse(request, template_path, headers=NO_CACHE)
         elif ext == ".css":
             return FileResponse(file_path, headers=NO_CACHE, media_type="text/css; charset=utf-8")
         elif ext == ".js":

@@ -18,20 +18,7 @@
 
 {% block content %}
 <div class="min-h-screen flex flex-col">
-    <!-- 导航栏 -->
-    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
-        <div class="text-2xl font-bold text-amber-primary flex items-center">
-            <a href="/" class="flex items-center"><i class="fas fa-flask mr-2"></i> OptLab</a>
-        </div>
-        <div class="flex items-center space-x-8">
-            <div class="space-x-8 hidden md:flex">
-                <a href="/" class="hover:text-amber-primary transition">首页</a>
-                <a href="/courses/" class="hover:text-amber-primary transition">课程中心</a>
-                <a href="/profile" class="hover:text-amber-primary transition">个人中心</a>
-            </div>
-            <div id="auth-status" class="hidden md:flex items-center space-x-4"></div>
-        </div>
-    </nav>
+    {% include 'components/_top_nav.html' %}
 
     <main class="flex-grow flex items-center justify-center px-6 py-12">
         <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-amber-100 p-8">
@@ -75,88 +62,6 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="/static/js/api.js"></script>
     <script src="/static/js/main.js"></script>
     <script src="/static/js/auth.js"></script>
 {% endblock %}
-
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登录 - OptLab</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            background-color: #fffaf0;
-            color: #5d4037;
-        }
-        .text-amber-primary { color: #d84315; }
-        .bg-amber-primary { background-color: #d84315; }
-        .border-amber-primary { border-color: #d84315; }
-        .hover-amber-primary:hover { background-color: #bf360c; }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col">
-    <!-- 导航栏 -->
-    <nav class="p-6 flex justify-between items-center max-w-7xl mx-auto w-full">
-        <div class="text-2xl font-bold text-amber-primary flex items-center">
-            <a href="/" class="flex items-center"><i class="fas fa-flask mr-2"></i> OptLab</a>
-        </div>
-        <div class="flex items-center space-x-8">
-            <div class="space-x-8 hidden md:flex">
-                <a href="/" class="hover:text-amber-primary transition">首页</a>
-                <a href="/courses/" class="hover:text-amber-primary transition">课程中心</a>
-                <a href="/profile" class="hover:text-amber-primary transition">个人中心</a>
-            </div>
-            <div id="auth-status" class="hidden md:flex items-center space-x-4"></div>
-        </div>
-    </nav>
-
-    <main class="flex-grow flex items-center justify-center px-6 py-12">
-        <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-amber-100 p-8">
-            <h1 class="text-2xl font-bold mb-6 text-center text-amber-primary">登录 OptLab</h1>
-            <p class="text-sm text-gray-600 mb-6 text-center">
-                使用 <span class="font-semibold">邮箱</span> 或 <span class="font-semibold">用户名</span> 登录
-            </p>
-
-            <div id="auth-error" class="hidden mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2"></div>
-
-            <form id="login-form" class="space-y-5">
-                <div>
-                    <label for="identifier" class="block text-sm font-medium mb-1">邮箱或用户名</label>
-                    <input type="text" id="identifier" name="identifier" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
-                </div>
-                <div>
-                    <label for="password" class="block text-sm font-medium mb-1">密码</label>
-                    <input type="password" id="password" name="password" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-primary focus:border-amber-primary bg-white">
-                </div>
-                <button type="submit"
-                        class="w-full bg-amber-primary text-white py-2.5 rounded-lg font-semibold shadow hover:bg-amber-700 transition">
-                    登录
-                </button>
-            </form>
-
-            <p class="mt-6 text-sm text-center text-gray-600">
-                还没有账号？
-                <a href="/auth/register" class="text-amber-primary font-semibold hover:underline">前往注册</a>
-            </p>
-        </div>
-    </main>
-
-    <footer class="bg-gray-100 py-8 px-6">
-        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
-            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
-        </div>
-    </footer>
-
-    <script src="/static/js/api.js"></script>
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/auth.js"></script>
-</body>
-</html>
-

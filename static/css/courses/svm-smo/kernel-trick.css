@@ -68,12 +68,72 @@ label {
     width: 100%;
 }
 
-.panel select, .panel input[type="file"], .panel input[type="text"], .panel input[type="range"] {
+.panel select, .panel input[type="file"], .panel input[type="text"] {
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 8px;
     background: #fff;
     color: var(--text);
+}
+
+/* 进度条（参照 SMO 页面色系，并修复两端可达） */
+.panel input[type="range"] {
+    --range-progress: 50%;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.panel input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(
+        90deg,
+        var(--primary) 0%,
+        var(--primary) var(--range-progress),
+        #ead9c7 var(--range-progress),
+        #ead9c7 100%
+    );
+}
+
+.panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    margin-top: -5px;
+    border: 2px solid #fff7ee;
+    background: var(--primary-dark);
+    box-shadow: 0 2px 7px rgba(217, 106, 43, 0.34);
+}
+
+.panel input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: #ead9c7;
+}
+
+.panel input[type="range"]::-moz-range-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--primary);
+}
+
+.panel input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff7ee;
+    background: var(--primary-dark);
+    box-shadow: 0 2px 7px rgba(217, 106, 43, 0.34);
 }
 
 .panel button {

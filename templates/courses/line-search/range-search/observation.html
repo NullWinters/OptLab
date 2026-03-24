@@ -314,6 +314,12 @@
         resetApp();
         initPanelCollapsible();
         initExperimentNotePersistence();
+
+        // 初始进入页面时，强制触发一次 resize 以确保画布尺寸与容器对齐
+        if (AppState.visualizer) {
+            AppState.visualizer.resize();
+            updateUI();
+        }
     });
 
     function initPanelCollapsible() {
@@ -325,6 +331,7 @@
                 if (AppState.visualizer) {
                     setTimeout(() => {
                         AppState.visualizer.resize();
+                        updateUI();
                     }, 310); // 对应 CSS 中 0.3s 的 transition 动画时间
                 }
             });
@@ -568,6 +575,7 @@
         window.addEventListener('resize', () => {
             if (AppState.visualizer) {
                 AppState.visualizer.resize();
+                updateUI();
             }
         });
 
@@ -1057,7 +1065,7 @@
         const func = x => calculateFunction(x, AppState.functionType);
 
         // 更新可视化
-        AppState.visualizer.updateInterval(a, b);
+        AppState.visualizer.updateInterval(a, b, currentIteration);
 
         if (AppState.runStatus === '未运行' || AppState.subStep === 0 || isComplete) {
             AppState.visualizer.clearTrialPoints();
