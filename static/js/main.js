@@ -7,7 +7,7 @@
       document.querySelectorAll("nav a[href]").forEach((a) => {
         const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
         if (href === currentPath) {
-          a.classList.add("active", "text-amber-primary", "font-semibold");
+          a.classList.add("active");
         }
       });
     } catch (e) {
@@ -26,7 +26,7 @@
     function setContainerHtml(container, html) {
       if (!container) return;
       container.innerHTML = html;
-      container.classList.remove("hidden");
+      container.classList.remove("is-hidden");
       markActiveNavLinks();
     }
 
@@ -34,8 +34,8 @@
       setContainerHtml(
         authContainer,
         `
-        <a href="/auth/login" class="hover:text-amber-primary transition">登录</a>
-        <a href="/auth/register" class="bg-amber-primary text-white px-4 py-2 rounded-full text-sm font-semibold shadow hover:bg-amber-700 transition">注册</a>
+        <a href="/auth/login" class="topnav-login-link">登录</a>
+        <a href="/auth/register" class="topnav-register-btn">注册</a>
       `
       );
       setContainerHtml(
@@ -55,10 +55,10 @@
         `
         <div class="topnav-user-menu">
           <button id="auth-user-trigger-${uid}" type="button" class="topnav-user-trigger">
-            <span>欢迎，<span class="font-semibold">${user.username}</span></span>
+            <span>欢迎，<span class="topnav-user-name">${user.username}</span></span>
             <svg viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
           </button>
-          <div id="auth-user-dropdown-${uid}" class="topnav-user-dropdown hidden">
+          <div id="auth-user-dropdown-${uid}" class="topnav-user-dropdown is-hidden">
             <a href="/settings" class="topnav-user-dropdown-link">个人设置</a>
             <button id="logout-btn-${uid}" type="button">退出登录</button>
           </div>
@@ -73,9 +73,9 @@
       if (trigger && dropdown) {
         trigger.addEventListener("click", (e) => {
           e.stopPropagation();
-          dropdown.classList.toggle("hidden");
+          dropdown.classList.toggle("is-hidden");
         });
-        document.addEventListener("click", () => dropdown.classList.add("hidden"));
+        document.addEventListener("click", () => dropdown.classList.add("is-hidden"));
       }
 
       if (logoutBtn) {

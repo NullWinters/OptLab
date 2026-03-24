@@ -86,3 +86,23 @@ p {
 .btn-outline:hover {
     background-color: var(--amber-50);
 }
+
+.placeholder-card-neutral {
+    border-color: #f3f4f6;
+}
+
+.placeholder-title-strong {
+    color: #111827;
+}
+
+.btn-neutral {
+    background-color: #4b5563;
+}
+
+.btn-neutral:hover {
+    background-color: #374151;
+}
+
+.icon-gray {
+    color: #9ca3af;
+}

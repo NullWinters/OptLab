@@ -1,14 +1,13 @@
 function setMsg(el, msg, ok) {
   if (!el) return;
   el.textContent = msg || "";
-  el.classList.toggle("hidden", !msg);
+  el.classList.toggle("is-hidden", !msg);
+  el.classList.toggle("is-visible", !!msg);
   if (msg) {
-    el.classList.toggle("text-red-600", !ok);
-    el.classList.toggle("bg-red-50", !ok);
-    el.classList.toggle("border-red-200", !ok);
-    el.classList.toggle("text-green-700", !!ok);
-    el.classList.toggle("bg-green-50", !!ok);
-    el.classList.toggle("border-green-200", !!ok);
+    el.classList.toggle("is-error", !ok);
+    el.classList.toggle("is-success", !!ok);
+  } else {
+    el.classList.remove("is-error", "is-success");
   }
 }
 
