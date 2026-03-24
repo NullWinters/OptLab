@@ -302,10 +302,16 @@ class SMO {
  */
 const App = {
     data: [],
+    rawCSVHeader: [],
+    rawCSVData: [],
     smo: null,
     state: 'unstarted', // unstarted, playing, paused, finished
     timer: null,
     speed: 500,
+    processLog: [],
+    uploadedFiles: [],
+    datasetSource: 'example',
+    dataSnapshotForNote: [],
     
     // Hyperparameters
     C: 1.0,
@@ -325,6 +331,25 @@ const App = {
         this.bindEvents();
         this.loadExampleData();
         this.updateUI();
+    },
+
+    trackNoteEvent(type, data) {
+        if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
+            window.ExperimentNotes.trackEvent(type, data || {});
+        }
+    },
+
+    pushProcessStep(step, detail) {
+        this.processLog.push({
+            step,
+            detail: detail || {},
+            state: this.state,
+            iter: this.smo ? this.smo.iter : 0,
+            timestamp: new Date().toISOString()
+        });
+        if (this.processLog.length > 500) {
+            this.processLog.shift();
+        }
     },
 
     setupD3() {
@@ -412,6 +437,16 @@ const App = {
         document.getElementById('btn-reset').onclick = () => this.loadExampleData();
         document.getElementById('csv-upload').onchange = (e) => this.handleUpload(e);
         document.getElementById('btn-apply-cols').onclick = () => this.applySelectedColumns();
+
+        ['btn-play','btn-pause','btn-step','btn-reset'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('click', () => {
+                    this.trackNoteEvent('control', { action: id.replace('btn-', '') });
+                    this.pushProcessStep('control', { action: id.replace('btn-', '') });
+                }, { capture: true });
+            }
+        });
         
         window.addEventListener('resize', () => {
             clearTimeout(this.resizeTimer);
@@ -421,16 +456,22 @@ const App = {
         // Sliders
         const updateC = (val) => {
             this.C = Math.pow(10, parseFloat(val));
+            this.pushProcessStep('set_hyperparam', { param: 'C', value: this.C });
+            this.trackNoteEvent('param_change', { param: 'C', value: this.C });
             document.getElementById('val-c').innerText = (this.C < 0.01 || this.C > 1000) ? this.C.toExponential(2) : this.C.toFixed(2);
             if (this.state !== 'unstarted') this.reset();
         };
         const updateTol = (val) => {
             this.tol = Math.pow(10, parseFloat(val));
+            this.pushProcessStep('set_hyperparam', { param: 'tol', value: this.tol });
+            this.trackNoteEvent('param_change', { param: 'tol', value: this.tol });
             document.getElementById('val-tol').innerText = (this.tol < 0.01) ? this.tol.toExponential(2) : this.tol.toFixed(4);
             if (this.state !== 'unstarted') this.reset();
         };
         const updateMaxIter = (val) => {
             this.maxIter = parseInt(val);
+            this.pushProcessStep('set_hyperparam', { param: 'maxIter', value: this.maxIter });
+            this.trackNoteEvent('param_change', { param: 'maxIter', value: this.maxIter });
             document.getElementById('val-max-iter').innerText = this.maxIter;
             if (this.state !== 'unstarted') this.reset();
         };
@@ -445,6 +486,8 @@ const App = {
             // In observation.html: AppState.speed = 2100 - parseInt(e.target.value);
             // Higher value in slider means faster speed (smaller interval)
             this.speed = 2100 - parseInt(e.target.value);
+            this.trackNoteEvent('param_change', { param: 'speed', value: this.speed });
+            this.pushProcessStep('set_speed', { slider: parseInt(e.target.value), interval: this.speed });
             const speedText = this.speed < 500 ? '快速' : this.speed < 1500 ? '正常' : '慢速';
             document.getElementById('speed-value').innerText = speedText;
             if (this.state === 'playing') {
@@ -469,6 +512,12 @@ const App = {
             {x: 5, y: 5, label: -1}, {x: 6, y: 5, label: -1}, {x: 5, y: 6, label: -1}
         ];
         this.data.forEach((d, i) => d.id = i);
+        this.datasetSource = 'example';
+        this.rawCSVHeader = ['x', 'y', 'label'];
+        this.rawCSVData = this.data.map((d) => [String(d.x), String(d.y), String(d.label)]);
+        this.uploadedFiles = [];
+        this.dataSnapshotForNote = this.data.map((d) => ({ ...d }));
+        this.pushProcessStep('load_example_data', { sample_count: this.data.length });
         document.getElementById('column-selection').style.display = 'none';
         document.getElementById('csv-upload').value = '';
         this.reset();
@@ -480,6 +529,15 @@ const App = {
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target.result;
+            this.datasetSource = 'uploaded_csv';
+            this.uploadedFiles = [{
+                name: file.name,
+                size: file.size,
+                type: file.type || 'text/csv',
+                text_preview: String(text || '').slice(0, 6000)
+            }];
+            this.trackNoteEvent('upload_csv', { file_name: file.name, file_size: file.size });
+            this.pushProcessStep('upload_csv', { file_name: file.name, file_size: file.size });
             this.processCSV(text);
         };
         reader.readAsText(file);
@@ -494,6 +552,7 @@ const App = {
 
         this.rawCSVHeader = header;
         this.rawCSVData = dataRows;
+        this.pushProcessStep('parse_csv', { headers: header, rows_count: dataRows.length });
 
         this.fillColumnSelects(header);
         document.getElementById('column-selection').style.display = 'block';
@@ -560,6 +619,20 @@ const App = {
         });
 
         this.data = newData;
+        this.dataSnapshotForNote = this.data.map((d) => ({ ...d }));
+        this.pushProcessStep('apply_columns', {
+            x_col: xIdx,
+            y_col: yIdx,
+            label_col: labelIdx,
+            sample_count: this.data.length,
+            class_count: labels.size
+        });
+        this.trackNoteEvent('apply_columns', {
+            x_col: xIdx,
+            y_col: yIdx,
+            label_col: labelIdx,
+            sample_count: this.data.length
+        });
         this.reset();
         // Keep the column selection visible but maybe collapse it if we had a toggle
     },
@@ -568,6 +641,12 @@ const App = {
         this.pause();
         this.smo = new SMO(this.data, this.C, this.tol, this.maxIter);
         this.state = 'unstarted';
+        this.pushProcessStep('reset_algorithm', {
+            C: this.C,
+            tol: this.tol,
+            maxIter: this.maxIter,
+            sample_count: this.data.length
+        });
         this.updateScales();
         this.draw();
         this.updateUI();
@@ -625,6 +704,19 @@ const App = {
 
     stepLogic() {
         const result = this.smo.nextStep();
+        this.pushProcessStep('smo_step', {
+            success: !!result,
+            iter: this.smo.iter,
+            sub_step: this.smo.subStep,
+            i: this.smo.i,
+            j: this.smo.j,
+            alpha_i: this.smo.i >= 0 ? this.smo.alphas[this.smo.i] : null,
+            alpha_j: this.smo.j >= 0 ? this.smo.alphas[this.smo.j] : null,
+            w: this.smo.w,
+            b: this.smo.b,
+            accuracy: this.smo.getAccuracy(),
+            is_finished: this.smo.isFinished
+        });
         this.draw();
         this.updateParams();
         return result;
@@ -775,7 +867,65 @@ const App = {
         
         const accuracy = this.smo.getAccuracy();
         document.getElementById('param-accuracy').innerText = (accuracy * 100).toFixed(2) + '%';
+    },
+
+    getExperimentNoteData() {
+        const xIdx = parseInt(document.getElementById('x-col')?.value ?? '0');
+        const yIdx = parseInt(document.getElementById('y-col')?.value ?? '1');
+        const labelIdx = parseInt(document.getElementById('label-col')?.value ?? '2');
+        const sampleData = this.dataSnapshotForNote && this.dataSnapshotForNote.length
+            ? this.dataSnapshotForNote
+            : this.data;
+        return {
+            experiment_module: 'svm-smo.smo_iteration',
+            algorithm: 'SMO (线性 SVM)',
+            dataset_source: this.datasetSource,
+            dataset_meta: {
+                sample_count: sampleData.length,
+                headers: this.rawCSVHeader,
+                x_col_index: Number.isFinite(xIdx) ? xIdx : null,
+                y_col_index: Number.isFinite(yIdx) ? yIdx : null,
+                label_col_index: Number.isFinite(labelIdx) ? labelIdx : null,
+                x_col_name: this.rawCSVHeader[xIdx] || null,
+                y_col_name: this.rawCSVHeader[yIdx] || null,
+                label_col_name: this.rawCSVHeader[labelIdx] || null
+            },
+            hyper_params: {
+                C: this.C,
+                tol: this.tol,
+                max_iter: this.maxIter,
+                speed_interval_ms: this.speed
+            },
+            final_result: this.smo ? {
+                iter: this.smo.iter,
+                w: this.smo.w,
+                b: this.smo.b,
+                accuracy: this.smo.getAccuracy(),
+                is_finished: this.smo.isFinished,
+                state_text: this.state
+            } : null,
+            process_log: this.processLog,
+            uploaded_files: this.uploadedFiles,
+            data_preview: sampleData.slice(0, 200),
+            iteration_log: this.processLog
+                .filter((row) => row.step === 'smo_step')
+                .map((row, idx) => ({
+                    iteration: idx + 1,
+                    smo_iter: row.detail.iter,
+                    sub_step: row.detail.sub_step,
+                    i: row.detail.i,
+                    j: row.detail.j,
+                    alpha_i: row.detail.alpha_i,
+                    alpha_j: row.detail.alpha_j,
+                    w: row.detail.w,
+                    b: row.detail.b,
+                    accuracy: row.detail.accuracy,
+                    is_finished: row.detail.is_finished,
+                    timestamp: row.timestamp
+                }))
+        };
     }
 };
 
+window.SMOApp = App;
 window.onload = () => App.init();

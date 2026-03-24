@@ -424,6 +424,17 @@
         <section class="comparison-visualization-section" style="display: flex; flex-direction: column;">
             <div class="viz-header">
                 <h2>性能可视化对比</h2>
+                <div style="display: flex; gap: 15px; align-items: center; background: #f0f2f5; padding: 5px 15px; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; color: #d84315; font-weight: bold;">
+                        <input type="checkbox" id="show-golden" checked> 黄金分割法
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; color: #f9a825; font-weight: bold;">
+                        <input type="checkbox" id="show-fibonacci" checked> 斐波那契数列法
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; color: #6d4c41; font-weight: bold;">
+                        <input type="checkbox" id="show-bisection" checked> 二分法
+                    </label>
+                </div>
                 <div class="viz-tabs">
                     <button class="viz-tab active" data-view="trajectory">搜索轨迹</button>
                     <button class="viz-tab" data-view="convergence">收敛速度</button>
@@ -550,7 +561,7 @@
     import { FunctionLibrary, calculateFunction } from '/static/js/courses/line-search/range-search/function-utils.js';
     import { ComparisonController } from '/static/js/courses/line-search/range-search/comparison-controller.js';
     import { ComparisonVisualizer } from '/static/js/courses/line-search/range-search/comparison-visualizer.js';
-    import { PerformanceMetrics } from '/static/js/courses/line-search/range-search/performance-metrics.js';
+    import { ComparisonSummary } from '/static/js/courses/line-search/range-search/comparison-summary.js';
 
     // 状态管理
     const AppState = {
@@ -559,6 +570,7 @@
         currentView: 'trajectory', // 'trajectory' or 'convergence'
         selectedFuncId: 'quadratic',
         yScaleType: 'log', // 'log' or 'linear'
+        visibleAlgorithms: { golden: true, fibonacci: true, bisection: true },
 
         // 运行状态
         runStatus: '未运行', // '未运行', '播放中', '已暂停', '已完成'
@@ -600,7 +612,9 @@
     }
 
     function initVisualizer() {
-        AppState.visualizer = new ComparisonVisualizer('comparison-canvas');
+        AppState.visualizer = new ComparisonVisualizer('comparison-canvas', {
+            margin: {top: 80, right: 40, bottom: 60, left: 60}
+        });
         AppState.visualizer.onResize = () => {
             updateVisualization();
         };
@@ -819,6 +833,17 @@
             document.getElementById('iteration-log-modal').style.display = 'none';
         });
         document.getElementById('iteration-log-export-csv-btn').addEventListener('click', exportIterationLog);
+        
+        // 可见性控制
+        ['golden', 'fibonacci', 'bisection'].forEach(key => {
+            const cb = document.getElementById(`show-${key === 'fibonacci' ? 'fibonacci' : (key === 'golden' ? 'golden' : 'bisection')}`);
+            if (cb) {
+                cb.addEventListener('change', (e) => {
+                    AppState.visibleAlgorithms[key] = e.target.checked;
+                    updateVisualization();
+                });
+            }
+        });
 
         // 保存至个人中心下拉
         const dropdownTrigger = document.getElementById('save-profile-dropdown-trigger');
@@ -936,53 +961,74 @@
     }
 
     async function saveToProfile(type, algoName) {
-        if (!window.api || !window.api.saveExperimentRecord) {
-            alert('系统正在维护中，请稍后再试');
+        if (typeof apiPost !== 'function' || !getStoredToken()) {
+            alert('请先登录后再保存至个人中心。');
             return;
         }
 
-        const histories = AppState.controller.histories;
-        let dataToSave = {};
+        const histories = AppState.controller.histories || {};
+        const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
+        if (alias == null || String(alias).trim() === '') return;
+
+        const toRows = (history, label) => (history || []).map(step => ({
+            algorithm: label,
+            iteration: step.iter,
+            a: step.a,
+            b: step.b,
+            interval_length: Math.abs(step.b - step.a),
+            timestamp: new Date().toISOString()
+        }));
+
+        const initialState = {
+            initial_a: AppState.a,
+            initial_b: AppState.b,
+            golden_eps: AppState.goldenEps,
+            fib_n: AppState.fibN,
+            fib_eps: AppState.fibEps,
+            bis_eps: AppState.bisEps
+        };
+
+        let payload;
 
         if (type === 'all') {
-            dataToSave = {
-                title: `区间收缩性质对比 - 总体数据`,
-                experiment_type: 'range_search_comparison',
-                parameters: {
-                    function: AppState.controller.expr,
-                    initial_a: AppState.a,
-                    initial_b: AppState.b,
-                    golden_eps: AppState.goldenEps,
-                    fib_n: AppState.fibN,
-                    fib_eps: AppState.fibEps,
-                    bis_eps: AppState.bisEps
-                },
-                results: histories
+            const allRows = [
+                ...toRows(histories.golden, '黄金分割法'),
+                ...toRows(histories.fibonacci, '斐波那契法'),
+                ...toRows(histories.bisection, '二分法')
+            ];
+            if (!allRows.length) {
+                alert('当前尚无迭代数据，请先运行一次实验。');
+                return;
+            }
+            payload = {
+                algorithm_name: '区间收缩法性质对比（总体）',
+                test_function: AppState.controller.expr,
+                initial_state: initialState,
+                iteration_data: allRows
             };
         } else {
             const keyMap = { '黄金分割法': 'golden', '斐波那契法': 'fibonacci', '二分法': 'bisection' };
             const key = keyMap[algoName];
-            dataToSave = {
-                title: `区间收缩性质对比 - ${algoName}`,
-                experiment_type: 'range_search_comparison',
-                parameters: {
-                    algorithm: algoName,
-                    function: AppState.controller.expr,
-                    initial_a: AppState.a,
-                    initial_b: AppState.b,
-                    epsilon: key === 'golden' ? AppState.goldenEps : (key === 'fibonacci' ? AppState.fibEps : AppState.bisEps)
-                },
-                results: histories[key]
+            const rows = toRows(histories[key], algoName);
+            if (!rows.length) {
+                alert('当前尚无该算法的迭代数据。');
+                return;
+            }
+            payload = {
+                algorithm_name: algoName,
+                test_function: AppState.controller.expr,
+                initial_state: initialState,
+                iteration_data: rows
             };
         }
 
         try {
-            const res = await window.api.saveExperimentRecord(dataToSave);
-            if (res.success) {
-                alert('实验数据已保存至个人中心');
-            } else {
-                alert('保存失败：' + (res.message || '未知错误'));
-            }
+            await apiPost('/experiments/records', {
+                alias: String(alias).trim(),
+                source_page: 'line-search.range_search.comparison',
+                payload
+            });
+            alert('已保存至个人中心。');
         } catch (e) {
             console.error(e);
             alert('保存出错，请检查网络或登录状态');
@@ -1143,7 +1189,8 @@
             AppState.visualizer.drawDualTrajectories(
                 AppState.controller.histories.golden,
                 AppState.controller.histories.fibonacci,
-                AppState.controller.histories.bisection
+                AppState.controller.histories.bisection,
+                AppState.visibleAlgorithms
             );
 
             // 更新试探点显示
@@ -1165,7 +1212,8 @@
                     fAlgo.isComplete ? null : AppState.currentTrialPoints.fibonacci,
                     bAlgo.isComplete ? null : bAlgo,
                     func,
-                    options
+                    options,
+                    AppState.visibleAlgorithms
                 );
             } else {
                 AppState.visualizer.clearTrialPoints();
@@ -1179,13 +1227,14 @@
                 () => {
                     const newType = AppState.visualizer.animateToggleConvergenceScale();
                     AppState.yScaleType = newType;
-                }
+                },
+                AppState.visibleAlgorithms
             );
         }
     }
 
     function showFinalMetrics() {
-        const metrics = PerformanceMetrics.calculate(
+        const metrics = ComparisonSummary.calculate(
             AppState.controller.histories.golden,
             AppState.controller.histories.fibonacci,
             AppState.controller.histories.bisection
@@ -1248,6 +1297,18 @@
         getPageData: function () {
             var st = window.AppState;
             if (!st || !st.controller) return {};
+            var hs = st.controller.histories || {};
+            function pickFinal(arr) {
+                if (!Array.isArray(arr) || !arr.length) return null;
+                var r = arr[arr.length - 1];
+                return {
+                    iteration: r.iter,
+                    a: r.a,
+                    b: r.b,
+                    length: Math.abs((r.b || 0) - (r.a || 0)),
+                    x_star: ((r.a || 0) + (r.b || 0)) / 2
+                };
+            }
             return {
                 function: st.controller.expr,
                 initial_range: [st.controller.a, st.controller.b],
@@ -1257,7 +1318,25 @@
                     fibonacci_epsilon: st.fibEps,
                     bisection_epsilon: st.bisEps
                 },
-                histories: st.controller.histories
+                histories: hs,
+                iteration_log: {
+                    golden: hs.golden || [],
+                    fibonacci: hs.fibonacci || [],
+                    bisection: hs.bisection || []
+                },
+                convergence_result: {
+                    golden: pickFinal(hs.golden),
+                    fibonacci: pickFinal(hs.fibonacci),
+                    bisection: pickFinal(hs.bisection)
+                },
+                user_result_summary: {
+                    metric_iter_golden: document.getElementById('metric-iter-golden') ? document.getElementById('metric-iter-golden').textContent : '',
+                    metric_iter_fib: document.getElementById('metric-iter-fib') ? document.getElementById('metric-iter-fib').textContent : '',
+                    metric_iter_bis: document.getElementById('metric-iter-bis') ? document.getElementById('metric-iter-bis').textContent : '',
+                    metric_prec_golden: document.getElementById('metric-prec-golden') ? document.getElementById('metric-prec-golden').textContent : '',
+                    metric_prec_fib: document.getElementById('metric-prec-fib') ? document.getElementById('metric-prec-fib').textContent : '',
+                    metric_prec_bis: document.getElementById('metric-prec-bis') ? document.getElementById('metric-prec-bis').textContent : ''
+                }
             };
         }
     };

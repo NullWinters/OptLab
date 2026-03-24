@@ -162,3 +162,10 @@ function apiPost(path, body) {
   });
 }
 
+function apiPatch(path, body) {
+  return apiRequest(path, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+

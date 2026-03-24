@@ -14,8 +14,24 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.convergenceLayer = this.plot.append('g').attr('class', 'convergence-layer').style('display', 'none');
     }
 
+    resize() {
+        super.resize();
+        if (this.convergenceLayer && this.convergenceLayer.style('display') === 'block') {
+            if (this.gData && this.fData && this.bData) {
+                this.drawConvergenceComparison(this.goldenHistory, this.fibonacciHistory, this.bisectionHistory, this.convYScaleType);
+            }
+        }
+    }
+
     // 绘制三算法轨迹对比
-    drawDualTrajectories(goldenHistory, fibHistory, bisHistory) {
+    drawDualTrajectories(goldenHistory, fibHistory, bisHistory, visibility = null) {
+        if (visibility) this.currentVisibility = visibility;
+        const vis = this.currentVisibility || {golden: true, fibonacci: true, bisection: true};
+
+        this.goldenHistory = goldenHistory;
+        this.fibonacciHistory = fibHistory;
+        this.bisectionHistory = bisHistory;
+
         this.convergenceLayer.style('display', 'none');
         this.functionLayer.style('display', 'block');
         this.intervalLayer.style('display', 'block');
@@ -23,17 +39,17 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.axisLayer.style('display', 'block');
         this.labelLayer.style('display', 'block');
 
-        const lastG = (goldenHistory && goldenHistory.length > 0) ? goldenHistory[goldenHistory.length - 1] : null;
-        this.drawInterval(lastG ? lastG.a : undefined, lastG ? lastG.b : undefined, '#d84315', 'G', 0);
+        const lastG = (vis.golden && goldenHistory && goldenHistory.length > 0) ? goldenHistory[goldenHistory.length - 1] : null;
+        this.drawInterval(lastG ? lastG.a : undefined, lastG ? lastG.b : undefined, '#d84315', 'G', 0, (goldenHistory ? goldenHistory.length - 1 : 0));
 
-        const lastF = (fibHistory && fibHistory.length > 0) ? fibHistory[fibHistory.length - 1] : null;
-        this.drawInterval(lastF ? lastF.a : undefined, lastF ? lastF.b : undefined, '#f9a825', 'F', 20);
+        const lastF = (vis.fibonacci && fibHistory && fibHistory.length > 0) ? fibHistory[fibHistory.length - 1] : null;
+        this.drawInterval(lastF ? lastF.a : undefined, lastF ? lastF.b : undefined, '#f9a825', 'F', 20, (fibHistory ? fibHistory.length - 1 : 0));
 
-        const lastB = (bisHistory && bisHistory.length > 0) ? bisHistory[bisHistory.length - 1] : null;
-        this.drawInterval(lastB ? lastB.a : undefined, lastB ? lastB.b : undefined, '#6d4c41', 'B', 40);
+        const lastB = (vis.bisection && bisHistory && bisHistory.length > 0) ? bisHistory[bisHistory.length - 1] : null;
+        this.drawInterval(lastB ? lastB.a : undefined, lastB ? lastB.b : undefined, '#6d4c41', 'B', 40, (bisHistory ? bisHistory.length - 1 : 0));
     }
 
-    drawInterval(a, b, color, labelPrefix, textOffset) {
+    drawInterval(a, b, color, labelPrefix, textOffset, iteration = 0) {
         const xA = this.xScale(a);
         const xB = this.xScale(b);
         const xMin = Math.min(xA, xB);
@@ -57,12 +73,13 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .transition().duration(duration)
             .attr('x', xMin)
             .attr('width', Math.max(0, xMax - xMin))
+            .attr('height', this.plotHeight)
             .style('opacity', 1);
 
         // 2. 边界线和标签
         const lineData = (a !== undefined && b !== undefined) ? [
-            {val: a, id: 'a', label: `${labelPrefix}-a`},
-            {val: b, id: 'b', label: `${labelPrefix}-b`}
+            {val: a, id: 'a', label: 'a', iteration: iteration},
+            {val: b, id: 'b', label: 'b', iteration: iteration}
         ] : [];
 
         let lines = this.intervalLayer.selectAll(`line.interval-line-${labelPrefix}`).data(lineData, d => d.id);
@@ -75,12 +92,13 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .attr('y2', this.plotHeight)
             .attr('stroke', color)
             .attr('stroke-width', 2)
-            .attr('stroke-dasharray', (d, i) => i === 0 ? 'none' : '5,5')
+            .attr('stroke-dasharray', 'none')
             .style('opacity', 0)
             .merge(lines)
             .transition().duration(duration)
             .attr('x1', d => this.xScale(d.val))
             .attr('x2', d => this.xScale(d.val))
+            .attr('y2', this.plotHeight)
             .style('opacity', 1);
 
         let texts = this.intervalLayer.selectAll(`text.interval-text-${labelPrefix}`).data(lineData, d => d.id);
@@ -89,20 +107,30 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .attr('class', `interval-text-${labelPrefix}`)
             .attr('x', d => this.xScale(d.val))
             .attr('text-anchor', 'middle')
-            .attr('font-size', '12px')
+            .attr('font-size', '14px')
             .attr('fill', color)
             .attr('y', -10 - textOffset)
             .style('opacity', 0)
             .merge(texts)
+            .each(function(d) {
+                d3.select(this).html(`${d.label}<tspan baseline-shift="sub" font-size="0.7em">${d.iteration}</tspan>=${d.val.toFixed(3)}`);
+            })
             .transition().duration(duration)
             .attr('x', d => this.xScale(d.val))
             .attr('y', -10 - textOffset)
-            .text(d => `${d.label}=${d.val.toFixed(3)}`)
             .style('opacity', 1);
     }
 
     // 绘制收敛速度对比 (区间长度随迭代次数变化)
-    drawConvergenceComparison(goldenHistory, fibHistory, bisHistory, yScaleType = 'log', onYLabelClick = null) {
+    drawConvergenceComparison(goldenHistory, fibHistory, bisHistory, yScaleType = 'log', onYLabelClick = null, visibility = null) {
+        if (visibility) this.currentVisibility = visibility;
+        const vis = this.currentVisibility || {golden: true, fibonacci: true, bisection: true};
+        
+        this.goldenHistory = goldenHistory;
+        this.fibonacciHistory = fibHistory;
+        this.bisectionHistory = bisHistory;
+        if (onYLabelClick) this.onYLabelClick = onYLabelClick;
+
         // 切换层级显示
         this.functionLayer.style('display', 'none');
         this.intervalLayer.style('display', 'none');
@@ -112,9 +140,9 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.convergenceLayer.style('display', 'block');
 
         // 准备数据
-        const gData = goldenHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)}));
-        const fData = fibHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)}));
-        const bData = bisHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)}));
+        const gData = vis.golden ? goldenHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)})) : [];
+        const fData = vis.fibonacci ? fibHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)})) : [];
+        const bData = vis.bisection ? bisHistory.map((d, i) => ({x: i, y: Math.abs(d.b - d.a)})) : [];
         this.gData = gData;
         this.fData = fData;
         this.bData = bData;
@@ -144,12 +172,18 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
 
             this.convLegendG = this.convRoot.append('g').attr('class', 'conv-legend')
                 .attr('transform', `translate(${this.plotWidth - 120}, 20)`);
-            this.convLegendG.append('rect').attr('width', 15).attr('height', 15).attr('fill', '#d84315');
-            this.convLegendG.append('text').attr('x', 20).attr('y', 12).text('黄金分割法').attr('font-size', '12px');
-            this.convLegendG.append('rect').attr('x', 0).attr('y', 25).attr('width', 15).attr('height', 15).attr('fill', '#f9a825');
-            this.convLegendG.append('text').attr('x', 20).attr('y', 37).text('斐波那契法').attr('font-size', '12px');
-            this.convLegendG.append('rect').attr('x', 0).attr('y', 50).attr('width', 15).attr('height', 15).attr('fill', '#6d4c41');
-            this.convLegendG.append('text').attr('x', 20).attr('y', 62).text('二分法').attr('font-size', '12px');
+            
+            const legendGolden = this.convLegendG.append('g').attr('class', 'legend-item-golden');
+            legendGolden.append('rect').attr('width', 15).attr('height', 15).attr('fill', '#d84315');
+            legendGolden.append('text').attr('x', 20).attr('y', 12).text('黄金分割法').attr('font-size', '12px');
+            
+            const legendFib = this.convLegendG.append('g').attr('class', 'legend-item-fibonacci').attr('transform', 'translate(0, 25)');
+            legendFib.append('rect').attr('width', 15).attr('height', 15).attr('fill', '#f9a825');
+            legendFib.append('text').attr('x', 20).attr('y', 12).text('斐波那契法').attr('font-size', '12px');
+            
+            const legendBis = this.convLegendG.append('g').attr('class', 'legend-item-bisection').attr('transform', 'translate(0, 50)');
+            legendBis.append('rect').attr('width', 15).attr('height', 15).attr('fill', '#6d4c41');
+            legendBis.append('text').attr('x', 20).attr('y', 12).text('二分法').attr('font-size', '12px');
 
             this.convXLabel = this.convRoot.append('text')
                 .attr('x', this.plotWidth / 2)
@@ -174,7 +208,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         } else {
             const dom = this.convXScale.domain();
             const newMax = Math.max(dom[1], maxIter);
-            this.convXScale.domain([dom[0], newMax]);
+            this.convXScale.domain([dom[0], newMax]).range([0, this.plotWidth]);
         }
 
         this.convYScaleType = yScaleType || this.convYScaleType || 'log';
@@ -185,17 +219,28 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         }
 
         const duration = 400;
-        this.convXAxisG.transition().duration(duration).call(d3.axisBottom(this.convXScale));
+        this.convXAxisG.transition().duration(duration)
+            .attr('transform', `translate(0,${this.plotHeight})`)
+            .call(d3.axisBottom(this.convXScale));
         this.convYAxisG.transition().duration(duration)
             .call(this.convYScaleType === 'log' ? d3.axisLeft(this.convYScale).ticks(10, "~e") : d3.axisLeft(this.convYScale));
+
+        // 更新标签与图例位置
+        this.convXLabel.transition().duration(duration)
+            .attr('x', this.plotWidth / 2)
+            .attr('y', this.plotHeight + 35);
+        
+        this.convYLabel.transition().duration(duration)
+            .attr('x', -this.plotHeight / 2);
+
+        this.convLegendG.transition().duration(duration)
+            .attr('transform', `translate(${this.plotWidth - 120}, 20)`);
 
         // 轴标签与事件
         const labelText = `区间长度 |b-a| (${this.convYScaleType === 'log' ? '对数刻度' : '普通刻度'})`;
         this.convYLabel.text(labelText);
-        if (onYLabelClick) {
-            this.convYLabel.on('click', onYLabelClick);
-        } else {
-            this.convYLabel.on('click', null);
+        if (this.onYLabelClick) {
+            this.convYLabel.on('click', this.onYLabelClick);
         }
 
         // 折线
@@ -203,9 +248,17 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .x(d => this.convXScale(d.x))
             .y(d => this.convYScale(Math.max(d.y, 1e-7)));
 
-        this.convGoldenPath.datum(gData).transition().duration(duration).attr('d', line);
-        this.convFibPath.datum(fData).transition().duration(duration).attr('d', line);
-        this.convBisPath.datum(bData).transition().duration(duration).attr('d', line);
+        this.convGoldenPath.datum(gData).transition().duration(duration).attr('d', line)
+            .style('opacity', vis.golden ? 1 : 0);
+        this.convFibPath.datum(fData).transition().duration(duration).attr('d', line)
+            .style('opacity', vis.fibonacci ? 1 : 0);
+        this.convBisPath.datum(bData).transition().duration(duration).attr('d', line)
+            .style('opacity', vis.bisection ? 1 : 0);
+
+        // 更新图例显示
+        this.convLegendG.select('.legend-item-golden').style('display', vis.golden ? 'block' : 'none');
+        this.convLegendG.select('.legend-item-fibonacci').style('display', vis.fibonacci ? 'block' : 'none');
+        this.convLegendG.select('.legend-item-bisection').style('display', vis.bisection ? 'block' : 'none');
     }
 
     /**
@@ -285,19 +338,27 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.fibonacciLayer.selectAll('*').remove();
     }
 
-    updateTripleTrialPoints(gPoints, fPoints, bAlgo, calculateFunc, options) {
+    updateTripleTrialPoints(gPoints, fPoints, bAlgo, calculateFunc, options, visibility = {golden: true, fibonacci: true, bisection: true}) {
         // 黄金分割 G: 红色 yOffset=0
-        this.drawAlgorithmTrialPoints(gPoints, calculateFunc, '#d84315', 'G', options, 0);
+        if (visibility.golden) {
+            const gIter = (this.goldenHistory && this.goldenHistory.length > 0) ? this.goldenHistory[this.goldenHistory.length - 1].iter : 0;
+            this.drawAlgorithmTrialPoints(gPoints, calculateFunc, '#d84315', 'G', options, 0, gIter);
+        } else {
+            this.clearAlgorithmTrialPoints('G');
+        }
+
         // 斐波那契 F: 琥珀色 yOffset=20 (增加间距)
-        this.drawAlgorithmTrialPoints(fPoints, calculateFunc, '#f9a825', 'F', options, 20);
+        if (visibility.fibonacci) {
+            const fIter = (this.fibonacciHistory && this.fibonacciHistory.length > 0) ? this.fibonacciHistory[this.fibonacciHistory.length - 1].iter : 0;
+            this.drawAlgorithmTrialPoints(fPoints, calculateFunc, '#f9a825', 'F', options, 20, fIter);
+        } else {
+            this.clearAlgorithmTrialPoints('F');
+        }
 
         // 二分法 B: 棕色 yOffset=40
-        if (!bAlgo || typeof bAlgo.getMidpoint !== 'function') {
+        if (!visibility.bisection || !bAlgo || typeof bAlgo.getMidpoint !== 'function') {
             // 清理二分法的试点相关元素
-            this.trialPointsLayer.selectAll('line.trial-line-B').remove();
-            this.trialPointsLayer.selectAll('circle.trial-point-B').remove();
-            this.trialPointsLayer.selectAll('text.trial-label-B').remove();
-            this.trialPointsLayer.selectAll('text.compare-text-B').remove();
+            this.clearAlgorithmTrialPoints('B');
             return;
         }
 
@@ -317,11 +378,18 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         );
     }
 
-    drawAlgorithmTrialPoints(points, calculateFunc, color, labelPrefix, options, yOffset) {
+    clearAlgorithmTrialPoints(labelPrefix) {
+        this.trialPointsLayer.selectAll(`line.trial-line-${labelPrefix}`).remove();
+        this.trialPointsLayer.selectAll(`circle.trial-point-${labelPrefix}`).remove();
+        this.trialPointsLayer.selectAll(`text.trial-label-${labelPrefix}`).remove();
+        this.trialPointsLayer.selectAll(`text.compare-text-${labelPrefix}`).remove();
+    }
+
+    drawAlgorithmTrialPoints(points, calculateFunc, color, labelPrefix, options, yOffset, iteration = 0) {
         const duration = 400;
         const pts = [];
-        if (points && options.showA) pts.push({id: `${labelPrefix}-a`, label: `${labelPrefix}-a`, x: points.a_try});
-        if (points && options.showB) pts.push({id: `${labelPrefix}-b`, label: `${labelPrefix}-b`, x: points.b_try});
+        if (points && options.showA) pts.push({id: `${labelPrefix}-a`, label: 'a', x: points.a_try, iteration: iteration});
+        if (points && options.showB) pts.push({id: `${labelPrefix}-b`, label: 'b', x: points.b_try, iteration: iteration});
 
         // 1. 引导线
         let lines = this.trialPointsLayer.selectAll(`line.trial-line-${labelPrefix}`).data(pts, d => d.id);
@@ -357,15 +425,17 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         labels.exit().transition().duration(duration).style('opacity', 0).remove();
         labels.enter().append('text')
             .attr('class', `trial-label-${labelPrefix}`)
-            .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', color)
+            .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', color)
             .attr('x', d => this.xScale(d.x))
             .attr('y', d => this.yScale(calculateFunc(d.x)) - 5 - yOffset)
             .style('opacity', 0)
             .merge(labels)
+            .each(function(d) {
+                d3.select(this).html(`${d.label}<tspan baseline-shift="sub" font-size="0.7em">${d.iteration}</tspan>=${d.x.toFixed(3)}`);
+            })
             .transition().duration(duration)
             .attr('x', d => this.xScale(d.x))
             .attr('y', d => this.yScale(calculateFunc(d.x)) - 8 - yOffset)
-            .text(d => `${d.label}=${d.x.toFixed(3)}`)
             .style('opacity', 1);
 
         // 4. 比较指示器
@@ -385,7 +455,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .text(d => {
                 const fa = calculateFunc(d.a_try);
                 const fb = calculateFunc(d.b_try);
-                return `${labelPrefix}: f(a) ${fa > fb ? '>' : (fa < fb ? '<' : '=')} f(b)`;
+                return `f(a) ${fa > fb ? '>' : (fa < fb ? '<' : '=')} f(b)`;
             })
             .style('opacity', 1);
     }

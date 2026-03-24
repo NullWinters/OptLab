@@ -16,6 +16,13 @@ function fmtTime(d) {
     return [d.getHours(),d.getMinutes(),d.getSeconds()].map(function(n){return String(n).padStart(2,'0');}).join(':');
 }
 
+function _sanitizeFilename(name) {
+    var s = String(name || '实验笔记').trim();
+    s = s.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ');
+    if (!s) s = '实验笔记';
+    return s.slice(0, 80);
+}
+
 /* Markdown + LaTeX：先占位公式再 marked，再还原 */
 function renderMd(text) {
     if (!text) return '';
@@ -132,6 +139,125 @@ function confirmDialog(msg) {
     });
 }
 
+function _noteToMarkdown(note, experimentKey, index) {
+    var title = (note.title || '').trim() || ('笔记 ' + index);
+    var lines = [];
+    lines.push('# ' + title);
+    lines.push('');
+    lines.push('- 实验：' + (experimentKey || 'unknown'));
+    lines.push('- 导出时间：' + new Date().toLocaleString());
+    lines.push('');
+    lines.push((note.content || '').trim() || '（暂无内容）');
+    lines.push('');
+    return { title: title, content: lines.join('\n') };
+}
+
+function _noteToPlainText(note, experimentKey, index) {
+    var title = (note.title || '').trim() || ('笔记 ' + index);
+    var lines = [];
+    lines.push(title);
+    lines.push('');
+    lines.push('实验：' + (experimentKey || 'unknown'));
+    lines.push('导出时间：' + new Date().toLocaleString());
+    lines.push('');
+    lines.push((note.content || '').trim() || '（暂无内容）');
+    lines.push('');
+    return { title: title, content: lines.join('\n') };
+}
+
+function _noteToHtml(note, experimentKey, index) {
+    var title = (note.title || '').trim() || ('笔记 ' + index);
+    var bodyHtml = renderMd(note.content || '（暂无内容）');
+    var html = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
+        + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        + '<title>' + esc(title) + '</title>'
+        + '<script>window.MathJax={tex:{inlineMath:[["$","$"],["\\\\(","\\\\)"]],displayMath:[["$$","$$"],["\\\\[","\\\\]"]]}};</script>'
+        + '<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>'
+        + '<style>body{max-width:920px;margin:28px auto;padding:0 16px;color:#333;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;line-height:1.72}h1{color:#D84315}hr{border:none;border-top:1px solid #eee;margin:16px 0}.meta{color:#777;font-size:14px}pre,code{font-family:Consolas,Monaco,monospace}</style>'
+        + '</head><body>'
+        + '<h1>' + renderTitleHtml(title) + '</h1>'
+        + '<p class="meta">实验：' + esc(experimentKey || 'unknown') + '<br>导出时间：' + esc(new Date().toLocaleString()) + '</p>'
+        + '<hr>'
+        + bodyHtml
+        + '</body></html>';
+    return { title: title, content: html };
+}
+
+function _buildExportPayload(note, experimentKey, index, format) {
+    if (format === 'html') return _noteToHtml(note, experimentKey, index);
+    if (format === 'txt') return _noteToPlainText(note, experimentKey, index);
+    return _noteToMarkdown(note, experimentKey, index);
+}
+
+function _downloadTextFile(filename, text, mimeType) {
+    var blob = new Blob([text], { type: (mimeType || 'text/plain') + ';charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 0);
+}
+
+function _pickNotesToExport(notes) {
+    return new Promise(function(resolve) {
+        var ov = document.createElement('div');
+        ov.className = 'exp-notes-confirm-overlay';
+
+        var itemsHtml = notes.map(function(n, idx) {
+            var t = (n.title || '').trim() || ('笔记 ' + (idx + 1));
+            return '<label class="exp-notes-export-item">'
+                + '<input type="checkbox" class="exp-notes-export-checkbox" value="'+idx+'" checked>'
+                + '<span class="exp-notes-export-title">'+renderTitleHtml(t)+'</span>'
+                + '</label>';
+        }).join('');
+
+        ov.innerHTML = '<div class="exp-notes-confirm-box exp-notes-export-box">'
+            + '<p><strong>选择要导出的笔记</strong></p>'
+            + '<div class="exp-notes-export-format">'
+            + '  <label for="_enExportFormat">导出格式：</label>'
+            + '  <select id="_enExportFormat" class="exp-notes-export-format-select">'
+            + '    <option value="md" selected>Markdown (.md)</option>'
+            + '    <option value="html">HTML（支持公式渲染）(.html)</option>'
+            + '    <option value="txt">纯文本 (.txt)</option>'
+            + '  </select>'
+            + '</div>'
+            + '<div class="exp-notes-export-list">' + itemsHtml + '</div>'
+            + '<div class="exp-notes-confirm-actions">'
+            + '  <button class="exp-notes-confirm-cancel" id="_enPickCancel">取消</button>'
+            + '  <button class="exp-notes-confirm-cancel" id="_enPickAll">全选</button>'
+            + '  <button class="exp-notes-confirm-delete" id="_enPickOk">导出所选</button>'
+            + '</div>'
+            + '</div>';
+
+        document.body.appendChild(ov);
+        retypeset(ov);
+
+        function done(v) { ov.remove(); resolve(v); }
+
+        ov.querySelector('#_enPickCancel').onclick = function(){ done(null); };
+        ov.querySelector('#_enPickAll').onclick = function(){
+            ov.querySelectorAll('.exp-notes-export-checkbox').forEach(function(cb){ cb.checked = true; });
+        };
+        ov.querySelector('#_enPickOk').onclick = function(){
+            var sel = [];
+            ov.querySelectorAll('.exp-notes-export-checkbox:checked').forEach(function(cb){
+                sel.push(parseInt(cb.value, 10));
+            });
+            if (!sel.length) {
+                alert('请至少选择一条笔记再导出。');
+                return;
+            }
+            var fmt = (ov.querySelector('#_enExportFormat') || {}).value || 'md';
+            done({ indices: sel, format: fmt });
+        };
+        ov.onclick = function(e){ if(e.target===ov){ done(null); } };
+    });
+}
+
+
 // ─── 行为追踪器 ────────────────────────────────────────────────
 var _tracker = {
     _events: [],
@@ -224,7 +350,7 @@ function _shell(mount) {
         '<div class="exp-notes-header">'+
         '  <div class="exp-notes-header-left">'+
         '    <h2>实验笔记</h2>'+
-        '    <span class="exp-notes-login-hint" id="_enHint" style="display:none">（<a href="/auth/login" style="color:inherit;text-decoration:underline;">登录</a>后保存笔记）</span>'+
+        '    <span class="exp-notes-login-hint" id="_enHint" style="display:none">（未登录：仅本地填写与导出，无法保存到云端，<a href="/auth/login" class="exp-notes-login-link">立即登录</a>）</span>'+
         '  </div>'+
         '  <div class="exp-notes-actions">'+
         '    <button class="exp-notes-action-btn secondary" id="_enSave">保存</button>'+
@@ -238,7 +364,11 @@ function _shell(mount) {
     _listEl = mount.querySelector('#_enList');
     _gStEl  = mount.querySelector('#_enGSt');
     if (!isLoggedIn()) mount.querySelector('#_enHint').style.display='inline';
-    mount.querySelector('#_enSave').addEventListener('click', _saveAll);
+    var saveBtn = mount.querySelector('#_enSave');
+    if (!isLoggedIn()) {
+        saveBtn.textContent = '本地暂存';
+    }
+    saveBtn.addEventListener('click', _saveAll);
     mount.querySelector('#_enExp').addEventListener('click',  _export);
     mount.querySelector('#_enAI').addEventListener('click',   _aiGen);
 }
@@ -341,7 +471,10 @@ async function _addNote() {
 
 async function _saveOne(note,card,stEl) {
     if(card){var ti=card.querySelector('.exp-note-title-input'),ci=card.querySelector('.exp-note-content-input');if(ti)note.title=ti.value;if(ci)note.content=ci.value;}
-    if(!isLoggedIn()||!note.id) return;
+    if(!note.id || !isLoggedIn()) {
+        setSt(stEl,'saved','本地已更新');
+        return;
+    }
     setSt(stEl,'saving','保存中...');
     var d=await apiSafe(function(){
         return apiRequest('/notes/item/'+note.id,{method:'PUT',body:JSON.stringify({title:note.title,content:note.content,sort_order:note.sort_order})});
@@ -351,10 +484,11 @@ async function _saveOne(note,card,stEl) {
 }
 
 async function _saveAll() {
-    setGSt(_gStEl,'saving','保存中...');
+    var logged = isLoggedIn();
+    setGSt(_gStEl,'saving', logged ? '保存中...' : '本地整理中...');
     var cs=_listEl?_listEl.querySelectorAll('.exp-note-card'):[];
     for(var i=0;i<_notes.length;i++) await _saveOne(_notes[i],cs[i]||null,cs[i]?cs[i].querySelector('.exp-note-status'):null);
-    setGSt(_gStEl,'saved','全部已保存 '+fmtTime(new Date()));
+    setGSt(_gStEl,'saved', (logged ? '全部已保存 ' : '本地已整理 ') + fmtTime(new Date()));
 }
 
 async function _del(note) {
@@ -364,16 +498,23 @@ async function _del(note) {
 }
 
 async function _export() {
-    if(!isLoggedIn()){alert('请先登录后再导出笔记。');return;}
     if(!_notes.length){alert('暂无笔记可导出。');return;}
     await _saveAll();
-    try{
-        var tk=(typeof getStoredToken==='function')?getStoredToken():'';
-        var res=await fetch('/notes/'+encodeURIComponent(_cfg.experimentKey)+'/export',{headers:{Authorization:'Bearer '+tk}});
-        if(!res.ok){var b=await res.json().catch(function(){return{};});alert(b.detail||'导出失败');return;}
-        var blob=await res.blob(),url=URL.createObjectURL(blob),a=document.createElement('a');
-        a.href=url;a.download=_cfg.experimentKey+'-notes.md';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
-    }catch(e){alert('导出错误：'+e.message);}
+
+    var selection = await _pickNotesToExport(_notes);
+    if (!selection) return;
+
+    var selectedIdx = selection.indices || [];
+    var fmt = selection.format || 'md';
+    var ext = fmt === 'html' ? '.html' : (fmt === 'txt' ? '.txt' : '.md');
+    var mime = fmt === 'html' ? 'text/html' : (fmt === 'txt' ? 'text/plain' : 'text/markdown');
+
+    selectedIdx.forEach(function(i){
+        var note = _notes[i];
+        var payload = _buildExportPayload(note, _cfg.experimentKey, i + 1, fmt);
+        var name = _sanitizeFilename((i + 1) + '-' + payload.title) + ext;
+        _downloadTextFile(name, payload.content, mime);
+    });
 }
 
 async function _aiGen() {

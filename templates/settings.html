@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}个人设置 - OptLab{% endblock %}
+
+{% block head %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #fffaf0; color: #5d4037; }
+        .text-amber-primary { color: #d84315; }
+        .bg-amber-primary { background-color: #d84315; }
+        .hover-amber-primary:hover { background-color: #bf360c; }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col">
+    {% include 'components/_top_nav.html' %}
+
+    <main class="max-w-4xl mx-auto w-full px-6 py-12 space-y-8">
+        <h1 class="text-3xl font-bold text-amber-primary">个人设置</h1>
+
+        <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+            <h2 class="text-xl font-bold mb-4">修改用户名</h2>
+            <div id="username-error" class="hidden mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2"></div>
+            <div id="username-success" class="hidden mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2"></div>
+            <form id="username-form" class="space-y-4 max-w-md">
+                <div>
+                    <label for="new-username" class="block text-sm font-medium mb-1">新用户名</label>
+                    <input id="new-username" name="username" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600" />
+                    <p class="mt-1 text-xs text-gray-500">用户名长度需在 3-50 个字符之间，且不能与已有用户名重复。</p>
+                </div>
+                <button type="submit" class="bg-amber-primary text-white px-4 py-2 rounded-lg font-semibold hover:bg-amber-700 transition">保存用户名</button>
+            </form>
+        </section>
+
+        <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+            <h2 class="text-xl font-bold mb-4">修改密码</h2>
+            <div id="password-error" class="hidden mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2"></div>
+            <div id="password-success" class="hidden mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2"></div>
+            <form id="password-form" class="space-y-4 max-w-md">
+                <div>
+                    <label for="current-password" class="block text-sm font-medium mb-1">当前密码</label>
+                    <input id="current-password" name="current_password" type="password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600" />
+                </div>
+                <div>
+                    <label for="new-password" class="block text-sm font-medium mb-1">新密码</label>
+                    <input id="new-password" name="new_password" type="password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600" />
+                </div>
+                <div>
+                    <label for="confirm-password" class="block text-sm font-medium mb-1">确认新密码</label>
+                    <input id="confirm-password" name="confirm_password" type="password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-600 focus:border-amber-600" />
+                    <p class="mt-1 text-xs text-gray-500">密码长度需在 8-50 个字符之间，且两次输入必须一致。</p>
+                </div>
+                <button type="submit" class="bg-amber-primary text-white px-4 py-2 rounded-lg font-semibold hover:bg-amber-700 transition">保存密码</button>
+            </form>
+        </section>
+    </main>
+
+    <footer class="bg-gray-100 py-8 px-6 mt-auto">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+        </div>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+<script src="/static/js/settings.js"></script>
+{% endblock %}

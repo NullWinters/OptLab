@@ -51,6 +51,18 @@
     font-style: italic;
 }
 
+.exp-notes-login-link {
+    color: #D84315;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+    font-weight: 700;
+}
+
+.exp-notes-login-link:hover {
+    color: #BF360C;
+}
+
 /* 全局状态消息 */
 .exp-notes-global-status {
     font-size: 12px;
@@ -494,6 +506,68 @@
     display: flex;
     gap: 10px;
     justify-content: center;
+}
+
+.exp-notes-export-box {
+    max-width: 460px;
+    text-align: left;
+}
+
+.exp-notes-export-format {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: #6D4C41;
+    font-size: 0.9em;
+}
+
+.exp-notes-export-format-select {
+    border: 1px solid #FFE0B2;
+    border-radius: 8px;
+    padding: 6px 10px;
+    background: #fff;
+    color: #5D4037;
+    font-family: inherit;
+}
+
+.exp-notes-export-title {
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.exp-notes-export-title mjx-container,
+.exp-notes-export-title .MathJax {
+    font-size: 0.96em;
+}
+
+.exp-notes-export-list {
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid #FFE0B2;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 14px;
+    background: #FFFAF0;
+}
+
+.exp-notes-export-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #5D4037;
+}
+
+.exp-notes-export-item:hover {
+    background: #FFF3E0;
+}
+
+.exp-notes-export-checkbox {
+    width: 15px;
+    height: 15px;
 }
 
 .exp-notes-confirm-cancel {

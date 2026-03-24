@@ -685,8 +685,16 @@ class SecantMethod {
             initialParams: {},
             targetLabel: "",
             iterationLog: []
+        },
+        data: {
+            source: 'default',
+            uploadedFiles: [],
+            headers: [],
+            sample_count: 0
         }
     };
+
+    window.AppState = AppState;
 
     function init() {
         lsViz = new SearchVisualizer("lsCanvas");
@@ -1288,6 +1296,13 @@ class SecantMethod {
         prices = [10, 20, 30, 40, 50];
         demands = [200, 150, 110, 80, 60];
         rawData = [["价格", "需求"], [10,200], [20,150], [30,110], [40,80], [50,60]];
+        AppState.data.source = 'default';
+        AppState.data.uploadedFiles = [];
+        AppState.data.headers = ['价格', '需求'];
+        AppState.data.sample_count = prices.length;
+        if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
+            window.ExperimentNotes.trackEvent('dataset_reset_default', { sample_count: prices.length });
+        }
         document.getElementById('columnSelector').style.display = 'none';
         updateAll();
     }
@@ -1303,6 +1318,18 @@ class SecantMethod {
             if (rows.length < 2) return;
             rawData = rows;
             const headers = rows[0];
+            AppState.data.source = 'uploaded_csv';
+            AppState.data.headers = headers.slice();
+            AppState.data.sample_count = Math.max(0, rows.length - 1);
+            AppState.data.uploadedFiles = [{
+                name: file.name,
+                size: file.size,
+                type: file.type || 'text/csv',
+                text_preview: String(content || '').slice(0, 6000)
+            }];
+            if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
+                window.ExperimentNotes.trackEvent('upload_csv', { file_name: file.name, file_size: file.size });
+            }
             const priceSelect = document.getElementById('priceColSelect');
             const demandSelect = document.getElementById('demandColSelect');
             priceSelect.innerHTML = demandSelect.innerHTML = '';
@@ -1325,6 +1352,10 @@ class SecantMethod {
         for(let i=1; i<rawData.length; i++) {
             const p = parseFloat(rawData[i][pIdx]), d = parseFloat(rawData[i][dIdx]);
             if(!isNaN(p) && !isNaN(d)) { prices.push(p); demands.push(d); }
+        }
+        AppState.data.sample_count = prices.length;
+        if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
+            window.ExperimentNotes.trackEvent('apply_columns', { price_col: pIdx, demand_col: dIdx, sample_count: prices.length });
         }
         updateAll();
     }
@@ -1376,10 +1407,14 @@ class SecantMethod {
         B_ls = prices.reduce((acc, p, i) => acc + (demands[i] - y_mean) * (p - x_mean), 0);
         b_fit = B_ls / A_ls;
         a_fit = y_mean - b_fit * x_mean;
-        
+
         const cost = parseFloat(document.getElementById('costInput').value) || 0;
         document.getElementById('cDisplay').textContent = cost;
         p_opt_val = (b_fit * cost - a_fit) / (2 * b_fit);
+
+        window.a_fit = a_fit;
+        window.b_fit = b_fit;
+        window.p_opt_val = p_opt_val;
     }
 
     function updateSliders(type) {

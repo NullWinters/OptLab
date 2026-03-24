@@ -375,7 +375,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/api.js"></script>
 <script>
     window.AI_CONFIG = {
         PAGE_ID: 'point_search_comparison',
@@ -1141,6 +1140,33 @@
         ];
         tbody.innerHTML = data.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
     }
+</script>
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'point_search_comparison',
+        BUTTON_REGISTRY: [
+            { id: 'function-select', description: '测试函数选择下拉框', type: 'normal' },
+            { id: 'custom-func-btn', description: '自定义函数按钮', type: 'normal' },
+            { id: 'confirm-custom-func', description: '确认应用自定义函数按钮', type: 'normal' },
+            { id: 'initial-point0-slider', description: '初始点 x0 滑块', type: 'normal' },
+            { id: 'initial-point-1-slider', description: '初始点 x-1 滑块', type: 'normal' },
+            { id: 'iterations', description: '迭代次数 N 滑块', type: 'normal' },
+            { id: 'learning-rate', description: '学习率 α 滑块', type: 'normal' },
+            { id: 'play-btn', description: '播放按钮', type: 'normal' },
+            { id: 'pause-btn', description: '暂停按钮', type: 'normal' },
+            { id: 'step-btn', description: '单步按钮', type: 'normal' },
+            { id: 'reset-btn', description: '重置按钮', type: 'normal' },
+            { id: 'speed-control', description: '播放速度滑块', type: 'normal' },
+            { id: 'pan-left-btn', description: '向左平移按钮', type: 'normal' },
+            { id: 'pan-right-btn', description: '向右平移按钮', type: 'normal' },
+            { id: 'zoom-in-btn', description: '放大按钮', type: 'normal' },
+            { id: 'zoom-out-btn', description: '缩小按钮', type: 'normal' },
+            { id: 'iteration-log-open-btn', description: '查看实验数据按钮', type: 'normal' },
+            { id: 'iteration-log-export-csv-btn', description: '导出实验数据按钮', type: 'normal' },
+            { id: 'save-profile-dropdown-trigger', description: '保存至个人中心下拉按钮', type: 'normal' }
+        ],
+        GUIDEBOOK: '这是点搜索法性质对比页面，用于并行比较梯度下降法、牛顿法和割线法的收敛过程与终止表现。可调参数后通过播放/单步观察三种算法在不同画布中的迭代轨迹，并在实验数据面板导出或保存记录。'
+    };
 </script>
 <script>
     window.EXPERIMENT_NOTES_CONFIG = {

@@ -57,7 +57,7 @@
 
             <div class="group">
                 <h2>2) 核技巧</h2>
-                <p id="current-map-text" class="hint" style="margin-top:0;">当前映射：φ(x, y) = (x², y², √2xy)</p>
+                <p id="current-map-text" class="hint" style="margin-top:0;">当前映射：\(\phi(x, y) = (x^2, y^2, \sqrt{2}xy)\)</p>
                 <button id="custom-map-btn" type="button">自定义映射</button>
 
                 <button id="animate-btn">升维动画</button>
@@ -140,6 +140,10 @@
             <div id="scene"></div>
         </section>
     </div>
+
+    <div style="margin-top: 20px;">
+        {% include 'components/_experiment_notes.html' %}
+    </div>
 </div>
 <footer class="footer">
     支持向量机与 SMO · OptLab 教学资源
@@ -170,8 +174,22 @@
             {id: 'plane-yaw', description: '超平面Yaw旋转滑块', type: 'normal'},
             {id: 'plane-pitch', description: '超平面Pitch旋转滑块', type: 'normal'}
         ],
-        GUIDEBOOK: '这是支持向量机核技巧三维可视化页面。页面左侧是参数面板，右侧是Three.js三维场景。用户先上传CSV或加载预设数据，再选择x/y/标签列并可视化。可使用默认固定映射 φ(x, y)=(x², √2xy, y²)，也可自定义输入 φ(x, y)=(x_new, y_new, z_new) 表达式并应用，再播放升维动画观察可分性变化。超平面可平移和旋转，并实时显示按颜色标签计算的划分准确率。'
+        GUIDEBOOK: '这是支持向量机核技巧三维可视化页面。页面左侧是参数面板，右侧是Three.js三维场景。用户先上传CSV或加载预设数据，再选择x/y/标签列并可视化。可使用默认固定映射 φ(x, y)=(x², y², √2xy)，也可自定义输入 φ(x, y)=(x_new, y_new, z_new) 表达式并应用，再播放升维动画观察可分性变化。超平面可平移和旋转，并实时显示按颜色标签计算的划分准确率。'
     };
 </script>
 <script type="module" src="/static/js/courses/svm-smo/kernel-trick.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        ExperimentNotes.init({
+            experimentKey: 'svm-smo.kernel_trick.visualization',
+            mountSelector: '#exp-notes-mount',
+            getPageData: function () {
+                if (typeof window.getKernelTrickPageData === 'function') {
+                    return window.getKernelTrickPageData();
+                }
+                return {};
+            }
+        });
+    });
+</script>
 {% endblock %}

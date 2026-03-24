@@ -1,25 +1,14 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OptLab - 最优化实验室</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% extends 'base.html' %}
+
+{% block title %}OptLab - 最优化实验室{% endblock %}
+
+{% block head %}
     <link rel="stylesheet" href="/static/css/base/index.css">
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
 <!-- 导航栏 -->
-<div class="container max-w-7xl">
-    <nav class="nav-bar">
-        <a href="/" class="nav-logo">
-            <i class="fas fa-flask"></i> OptLab
-        </a>
-        <div class="nav-links">
-            <a href="/" class="active">首页</a>
-            <a href="/courses/">课程中心</a>
-        </div>
-    </nav>
-</div>
+{% include 'components/_top_nav.html' %}
 
 <!-- 主视觉区 -->
 <header class="hero container">
@@ -34,7 +23,11 @@
             <a href="/courses/" class="btn btn-primary">
                 浏览课程
             </a>
+            <a href="/profile" class="btn btn-secondary" id="hero-profile-btn">
+                个人中心
+            </a>
         </div>
+        <div id="hero-auth-actions" class="hero-auth-actions"></div>
     </div>
 </header>
 
@@ -99,22 +92,8 @@
         <p class="footer-text">&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
     </div>
 </footer>
+{% endblock %}
 
-<script>
-    (function () {
-        try {
-            const path = location.pathname.replace(/\/$/, '') || '/';
-            document.querySelectorAll('.nav-links a').forEach((a) => {
-                const href = a.getAttribute('href').replace(/\/$/, '') || '/';
-                if (href === path) {
-                    a.classList.add('text-amber-primary', 'font-semibold');
-                }
-            });
-        } catch (e) {
-            // 静默失败以避免阻塞页面
-            console.debug('main.js init skipped:', e);
-        }
-    })();
-</script>
-</body>
-</html>
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+{% endblock %}

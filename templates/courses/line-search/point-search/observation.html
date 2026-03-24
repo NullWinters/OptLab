@@ -273,7 +273,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/api.js"></script>
 <script>
     window.AI_CONFIG = {
         PAGE_ID: 'point_search_observation',
@@ -361,7 +360,18 @@
         initFunctionSelect();
         initVisualizer();
         setupEventListeners();
+
+        // 立即执行一次初始重构，确保内部状态 (currentExpr, initialized) 已就绪
         resetApp();
+
+        // 初始进入页面 50ms 后，强制执行一次 resize 以确保布局稳定
+        // 从而触发图形高度缩放自适应以及横轴位置随画布高度变化的平移移动效果
+        setTimeout(() => {
+            if (AppState.visualizer) {
+                AppState.visualizer.resize();
+            }
+        }, 50);
+
         initExperimentNotePersistence();
         initPanelCollapsible();
     });
@@ -1070,7 +1080,6 @@
     window.AppState = AppState;
     window.FunctionLibrary = FunctionLibrary;
 </script>
-<script src="/static/js/common/experiment-notes.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         ExperimentNotes.init({

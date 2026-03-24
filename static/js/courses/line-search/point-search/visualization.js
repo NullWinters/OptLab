@@ -78,8 +78,6 @@ export class PointSearchVisualizer {
         this.xScale.range([0, this.plotWidth]);
         this.yScale.range([this.plotHeight, 0]);
 
-        this.xAxisG.attr('transform', `translate(0,${this.plotHeight})`);
-        
         if (this.currentExpr) {
             this.drawFunction(this.currentExpr, this.currentDomain);
         }
@@ -123,7 +121,9 @@ export class PointSearchVisualizer {
     }
 
     updateAxes(duration = this.duration) {
-        this.xAxisG.transition().duration(duration).call(d3.axisBottom(this.xScale));
+        this.xAxisG.transition().duration(duration)
+            .attr('transform', `translate(0,${this.plotHeight})`)
+            .call(d3.axisBottom(this.xScale));
         this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
         
         this.gridX.transition().duration(duration)
