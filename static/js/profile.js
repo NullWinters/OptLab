@@ -20,37 +20,37 @@
 
     function renderRecordRow(r) {
         const li = document.createElement("li");
-        li.className = "py-4 flex flex-wrap items-center justify-between gap-4";
+        li.className = "record-row";
         li.innerHTML =
-            "<div class='flex flex-wrap items-center gap-4'>" +
-            "<span class='font-medium'>" + (r.alias || "未命名") + "</span>" +
-            "<span class='text-gray-500 text-sm'>" + formatTime(r.created_at) + "</span>" +
+            "<div class='record-meta-group'>" +
+            "<span class='record-title'>" + (r.alias || "未命名") + "</span>" +
+            "<span class='record-time'>" + formatTime(r.created_at) + "</span>" +
             "</div>" +
-            "<div class='flex gap-2'>" +
-            "<button class='record-view-btn px-3 py-1.5 bg-amber-50 text-amber-primary rounded-lg hover:bg-amber-100 text-sm' data-id='" + r.id + "'>查看实验数据</button>" +
-            "<button class='record-export-btn px-3 py-1.5 border border-amber-primary text-amber-primary rounded-lg hover:bg-amber-50 text-sm' data-id='" + r.id + "'>导出实验数据</button>" +
-            "<button class='record-rename-btn px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm' data-id='" + r.id + "' data-alias='" + (r.alias || "") + "'>修改备注名</button>" +
-            "<button class='record-delete-btn px-3 py-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 text-sm' data-id='" + r.id + "'>删除</button>" +
+            "<div class='record-action-group'>" +
+            "<button class='record-view-btn record-btn record-btn-view' data-id='" + r.id + "'>查看实验数据</button>" +
+            "<button class='record-export-btn record-btn record-btn-export' data-id='" + r.id + "'>导出实验数据</button>" +
+            "<button class='record-rename-btn record-btn record-btn-rename' data-id='" + r.id + "' data-alias='" + (r.alias || "") + "'>修改备注名</button>" +
+            "<button class='record-delete-btn record-btn record-btn-delete' data-id='" + r.id + "'>删除</button>" +
             "</div>";
         listEl.appendChild(li);
     }
 
     async function loadList() {
         if (typeof apiGet !== "function") {
-            loadingEl.classList.add("hidden");
-            emptyEl.classList.remove("hidden");
+            loadingEl.classList.add("is-hidden");
+            emptyEl.classList.remove("is-hidden");
             emptyEl.textContent = "请先登录后查看实验记录。";
             return;
         }
         try {
             const list = await apiGet("/experiments/records");
-            loadingEl.classList.add("hidden");
+            loadingEl.classList.add("is-hidden");
             if (!list || list.length === 0) {
                 listEl.innerHTML = "";
-                emptyEl.classList.remove("hidden");
+                emptyEl.classList.remove("is-hidden");
                 return;
             }
-            emptyEl.classList.add("hidden");
+            emptyEl.classList.add("is-hidden");
             listEl.innerHTML = "";
             list.forEach(renderRecordRow);
 
@@ -80,8 +80,8 @@
                 });
             });
         } catch (err) {
-            loadingEl.classList.add("hidden");
-            emptyEl.classList.remove("hidden");
+            loadingEl.classList.add("is-hidden");
+            emptyEl.classList.remove("is-hidden");
             emptyEl.textContent = "加载失败，请检查登录状态后刷新。";
         }
     }
@@ -97,6 +97,28 @@
             const p = data.payload || {};
             const iter = p.iteration_data || p.iterationLog || [];
 
+            function terminationText(row) {
+                if (!row || !row.is_complete) return "进行中";
+                if (row.has_converged) {
+                    if (row.result != null && !Number.isNaN(Number(row.result))) {
+                        return "已收敛（结果 x*≈" + Number(row.result).toFixed(6) + "）";
+                    }
+                    return "已收敛";
+                }
+                switch (row.termination_reason) {
+                    case "max_iter":
+                        return "已终止（达到最大迭代次数，未收敛）";
+                    case "grad_zero":
+                        return "已终止（梯度≈0，但未满足收敛判据）";
+                    case "hessian_zero":
+                        return "已终止（二阶导≈0，无法继续更新）";
+                    case "secant_den_zero":
+                        return "已终止（割线分母≈0，无法继续更新）";
+                    default:
+                        return "已终止（未收敛）";
+                }
+            }
+
             function escapeHtml(s) {
                 return String(s == null ? "" : s)
                     .replace(/&/g, "&amp;")
@@ -108,31 +130,37 @@
 
             function algoRowClass(row) {
                 const algo = (row && row.algorithm) ? String(row.algorithm) : "";
-                if (algo.includes("黄金") || algo.includes("Golden")) return "bg-yellow-50";
-                if (algo.includes("斐波那契") || algo.includes("Fibonacci")) return "bg-green-50";
-                if (algo.includes("二分") || algo.includes("Bisection")) return "bg-blue-50";
-                if (algo.includes("梯度") || algo.includes("GD")) return "bg-yellow-50";
-                if (algo.includes("牛顿") || algo.includes("Newton")) return "bg-green-50";
-                if (algo.includes("割线") || algo.includes("Secant")) return "bg-blue-50";
+                if (algo.includes("黄金") || algo.includes("Golden")) return "algo-row-golden";
+                if (algo.includes("斐波那契") || algo.includes("Fibonacci")) return "algo-row-fibonacci";
+                if (algo.includes("二分") || algo.includes("Bisection")) return "algo-row-bisection";
+                if (algo.includes("梯度") || algo.includes("GD")) return "algo-row-golden";
+                if (algo.includes("牛顿") || algo.includes("Newton")) return "algo-row-fibonacci";
+                if (algo.includes("割线") || algo.includes("Secant")) return "algo-row-bisection";
                 return "";
             }
 
             const summaryItems = [];
-            summaryItems.push("<div><span class='text-gray-500'>别名：</span><span class='font-semibold'>" + escapeHtml(data.alias || "") + "</span></div>");
-            summaryItems.push("<div><span class='text-gray-500'>来源：</span><span class='font-mono text-xs'>" + escapeHtml(data.source_page || "") + "</span></div>");
-            if (p.algorithm_name) summaryItems.push("<div><span class='text-gray-500'>算法：</span><span>" + escapeHtml(p.algorithm_name) + "</span></div>");
-            if (p.test_function) summaryItems.push("<div><span class='text-gray-500'>测试函数：</span><span class='font-mono text-xs'>" + escapeHtml(p.test_function) + "</span></div>");
-            summaryItems.push("<div><span class='text-gray-500'>记录条数：</span><span>" + (Array.isArray(iter) ? String(iter.length) : "0") + "</span></div>");
+            summaryItems.push("<div><span class='record-detail-label'>别名：</span><span class='record-detail-strong'>" + escapeHtml(data.alias || "") + "</span></div>");
+            summaryItems.push("<div><span class='record-detail-label'>来源：</span><span class='record-detail-mono'>" + escapeHtml(data.source_page || "") + "</span></div>");
+            if (p.algorithm_name) summaryItems.push("<div><span class='record-detail-label'>算法：</span><span>" + escapeHtml(p.algorithm_name) + "</span></div>");
+            if (p.test_function) summaryItems.push("<div><span class='record-detail-label'>测试函数：</span><span class='record-detail-mono'>" + escapeHtml(p.test_function) + "</span></div>");
+            summaryItems.push("<div><span class='record-detail-label'>记录条数：</span><span>" + (Array.isArray(iter) ? String(iter.length) : "0") + "</span></div>");
+            if (Array.isArray(iter) && iter.length) {
+                const finalRow = [...iter].reverse().find(function (row) {
+                    return row && row.is_complete;
+                }) || null;
+                summaryItems.push("<div><span class='record-detail-label'>终止状态：</span><span>" + escapeHtml(terminationText(finalRow)) + "</span></div>");
+            }
 
             let html = "";
-            html += "<div class='text-sm text-gray-700 space-y-1 mb-3'>" + summaryItems.join("") + "</div>";
+            html += "<div class='record-detail-summary'>" + summaryItems.join("") + "</div>";
 
             if (p.initial_state && typeof p.initial_state === "object") {
-                html += "<div class='mb-3 p-3 rounded-lg bg-amber-50/50 border border-amber-100'>";
-                html += "<div class='font-semibold mb-2'>初始参数</div>";
-                html += "<div class='grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs'>";
+                html += "<div class='record-detail-initial'>";
+                html += "<div class='record-detail-initial-title'>初始参数</div>";
+                html += "<div class='record-detail-initial-grid'>";
                 Object.keys(p.initial_state).forEach(function (k) {
-                    html += "<div class='flex justify-between gap-4'><span class='text-gray-500'>" + escapeHtml(k) + "</span><span class='font-mono'>" + escapeHtml(p.initial_state[k]) + "</span></div>";
+                    html += "<div class='record-detail-kv'><span class='record-detail-label'>" + escapeHtml(k) + "</span><span class='record-detail-mono'>" + escapeHtml(p.initial_state[k]) + "</span></div>";
                 });
                 html += "</div></div>";
             }
@@ -141,34 +169,34 @@
                 const headers = Object.keys(iter[0]);
                 const maxRows = 200;
                 const rows = iter.slice(0, maxRows);
-                html += "<div class='rounded-xl border border-gray-200 overflow-hidden'>";
-                html += "<div class='overflow-auto max-h-[52vh]'>";
-                html += "<table class='min-w-full text-xs'>";
-                html += "<thead class='bg-gray-50 sticky top-0'><tr>";
+                html += "<div class='record-detail-table-wrap'>";
+                html += "<div class='record-detail-table-scroll'>";
+                html += "<table class='record-detail-table'>";
+                html += "<thead><tr>";
                 headers.forEach(function (h) {
-                    html += "<th class='text-left font-semibold px-3 py-2 border-b border-gray-200'>" + escapeHtml(h) + "</th>";
+                    html += "<th>" + escapeHtml(h) + "</th>";
                 });
                 html += "</tr></thead><tbody>";
                 rows.forEach(function (row) {
                     html += "<tr class='" + algoRowClass(row) + "'>";
                     headers.forEach(function (h) {
-                        html += "<td class='px-3 py-2 border-b border-gray-100 whitespace-nowrap'>" + escapeHtml(row[h]) + "</td>";
+                        html += "<td>" + escapeHtml(row[h]) + "</td>";
                     });
                     html += "</tr>";
                 });
                 html += "</tbody></table></div>";
                 if (iter.length > maxRows) {
-                    html += "<div class='px-3 py-2 text-xs text-gray-500 bg-white border-t'>仅展示前 " + maxRows + " 条记录（共 " + iter.length + " 条）。如需全部数据请使用“导出实验数据”。</div>";
+                    html += "<div class='record-detail-table-tip'>仅展示前 " + maxRows + " 条记录（共 " + iter.length + " 条）。如需全部数据请使用“导出实验数据”。</div>";
                 }
                 html += "</div>";
             } else if (Array.isArray(iter) && iter.length) {
-                html += "<div class='text-gray-500 text-sm'>迭代数据格式非表格结构，建议使用“导出实验数据”查看完整内容。</div>";
+                html += "<div class='record-detail-empty'>迭代数据格式非表格结构，建议使用“导出实验数据”查看完整内容。</div>";
             } else {
-                html += "<div class='text-gray-500 text-sm'>该记录不包含迭代数据。</div>";
+                html += "<div class='record-detail-empty'>该记录不包含迭代数据。</div>";
             }
 
             detailBody.innerHTML = html;
-            modal.classList.remove("hidden");
+            modal.classList.remove("is-hidden");
         } catch (e) {
             alert("查看实验数据失败，请稍后重试。");
         }
@@ -263,12 +291,12 @@
     }
 
     detailClose && detailClose.addEventListener("click", function () {
-        modal.classList.add("hidden");
+        modal.classList.add("is-hidden");
     });
 
     modal && modal.addEventListener("click", function (e) {
         if (e.target === modal) {
-            modal.classList.add("hidden");
+            modal.classList.add("is-hidden");
         }
     });
 

@@ -3,44 +3,37 @@
 {% block title %}个人中心 - OptLab{% endblock %}
 
 {% block head %}
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background-color: #fffaf0; color: #5d4037; }
-        .text-amber-primary { color: #d84315; }
-        .bg-amber-primary { background-color: #d84315; }
-        .border-amber-primary { border-color: #d84315; }
-        .hover-amber-primary:hover { background-color: #bf360c; }
-    </style>
+    <link rel="stylesheet" href="/static/css/base/account.css">
 {% endblock %}
 
+{% block ai_sidebar %}{% endblock %}
+
 {% block content %}
-<div class="min-h-screen flex flex-col">
+<div class="account-page">
     {% include 'components/_top_nav.html' %}
 
-    <main class="max-w-4xl mx-auto w-full px-6 py-12">
-        <h1 class="text-3xl font-bold text-amber-primary mb-8">个人中心</h1>
-        <section class="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-            <h2 class="text-xl font-bold mb-4">实验记录</h2>
-            <div id="record-list-loading" class="text-gray-500 py-8 text-center">加载中…</div>
-            <div id="record-list-empty" class="hidden text-gray-500 py-8 text-center">暂无实验记录，在实验页运行算法后点击「保存至个人中心」即可保存。</div>
-            <ul id="record-list" class="divide-y divide-gray-100"></ul>
+    <main class="account-main">
+        <h1 class="account-title">个人中心</h1>
+
+        <section class="account-card">
+            <h2 class="account-card-title">实验记录</h2>
+            <div id="record-list-loading" class="account-placeholder">加载中…</div>
+            <div id="record-list-empty" class="account-placeholder is-hidden">暂无实验记录，在实验页运行算法后点击「保存至个人中心」即可保存。</div>
+            <ul id="record-list" class="record-list"></ul>
         </section>
     </main>
 
-    <footer class="bg-gray-100 py-8 px-6 mt-auto">
-        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
-            <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
-        </div>
+    <footer class="account-footer">
+        <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
     </footer>
 
-    <!-- 查看实验数据弹窗 -->
-    <div id="record-detail-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col mx-4">
-            <div class="p-4 border-b flex justify-between items-center">
-                <h3 class="text-lg font-bold">实验数据</h3>
-                <button id="record-detail-close" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+    <div id="record-detail-modal" class="record-modal modal is-hidden">
+        <div class="record-modal-panel">
+            <div class="record-modal-header">
+                <h3>实验数据</h3>
+                <button id="record-detail-close" class="record-modal-close" aria-label="关闭">&times;</button>
             </div>
-            <div id="record-detail-body" class="p-4 overflow-auto flex-1 text-sm"></div>
+            <div id="record-detail-body" class="record-modal-body"></div>
         </div>
     </div>
 </div>

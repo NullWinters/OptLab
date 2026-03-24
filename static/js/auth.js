@@ -1,3 +1,16 @@
+function setAlert(el, msg, ok) {
+  if (!el) return;
+  el.innerHTML = msg || "";
+  el.classList.toggle("is-visible", !!msg);
+  el.classList.toggle("is-hidden", !msg);
+  if (msg) {
+    el.classList.toggle("is-error", !ok);
+    el.classList.toggle("is-success", !!ok);
+  } else {
+    el.classList.remove("is-error", "is-success");
+  }
+}
+
 function getErrorMessage(err, defaultMessage) {
   if (!err) return defaultMessage;
   if (typeof err.message === "string" && err.message.trim()) {
@@ -16,14 +29,12 @@ async function handleLoginSubmit(event) {
   const errorBox = document.getElementById("auth-error");
 
   if (errorBox) {
-    errorBox.innerHTML = "";
-    errorBox.classList.add("hidden");
+    setAlert(errorBox, "", false);
   }
 
   if (!identifier || !password) {
     if (errorBox) {
-      errorBox.textContent = "请输入账号和密码";
-      errorBox.classList.remove("hidden");
+      setAlert(errorBox, "请输入账号和密码", false);
     }
     return;
   }
@@ -39,8 +50,7 @@ async function handleLoginSubmit(event) {
   } catch (err) {
     if (errorBox) {
       const msg = getErrorMessage(err, "登录失败，请检查账号和密码");
-      errorBox.innerHTML = msg.replace(/\n/g, "<br>");
-      errorBox.classList.remove("hidden");
+      setAlert(errorBox, msg.replace(/\n/g, "<br>"), false);
     }
   }
 }
@@ -59,18 +69,15 @@ async function handleRegisterSubmit(event) {
   const successBox = document.getElementById("auth-success");
 
   if (errorBox) {
-    errorBox.innerHTML = "";
-    errorBox.classList.add("hidden");
+    setAlert(errorBox, "", false);
   }
   if (successBox) {
-    successBox.innerHTML = "";
-    successBox.classList.add("hidden");
+    setAlert(successBox, "", true);
   }
 
   if (!email || !username || !password || !confirmPassword) {
     if (errorBox) {
-      errorBox.textContent = "请完整填写所有字段";
-      errorBox.classList.remove("hidden");
+      setAlert(errorBox, "请完整填写所有字段", false);
     }
     return;
   }
@@ -83,8 +90,7 @@ async function handleRegisterSubmit(event) {
       confirm_password: confirmPassword,
     });
     if (successBox) {
-      successBox.textContent = "注册成功，请前往登录";
-      successBox.classList.remove("hidden");
+      setAlert(successBox, "注册成功，请前往登录", true);
     }
     setTimeout(() => {
       window.location.href = "/auth/login";
@@ -92,8 +98,7 @@ async function handleRegisterSubmit(event) {
   } catch (err) {
     if (errorBox) {
       const msg = getErrorMessage(err, "注册失败，请稍后重试");
-      errorBox.innerHTML = msg.replace(/\n/g, "<br>");
-      errorBox.classList.remove("hidden");
+      setAlert(errorBox, msg.replace(/\n/g, "<br>"), false);
     }
   }
 }

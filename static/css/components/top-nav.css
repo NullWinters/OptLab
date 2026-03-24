@@ -96,6 +96,43 @@
     color: #fff;
 }
 
+.topnav-login-link {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s ease-in-out;
+}
+
+.topnav-login-link:hover {
+    color: #d84315;
+}
+
+.topnav-register-btn {
+    text-decoration: none;
+    background-color: #d84315;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: background-color 0.15s ease-in-out;
+}
+
+.nav-auth a.topnav-register-btn,
+.nav-auth a.topnav-register-btn:visited,
+.nav-auth a.topnav-register-btn:hover,
+.nav-auth a.topnav-register-btn.active {
+    color: #fff;
+}
+
+.topnav-register-btn:hover {
+    background-color: #bf360c;
+}
+
+.topnav-user-name {
+    font-weight: 700;
+}
+
 .topnav-user-menu {
     position: relative;
 }
@@ -168,6 +205,7 @@
     color: #d84315;
 }
 
-.hidden {
+.hidden,
+.is-hidden {
     display: none !important;
 }
