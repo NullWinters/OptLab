@@ -24,7 +24,7 @@ class SMO {
         this.jSearchStage = 0; // 0: heuristic, 1: random
         this.jTried = new Set();
         this.isFinished = false;
-        
+
         // Track if there were any changes in the current full pass
         this.entireSet = true;
         this.numChanged = 0;
@@ -73,29 +73,27 @@ class SMO {
 
     // Helper to compute partial objective function for alpha_i and alpha_j
     getObjective(i, j, ai, aj) {
-        const Ki = this.X[i][0]**2 + this.X[i][1]**2;
-        const Kj = this.X[j][0]**2 + this.X[j][1]**2;
-        const Kij = this.X[i][0]*this.X[j][0] + this.X[i][1]*this.X[j][1];
-        
+        const Ki = this.X[i][0] ** 2 + this.X[i][1] ** 2;
+        const Kj = this.X[j][0] ** 2 + this.X[j][1] ** 2;
+        const Kij = this.X[i][0] * this.X[j][0] + this.X[i][1] * this.X[j][1];
+
         let s = 0;
         for (let k = 0; k < this.N; k++) {
             if (k !== i && k !== j) {
-                s += this.alphas[k] * this.y[k] * (this.y[i] * (this.X[k][0]*this.X[i][0] + this.X[k][1]*this.X[i][1]) + 
-                                                   this.y[j] * (this.X[k][0]*this.X[j][0] + this.X[k][1]*this.X[j][1]));
+                s += this.alphas[k] * this.y[k] * (this.y[i] * (this.X[k][0] * this.X[i][0] + this.X[k][1] * this.X[i][1]) +
+                    this.y[j] * (this.X[k][0] * this.X[j][0] + this.X[k][1] * this.X[j][1]));
             }
         }
-        
-        return ai + aj - 0.5 * Ki * ai**2 - 0.5 * Kj * aj**2 - this.y[i] * this.y[j] * Kij * ai * aj - ai * s;
+
+        return ai + aj - 0.5 * Ki * ai ** 2 - 0.5 * Kj * aj ** 2 - this.y[i] * this.y[j] * Kij * ai * aj - ai * s;
     }
 
     // Check if i violates KKT
     violatesKKT(i) {
         const Ei = this.errors[i];
         const r = Ei * this.y[i];
-        if ((r < -this.tol && this.alphas[i] < this.C) || (r > this.tol && this.alphas[i] > 0)) {
-            return true;
-        }
-        return false;
+        return (r < -this.tol && this.alphas[i] < this.C) || (r > this.tol && this.alphas[i] > 0);
+
     }
 
     nextStep() {
@@ -152,14 +150,14 @@ class SMO {
             // Select second alpha j using two-stage search mechanism
             if (this.jCandidates.length === 0 || this.jCandidateIdx >= this.jCandidates.length) {
                 const Ei = this.errors[this.i];
-                
+
                 if (this.jSearchStage === 0) {
                     // Phase 1: Heuristic optimal search (non-bound examples)
                     let nonBoundCandidates = [];
                     for (let k = 0; k < this.N; k++) {
                         if (k === this.i) continue;
                         if (this.alphas[k] > 0 && this.alphas[k] < this.C) {
-                            nonBoundCandidates.push({idx: k, deltaE: Math.abs(Ei - this.errors[k])});
+                            nonBoundCandidates.push({ idx: k, deltaE: Math.abs(Ei - this.errors[k]) });
                         }
                     }
                     if (nonBoundCandidates.length > 0) {
@@ -229,12 +227,12 @@ class SMO {
 
             if (L === H) {
                 this.subStep = 1; // Try next j
-                return this.nextStep(); 
+                return this.nextStep();
             }
 
-            const K11 = this.X[i][0]**2 + this.X[i][1]**2;
-            const K22 = this.X[j][0]**2 + this.X[j][1]**2;
-            const K12 = this.X[i][0]*this.X[j][0] + this.X[i][1]*this.X[j][1];
+            const K11 = this.X[i][0] ** 2 + this.X[i][1] ** 2;
+            const K22 = this.X[j][0] ** 2 + this.X[j][1] ** 2;
+            const K12 = this.X[i][0] * this.X[j][0] + this.X[i][1] * this.X[j][1];
             const eta = K11 + K22 - 2 * K12;
 
             let newAj;
@@ -246,10 +244,10 @@ class SMO {
                 // eta <= 0: evaluate objective at boundaries L and H
                 const L_ai = oldAi + Yi * Yj * (oldAj - L);
                 const H_ai = oldAi + Yi * Yj * (oldAj - H);
-                
+
                 const objL = this.getObjective(i, j, L_ai, L);
                 const objH = this.getObjective(i, j, H_ai, H);
-                
+
                 if (objL > objH + 1e-10) {
                     newAj = L;
                 } else if (objL < objH - 1e-10) {
@@ -259,7 +257,7 @@ class SMO {
                 }
             }
 
-            if (Math.abs(newAj - oldAj) < 1e-10) {
+            if (Math.abs(newAj - oldAj) < 1e-12) {
                 this.subStep = 1; // Try next j
                 return this.nextStep();
             }
@@ -276,11 +274,11 @@ class SMO {
 
             this.alphas[i] = newAi;
             this.alphas[j] = newAj;
-            
+
             this.updateW();
             this.updateErrors();
             this.iter++;
-            
+
             // If reached max iter, mark as finished immediately
             if (this.iter >= this.maxIter) {
                 this.isFinished = true;
@@ -312,7 +310,7 @@ const App = {
     uploadedFiles: [],
     datasetSource: 'example',
     dataSnapshotForNote: [],
-    
+
     // Hyperparameters
     C: 1.0,
     tol: 0.01,
@@ -354,14 +352,14 @@ const App = {
 
     setupD3() {
         this.container = d3.select("#smo-canvas");
-        
+
         this.svg = this.container.append("svg")
             .style("display", "block");
-        
+
         this.tooltip = this.container.append("div")
             .attr("class", "tooltip")
             .style("opacity", 0);
-        
+
         // Layers
         this.g = this.svg.append("g");
 
@@ -370,7 +368,7 @@ const App = {
 
         this.xAxis = this.g.append("g");
         this.yAxis = this.g.append("g");
-        
+
         this.planeLayer = this.g.append("g").attr("class", "plane-layer");
         this.pointLayer = this.g.append("g").attr("class", "point-layer");
         this.highlightLayer = this.g.append("g").attr("class", "highlight-layer");
@@ -390,12 +388,12 @@ const App = {
         const rect = this.container.node().getBoundingClientRect();
         this.width = rect.width;
         this.height = rect.height;
-        
+
         this.svg
             .attr("width", this.width)
             .attr("height", this.height);
-        
-        const margin = {top: 20, right: 20, bottom: 30, left: 40};
+
+        const margin = { top: 20, right: 20, bottom: 30, left: 40 };
         this.innerWidth = this.width - margin.left - margin.right;
         this.innerHeight = this.height - margin.top - margin.bottom;
 
@@ -405,7 +403,7 @@ const App = {
         this.yScale.range([this.innerHeight, 0]);
 
         this.xAxis.attr("transform", `translate(0, ${this.innerHeight})`);
-        
+
         // Update scales if domain exists
         if (this.data && this.data.length > 0) {
             this.updateScales();
@@ -414,7 +412,7 @@ const App = {
         // Update clip path
         let defs = this.svg.select("defs");
         if (defs.empty()) defs = this.svg.append("defs");
-        
+
         let clip = defs.select("#clip");
         if (clip.empty()) {
             clip = defs.append("clipPath").attr("id", "clip");
@@ -447,12 +445,12 @@ const App = {
                 }, { capture: true });
             }
         });
-        
+
         window.addEventListener('resize', () => {
             clearTimeout(this.resizeTimer);
             this.resizeTimer = setTimeout(() => this.handleResize(), 100);
         });
-        
+
         // Sliders
         const updateC = (val) => {
             this.C = Math.pow(10, parseFloat(val));
@@ -488,7 +486,8 @@ const App = {
             this.speed = 2100 - parseInt(e.target.value);
             this.trackNoteEvent('param_change', { param: 'speed', value: this.speed });
             this.pushProcessStep('set_speed', { slider: parseInt(e.target.value), interval: this.speed });
-            const speedText = this.speed < 500 ? '快速' : this.speed < 1500 ? '正常' : '慢速';
+            let speedText;
+            speedText = this.speed < 500 ? '快速' : this.speed < 1500 ? '正常' : '慢速';
             document.getElementById('speed-value').innerText = speedText;
             if (this.state === 'playing') {
                 this.pause();
@@ -506,10 +505,10 @@ const App = {
     loadExampleData() {
         // Simple linear separable data
         this.data = [
-            {x: 1, y: 1, label: 1}, {x: 2, y: 1, label: 1}, {x: 1, y: 2, label: 1},
-            {x: 4, y: 4, label: -1}, {x: 5, y: 4, label: -1}, {x: 4, y: 5, label: -1},
-            {x: 2, y: 3, label: 1}, {x: 3, y: 2, label: 1},
-            {x: 5, y: 5, label: -1}, {x: 6, y: 5, label: -1}, {x: 5, y: 6, label: -1}
+            { x: 1, y: 1, label: 1 }, { x: 2, y: 1, label: 1 }, { x: 1, y: 2, label: 1 },
+            { x: 4, y: 4, label: -1 }, { x: 5, y: 4, label: -1 }, { x: 4, y: 5, label: -1 },
+            { x: 2, y: 3, label: 1 }, { x: 3, y: 2, label: 1 },
+            { x: 5, y: 5, label: -1 }, { x: 6, y: 5, label: -1 }, { x: 5, y: 6, label: -1 }
         ];
         this.data.forEach((d, i) => d.id = i);
         this.datasetSource = 'example';
@@ -594,16 +593,16 @@ const App = {
 
         const newData = [];
         const labels = new Set();
-        
+
         for (let i = 0; i < this.rawCSVData.length; i++) {
             const cols = this.rawCSVData[i];
             const x = parseFloat(cols[xIdx]);
             const y = parseFloat(cols[yIdx]);
             const label = cols[labelIdx];
-            
+
             if (isNaN(x) || isNaN(y)) continue;
-            
-            newData.push({x, y, originalLabel: label});
+
+            newData.push({ x, y, originalLabel: label });
             labels.add(label);
         }
 
@@ -735,13 +734,15 @@ const App = {
             .attr("stroke-width", 1)
             .on("mouseover", (event, d) => {
                 const alpha = this.smo ? this.smo.alphas[d.id] : 0;
+                const error = this.smo ? this.smo.errors[d.id] : 0;
                 this.tooltip.transition().duration(200).style("opacity", .9);
                 this.tooltip.html(`
                     <b>编号:</b> ${d.id}<br/>
                     <b>坐标:</b> (${d.x.toFixed(2)}, ${d.y.toFixed(2)})<br/>
-                    <b>乘子 α:</b> ${alpha.toFixed(4)}
+                    <b>乘子 α:</b> ${alpha.toFixed(4)}<br/>
+                    <b>偏差 E:</b> ${error.toFixed(4)}
                 `);
-                
+
                 const [mouseX, mouseY] = d3.pointer(event, this.container.node());
                 this.tooltip
                     .style("left", (mouseX + 15) + "px")
@@ -822,11 +823,11 @@ const App = {
         const playBtn = document.getElementById('btn-play');
         const pauseBtn = document.getElementById('btn-pause');
         const stepBtn = document.getElementById('btn-step');
-        
+
         playBtn.disabled = (this.state === 'playing' || this.state === 'finished');
         pauseBtn.disabled = (this.state !== 'playing');
         stepBtn.disabled = (this.state === 'playing' || this.state === 'finished');
-        
+
         const statusEl = document.getElementById('status-text');
         statusEl.innerText = {
             'unstarted': '未开始',
@@ -835,7 +836,7 @@ const App = {
             'finished': '已结束'
         }[this.state];
         statusEl.className = 'status-tag status-' + this.state;
-        
+
         this.updateParams();
     },
 
@@ -844,17 +845,17 @@ const App = {
         document.getElementById('param-iter').innerText = this.smo.iter;
         document.getElementById('param-i').innerText = this.smo.i === -1 ? '-' : this.smo.i;
         document.getElementById('param-j').innerText = (this.smo.j === -1 || this.smo.subStep === 1) ? '-' : this.smo.j;
-        
+
         document.getElementById('param-alpha-i').innerText = this.smo.i === -1 ? '-' : this.smo.alphas[this.smo.i].toFixed(4);
         document.getElementById('param-alpha-j').innerText = (this.smo.j === -1 || this.smo.subStep === 1) ? '-' : this.smo.alphas[this.smo.j].toFixed(4);
-        
+
         if (this.smo.i !== -1) {
             const p = this.data[this.smo.i];
             document.getElementById('param-coord-i').innerText = `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
         } else {
             document.getElementById('param-coord-i').innerText = '-';
         }
-        
+
         if (this.smo.j !== -1 && this.smo.subStep !== 1) {
             const p = this.data[this.smo.j];
             document.getElementById('param-coord-j').innerText = `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
@@ -864,7 +865,7 @@ const App = {
 
         document.getElementById('param-w').innerText = `[${this.smo.w[0].toFixed(3)}, ${this.smo.w[1].toFixed(3)}]`;
         document.getElementById('param-b').innerText = this.smo.b.toFixed(3);
-        
+
         const accuracy = this.smo.getAccuracy();
         document.getElementById('param-accuracy').innerText = (accuracy * 100).toFixed(2) + '%';
     },

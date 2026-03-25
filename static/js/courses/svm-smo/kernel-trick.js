@@ -29,6 +29,8 @@ function refreshCurrentMapText() {
     const mapZ = toTex(state.mapExpr.z);
     el.innerHTML = `当前映射：\\(\\phi(x, y) = (${mapX}, ${mapY}, ${mapZ})\\)`;
 
+    refreshKernelText();
+
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
         window.MathJax.typesetPromise([el]).catch(() => {});
     }
@@ -83,6 +85,85 @@ const MAPPING_PRESETS = {
     trig: { x: 'sin(x)', y: 'cos(y)', z: 'x*y' },
     saddle: { x: 'x', y: 'y', z: 'x^2 - y^2' }
 };
+
+const KERNEL_PRESETS = {
+    textbook: {
+        simplified: 'K(u,v) = (u_x v_x + u_y v_y)^2',
+        expansion: 'u_x^2 v_x^2 + u_y^2 v_y^2 + 2u_x u_y v_x v_y'
+    },
+    identity_lift: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)',
+        expansion: 'u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)'
+    },
+    trig: {
+        simplified: 'K(u,v) = \\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y',
+        expansion: '\\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y'
+    },
+    saddle: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)',
+        expansion: 'u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)'
+    }
+};
+
+function generateKernelExpansion(xExpr, yExpr, zExpr) {
+    const replaceVarsU = (expr) => {
+        return expr
+            .replace(/\bx\b/g, 'u_x')
+            .replace(/\by\b/g, 'u_y');
+    };
+
+    const replaceVarsV = (expr) => {
+        return expr
+            .replace(/\bx\b/g, 'v_x')
+            .replace(/\by\b/g, 'v_y');
+    };
+
+    const phi1_u = replaceVarsU(xExpr);
+    const phi1_v = replaceVarsV(xExpr);
+    const phi2_u = replaceVarsU(yExpr);
+    const phi2_v = replaceVarsV(yExpr);
+    const phi3_u = replaceVarsU(zExpr);
+    const phi3_v = replaceVarsV(zExpr);
+
+    const toTexKernel = (expr) => String(expr || '')
+        .replace(/\s+/g, '')
+        .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
+        .replace(/\^2/g, '^2');
+
+    const term1 = toTexKernel(`(${phi1_u})(${phi1_v})`);
+    const term2 = toTexKernel(`(${phi2_u})(${phi2_v})`);
+    const term3 = toTexKernel(`(${phi3_u})(${phi3_v})`);
+
+    return `${term1} + ${term2} + ${term3}`;
+}
+
+function findPresetKey(mapExpr) {
+    for (const [key, preset] of Object.entries(MAPPING_PRESETS)) {
+        if (preset.x === mapExpr.x && preset.y === mapExpr.y && preset.z === mapExpr.z) {
+            return key;
+        }
+    }
+    return null;
+}
+
+function refreshKernelText() {
+    const el = $('current-kernel-text');
+    if (!el) return;
+
+    const presetKey = findPresetKey(state.mapExpr);
+
+    if (presetKey && KERNEL_PRESETS[presetKey]) {
+        const kernelInfo = KERNEL_PRESETS[presetKey];
+        el.innerHTML = `当前核函数：\\(${kernelInfo.simplified}\\)`;
+    } else {
+        const expansion = generateKernelExpansion(state.mapExpr.x, state.mapExpr.y, state.mapExpr.z);
+        el.innerHTML = `当前核函数：\\(K(u,v) = \\phi(u) \\cdot \\phi(v) = ${expansion}\\)`;
+    }
+
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        window.MathJax.typesetPromise([el]).catch(() => {});
+    }
+}
 
 // ---------- Three.js ----------
 const container = $('scene');
