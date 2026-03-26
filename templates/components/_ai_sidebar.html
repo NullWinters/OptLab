@@ -5,16 +5,34 @@
 <div id="ai-assistant-sidebar" class="ai-sidebar">
     <div class="ai-sidebar-header">
         <h3>AI 操作助手</h3>
-        <button id="ai-sidebar-close" class="ai-close-btn">&times;</button>
+        <div class="ai-header-actions">
+            <button id="ai-reset-btn" class="ai-reset-btn" title="清空对话历史">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+            <button id="ai-sidebar-close" class="ai-close-btn">&times;</button>
+        </div>
     </div>
     <div id="ai-chat-messages" class="ai-chat-messages">
-        <div class="ai-message ai-bot">
+        <div class="ai-message ai-bot" id="ai-welcome-message">
             <p>你好！我是页面操作助手，可以帮助你了解如何使用这个页面的各项功能。请问有什么需要帮助的？</p>
         </div>
     </div>
     <div class="ai-chat-input">
-        <input type="text" id="ai-input" placeholder="请输入你的问题..." />
+        <label for="ai-input"></label><input type="text" id="ai-input" placeholder="请输入你的问题..." />
         <button id="ai-send-btn" class="control-btn btn-primary">发送</button>
+    </div>
+</div>
+
+<!-- 重置确认弹窗 -->
+<div id="ai-reset-modal" class="ai-modal" style="display: none;">
+    <div class="ai-modal-content">
+        <p>确定清空当前页面所有对话历史？此操作不可恢复。</p>
+        <div class="ai-modal-actions">
+            <button id="ai-reset-confirm" class="control-btn btn-danger">确定</button>
+            <button id="ai-reset-cancel" class="control-btn btn-secondary">取消</button>
+        </div>
     </div>
 </div>
 

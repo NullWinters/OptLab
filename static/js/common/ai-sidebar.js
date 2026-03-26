@@ -3,6 +3,10 @@
     let highlightIds = [];
     let currentHighlightIndex = -1;
 
+    // 会话状态
+    let currentSessionId = null;
+    let isLoadingHistory = false;
+
     // DOM 引用
     const sidebar = document.getElementById('ai-assistant-sidebar');
     const toggleBtn = document.getElementById('ai-assistant-toggle');
@@ -11,14 +15,23 @@
     const inputField = document.getElementById('ai-input');
     const sendBtn = document.getElementById('ai-send-btn');
     const highlightOverlay = document.getElementById('ai-highlight-overlay');
+    const resetBtn = document.getElementById('ai-reset-btn');
+    const resetModal = document.getElementById('ai-reset-modal');
+    const resetConfirm = document.getElementById('ai-reset-confirm');
+    const resetCancel = document.getElementById('ai-reset-cancel');
 
     if (!sidebar || !toggleBtn) return;
 
     // 侧边栏开关
-    toggleBtn.addEventListener('click', function () {
+    toggleBtn.addEventListener('click', async function () {
         const isOpen = sidebar.classList.toggle('open');
         toggleBtn.classList.toggle('active', isOpen);
         document.body.classList.toggle('ai-sidebar-open', isOpen);
+
+        // 如果打开侧栏且未加载过历史，加载会话历史
+        if (isOpen && !isLoadingHistory) {
+            await loadSessionHistory();
+        }
     });
 
     closeBtn && closeBtn.addEventListener('click', function () {
@@ -27,8 +40,38 @@
         document.body.classList.remove('ai-sidebar-open');
     });
 
-        // 发送消息
-    function sendMessage() {
+    // 加载会话历史
+    async function loadSessionHistory() {
+        isLoadingHistory = true;
+        const pageId = window.AI_CONFIG?.PAGE_ID || 'default';
+
+        try {
+            const response = await apiGet(`/api/assistant/session?page_id=${encodeURIComponent(pageId)}`);
+
+            if (!response.exists) {
+                currentSessionId = null;
+                clearChatMessages();
+            } else {
+                currentSessionId = response.id;
+                clearChatMessages();
+
+                if (response.messages && response.messages.length > 0) {
+                    response.messages.forEach(function (msg) {
+                        addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('加载会话历史失败:', err);
+            currentSessionId = null;
+            clearChatMessages();
+        } finally {
+            isLoadingHistory = false;
+        }
+    }
+
+    // 发送消息
+    async function sendMessage() {
         const message = inputField.value.trim();
         if (!message) return;
 
@@ -38,31 +81,46 @@
         const guidebook = aiConfig.GUIDEBOOK || '';
         const pageId = aiConfig.PAGE_ID || 'default';
 
+        // 如果没有会话，先创建
+        if (!currentSessionId) {
+            try {
+                const session = await apiPost('/api/assistant/session', { page_id: pageId });
+                currentSessionId = session.id;
+            } catch (err) {
+                // 检测是否为认证错误
+                const isAuthError = err.status === 401 || 
+                    /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(err.message);
+                
+                if (isAuthError) {
+                    // 生成登录链接，包含当前页面URL作为redirect参数
+                    const currentUrl = encodeURIComponent(window.location.href);
+                    const loginUrl = '/auth/login?redirect=' + currentUrl;
+                    
+                    const errorHtml = '<div style="margin-bottom: 10px;">您的登录已过期，请重新登录后继续使用。</div>' +
+                        '<a href="' + loginUrl + '" class="ai-login-btn">点击登录</a>';
+                    addMessage(errorHtml, 'bot error');
+                } else {
+                    addMessage('抱歉，创建会话失败：' + err.message, 'bot error');
+                }
+                return;
+            }
+        }
+
         addMessage(message, 'user');
         inputField.value = '';
         clearHighlights();
 
         const loadingEl = addMessage('思考中...', 'bot loading');
 
-        fetch('/api/assistant/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        try {
+            const data = await apiPost('/api/assistant/chat', {
+                session_id: currentSessionId,
                 message: message,
                 page_id: pageId,
                 guidebook: guidebook,
                 buttons: registry
-            })
-        })
-        .then(function (res) {
-            if (!res.ok) {
-                return res.json().then(function (body) {
-                    throw new Error(body.detail || '请求失败 (' + res.status + ')');
-                });
-            }
-            return res.json();
-        })
-        .then(function (data) {
+            });
+
             loadingEl.remove();
             addMessage(data.text, 'bot');
 
@@ -71,16 +129,63 @@
                 currentHighlightIndex = 0;
                 highlightCurrentButton();
             }
-        })
-        .catch(function (err) {
+        } catch (err) {
             loadingEl && loadingEl.remove();
             addMessage('抱歉，请求出错：' + err.message, 'bot error');
-        });
+        }
     }
 
+    // 重置会话
+    function showResetModal() {
+        if (resetModal) {
+            resetModal.style.display = 'flex';
+        }
+    }
+
+    function hideResetModal() {
+        if (resetModal) {
+            resetModal.style.display = 'none';
+        }
+    }
+
+    async function resetSession() {
+        const pageId = window.AI_CONFIG?.PAGE_ID || 'default';
+
+        try {
+            await apiPost('/api/assistant/session/reset', { page_id: pageId });
+            currentSessionId = null;
+            clearChatMessages();
+            hideResetModal();
+        } catch (err) {
+            alert('重置失败：' + err.message);
+        }
+    }
+
+    // 清空聊天消息区域
+    function clearChatMessages() {
+        // 保留欢迎语
+        chatMessages.innerHTML = '';
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'ai-message ai-bot';
+        welcomeDiv.innerHTML = '<p>你好！我是页面操作助手，可以帮助你了解如何使用这个页面的各项功能。请问有什么需要帮助的？</p>';
+        chatMessages.appendChild(welcomeDiv);
+    }
+
+    // 绑定事件
     sendBtn.addEventListener('click', sendMessage);
     inputField.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') sendMessage();
+    });
+
+    resetBtn && resetBtn.addEventListener('click', showResetModal);
+    resetConfirm && resetConfirm.addEventListener('click', resetSession);
+    resetCancel && resetCancel.addEventListener('click', hideResetModal);
+
+    // 点击弹窗外部关闭
+    resetModal && resetModal.addEventListener('click', function (e) {
+        if (e.target === resetModal) {
+            hideResetModal();
+        }
     });
 
     // 添加聊天消息
