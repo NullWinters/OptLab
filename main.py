@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
@@ -6,9 +8,21 @@ from routers.agent import router as agent_router
 from routers.auth import router as auth_router
 from routers.experiments import router as experiments_router
 from routers.notes import router as notes_router
+from core.scheduler import init_scheduler, start_scheduler, shutdown_scheduler
 import os
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动时
+    init_scheduler()
+    start_scheduler()
+    yield
+    # 关闭时
+    shutdown_scheduler()
+
+
+app = FastAPI(lifespan=lifespan)
 app.include_router(agent_router)
 app.include_router(auth_router)
 app.include_router(experiments_router)
@@ -20,7 +34,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
-NO_CACHE = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"}
+NO_CACHE = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -103,9 +120,15 @@ async def read_course_subpage(request: Request, course_name: str, subpath: str):
             template_path = os.path.join("courses", course_name, subpath)
             return templates.TemplateResponse(request, template_path, headers=NO_CACHE)
         elif ext == ".css":
-            return FileResponse(file_path, headers=NO_CACHE, media_type="text/css; charset=utf-8")
+            return FileResponse(
+                file_path, headers=NO_CACHE, media_type="text/css; charset=utf-8"
+            )
         elif ext == ".js":
-            return FileResponse(file_path, headers=NO_CACHE, media_type="application/javascript; charset=utf-8")
+            return FileResponse(
+                file_path,
+                headers=NO_CACHE,
+                media_type="application/javascript; charset=utf-8",
+            )
     placeholder_path = "templates/courses/placeholder.html"
     if subpath.endswith(".html") and os.path.exists(placeholder_path):
         return FileResponse(placeholder_path, status_code=404)
