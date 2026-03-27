@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}登录 - OptLab{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="/static/css/base/auth.css">
+{% endblock %}
+
+{% block ai_sidebar %}{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    {% include 'components/_top_nav.html' %}
+
+    <main class="auth-main">
+        <div class="auth-card">
+            <h1 class="auth-title">登录 OptLab</h1>
+            <p class="auth-subtitle">使用 <strong>邮箱</strong> 或 <strong>用户名</strong> 登录</p>
+
+            <div id="auth-error" class="auth-alert"></div>
+
+            <form id="login-form" class="auth-form">
+                <div class="auth-field">
+                    <label for="identifier">邮箱或用户名</label>
+                    <input type="text" id="identifier" name="identifier" required>
+                </div>
+                <div class="auth-field">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="auth-submit">登录</button>
+            </form>
+
+            <p class="auth-footer-tip">
+                还没有账号？
+                <a href="/auth/register">前往注册</a>
+            </p>
+        </div>
+    </main>
+
+    <footer class="auth-site-footer">
+        <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/auth.js"></script>
+{% endblock %}

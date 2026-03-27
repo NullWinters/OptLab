@@ -84,6 +84,39 @@ body {
     }
 }
 
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.nav-auth {
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .nav-auth {
+        display: flex;
+    }
+}
+
+.nav-auth a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s ease-in-out;
+}
+
+.nav-auth a:hover,
+.nav-auth a.active {
+    color: var(--amber-primary);
+}
+
+.nav-auth a.active {
+    font-weight: 700;
+}
+
 .nav-links a {
     text-decoration: none;
     color: inherit;

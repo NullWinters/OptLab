@@ -16,10 +16,22 @@ function setAccuracyText(text) {
 function refreshCurrentMapText() {
     const el = $('current-map-text');
     if (!el) return;
-    const mapX = state.mapExpr.x.replace(/\*/g, '·');
-    const mapY = state.mapExpr.y.replace(/\*/g, '·');
-    const mapZ = state.mapExpr.z.replace(/\*/g, '·');
-    el.textContent = `当前映射：φ(x, y) = (${mapX}, ${mapY}, ${mapZ})`;
+    const toTex = (expr) => String(expr || '')
+        .replace(/\s+/g, '')
+        .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
+        .replace(/\^2/g, '^2')
+        .replace(/\*/g, '');
+
+    const mapX = toTex(state.mapExpr.x);
+    const mapY = toTex(state.mapExpr.y);
+    const mapZ = toTex(state.mapExpr.z);
+    el.innerHTML = `当前映射：\\(\\phi(x, y) = (${mapX}, ${mapY}, ${mapZ})\\)`;
+
+    refreshKernelText();
+
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        window.MathJax.typesetPromise([el]).catch(() => {});
+    }
 }
 
 const state = {
@@ -38,8 +50,33 @@ const state = {
     maxX: 1,
     minY: 0,
     maxY: 1,
+    datasetSource: 'default_builtin',
+    datasetMeta: null,
+    uploadedFiles: [],
+    lastUploadedCsvText: '',
+    processLog: [],
+    latestAccuracy: null,
+    lastPlaneParams: { z: 0, yaw: 0, pitch: 0 },
     autoFitTimer: null,
 };
+
+function trackNoteEvent(type, data) {
+    if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
+        window.ExperimentNotes.trackEvent(type, data || {});
+    }
+}
+
+function pushProcessStep(step, detail) {
+    state.processLog.push({
+        step,
+        detail: detail || {},
+        timestamp: new Date().toISOString()
+    });
+    if (state.processLog.length > 300) {
+        state.processLog.shift();
+    }
+}
+
 
 const MAPPING_PRESETS = {
     textbook: { x: 'x^2', y: 'y^2', z: 'sqrt(2)*x*y' },
@@ -47,6 +84,85 @@ const MAPPING_PRESETS = {
     trig: { x: 'sin(x)', y: 'cos(y)', z: 'x*y' },
     saddle: { x: 'x', y: 'y', z: 'x^2 - y^2' }
 };
+
+const KERNEL_PRESETS = {
+    textbook: {
+        simplified: 'K(u,v) = (u_x v_x + u_y v_y)^2',
+        expansion: 'u_x^2 v_x^2 + u_y^2 v_y^2 + 2u_x u_y v_x v_y'
+    },
+    identity_lift: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)',
+        expansion: 'u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)'
+    },
+    trig: {
+        simplified: 'K(u,v) = \\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y',
+        expansion: '\\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y'
+    },
+    saddle: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)',
+        expansion: 'u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)'
+    }
+};
+
+function generateKernelExpansion(xExpr, yExpr, zExpr) {
+    const replaceVarsU = (expr) => {
+        return expr
+            .replace(/\bx\b/g, 'u_x')
+            .replace(/\by\b/g, 'u_y');
+    };
+
+    const replaceVarsV = (expr) => {
+        return expr
+            .replace(/\bx\b/g, 'v_x')
+            .replace(/\by\b/g, 'v_y');
+    };
+
+    const phi1_u = replaceVarsU(xExpr);
+    const phi1_v = replaceVarsV(xExpr);
+    const phi2_u = replaceVarsU(yExpr);
+    const phi2_v = replaceVarsV(yExpr);
+    const phi3_u = replaceVarsU(zExpr);
+    const phi3_v = replaceVarsV(zExpr);
+
+    const toTexKernel = (expr) => String(expr || '')
+        .replace(/\s+/g, '')
+        .replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}')
+        .replace(/\^2/g, '^2');
+
+    const term1 = toTexKernel(`(${phi1_u})(${phi1_v})`);
+    const term2 = toTexKernel(`(${phi2_u})(${phi2_v})`);
+    const term3 = toTexKernel(`(${phi3_u})(${phi3_v})`);
+
+    return `${term1} + ${term2} + ${term3}`;
+}
+
+function findPresetKey(mapExpr) {
+    for (const [key, preset] of Object.entries(MAPPING_PRESETS)) {
+        if (preset.x === mapExpr.x && preset.y === mapExpr.y && preset.z === mapExpr.z) {
+            return key;
+        }
+    }
+    return null;
+}
+
+function refreshKernelText() {
+    const el = $('current-kernel-text');
+    if (!el) return;
+
+    const presetKey = findPresetKey(state.mapExpr);
+
+    if (presetKey && KERNEL_PRESETS[presetKey]) {
+        const kernelInfo = KERNEL_PRESETS[presetKey];
+        el.innerHTML = `当前核函数：\\(${kernelInfo.simplified}\\)`;
+    } else {
+        const expansion = generateKernelExpansion(state.mapExpr.x, state.mapExpr.y, state.mapExpr.z);
+        el.innerHTML = `当前核函数：\\(K(u,v) = \\phi(u) \\cdot \\phi(v) = ${expansion}\\)`;
+    }
+
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        window.MathJax.typesetPromise([el]).catch(() => {});
+    }
+}
 
 if (typeof window.THREE === 'undefined') {
     setStatus('Three.js 加载失败，请刷新页面或检查静态资源路径。', true);
@@ -171,6 +287,21 @@ $('csv-file').addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const text = await file.text();
+    state.datasetSource = 'uploaded_csv';
+    state.lastUploadedCsvText = text;
+    state.uploadedFiles = [{
+        name: file.name,
+        size: file.size,
+        type: file.type || 'text/csv',
+        text_preview: text.slice(0, 6000)
+    }];
+    state.datasetMeta = {
+        file_name: file.name,
+        file_size: file.size,
+        file_type: file.type || 'text/csv'
+    };
+    pushProcessStep('upload_csv', { file_name: file.name, file_size: file.size });
+    trackNoteEvent('upload_csv', { file_name: file.name, file_size: file.size });
     parseCsv(text);
 });
 
@@ -224,6 +355,12 @@ const PRESET_DATASETS = {
 
 $('load-preset-btn').addEventListener('click', () => {
     const key = $('preset-dataset').value;
+    state.datasetSource = 'preset';
+    state.datasetMeta = { preset: key };
+    state.uploadedFiles = [];
+    state.lastUploadedCsvText = PRESET_DATASETS[key] || '';
+    pushProcessStep('load_preset', { preset: key });
+    trackNoteEvent('dataset_preset_change', { preset: key });
     parseCsv(PRESET_DATASETS[key]);
     const ok = visualizeFromSelection(false);
     if (ok) {
@@ -247,6 +384,7 @@ function parseCsv(text) {
     const rows = lines.slice(1).map(line => line.split(',').map(x => x.trim()));
     state.headers = headers;
     state.rows = rows;
+    pushProcessStep('parse_csv', { headers_count: headers.length, rows_count: rows.length, headers });
     fillSelectors(headers);
     setStatus(`已读取 ${rows.length} 条数据，请确认列映射并加载可视化。`);
 }
@@ -320,6 +458,7 @@ function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
 
 function updateSeparationAccuracy() {
     if (!state.points.length || !state.currentMapped.length) {
+        state.latestAccuracy = null;
         setAccuracyText('划分准确率：--');
         return;
     }
@@ -330,9 +469,11 @@ function updateSeparationAccuracy() {
     const acc = computeSplitAccuracy(yawDeg, pitchDeg, zVal);
 
     if (acc === null) {
+        state.latestAccuracy = null;
         setAccuracyText('划分准确率：仅支持二分类');
         return;
     }
+    state.latestAccuracy = Number(acc.toFixed(4));
     setAccuracyText(`划分准确率：${acc.toFixed(1)}%（实时）`);
 }
 
@@ -433,6 +574,14 @@ function visualizeFromSelection(showSuccessHint = true) {
     }
 
     state.points = normalizeXY(parsed);
+    pushProcessStep('apply_columns', {
+        x_col: xIdx,
+        y_col: yIdx,
+        label_col: lIdx,
+        sample_count: parsed.length,
+        class_count: labels.size
+    });
+    trackNoteEvent('apply_columns', { x_col: xIdx, y_col: yIdx, label_col: lIdx, sample_count: parsed.length });
     createOrUpdatePoints();
     scheduleAutoFit();
     setStatus(`渲染完成：共 ${parsed.length} 个点，类别数 ${labels.size}。`);
@@ -576,6 +725,15 @@ $('animate-btn').addEventListener('click', () => {
         return;
     }
 
+    pushProcessStep('run_lift_animation', {
+        sample_count: state.points.length,
+        map_expr: { ...state.mapExpr }
+    });
+    trackNoteEvent('run_lift_animation', {
+        sample_count: state.points.length,
+        map_expr: { ...state.mapExpr }
+    });
+
     const duration = 1100;
     const start = performance.now();
     const from = state.currentMapped.map(p => ({ ...p }));
@@ -612,6 +770,21 @@ $('animate-btn').addEventListener('click', () => {
 });
 
 // ---------- Plane controls ----------
+function syncRangeProgress(id) {
+    const el = $(id);
+    if (!el) return;
+    const min = Number(el.min);
+    const max = Number(el.max);
+    const val = Number(el.value);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min || !Number.isFinite(val)) {
+        el.style.setProperty('--range-progress', '50%');
+        return;
+    }
+    const p = ((val - min) / (max - min)) * 100;
+    const clamped = Math.min(100, Math.max(0, p));
+    el.style.setProperty('--range-progress', clamped.toFixed(4) + '%');
+}
+
 function updatePlane() {
     const z = Number($('plane-z').value);
     const yaw = Number($('plane-yaw').value) * Math.PI / 180;
@@ -624,11 +797,24 @@ function updatePlane() {
     $('plane-z-val').textContent = z.toFixed(2);
     $('plane-yaw-val').textContent = `${Math.round(yaw * 180 / Math.PI)}°`;
     $('plane-pitch-val').textContent = `${Math.round(pitch * 180 / Math.PI)}°`;
+    state.lastPlaneParams = {
+        z,
+        yaw: Math.round(yaw * 180 / Math.PI),
+        pitch: Math.round(pitch * 180 / Math.PI)
+    };
+
+    syncRangeProgress('plane-z');
+    syncRangeProgress('plane-yaw');
+    syncRangeProgress('plane-pitch');
     updateSeparationAccuracy();
 }
 
 ['plane-z', 'plane-yaw', 'plane-pitch'].forEach(id => {
     $(id).addEventListener('input', updatePlane);
+    $(id).addEventListener('change', () => {
+        trackNoteEvent('plane_adjust', { control: id, value: $(id).value });
+        pushProcessStep('plane_adjust', { control: id, value: $(id).value });
+    });
 });
 
 function validateMappingExpr(expr, testScope) {
@@ -659,6 +845,8 @@ function applyCustomMappingFromInputs() {
         validateMappingExpr(zExpr, { x: 1.23, y: -0.8 });
         state.mapExpr = { x: xExpr, y: yExpr, z: zExpr };
         refreshCurrentMapText();
+        pushProcessStep('custom_map_apply', { map_expr: { ...state.mapExpr } });
+        trackNoteEvent('custom_map_apply', { map_expr: { ...state.mapExpr } });
         setStatus('自定义映射已应用。点击“升维动画”查看效果。');
         $('custom-map-modal').style.display = 'none';
     } catch (err) {
@@ -757,3 +945,40 @@ parseCsv(defaultCsv);
 $('preset-dataset').value = 'xor';
 applyDefaultMode();
 visualizeFromSelection(false);
+
+window.getKernelTrickPageData = function () {
+    const xCol = Number($('x-col')?.value ?? 0);
+    const yCol = Number($('y-col')?.value ?? 1);
+    const labelCol = Number($('label-col')?.value ?? 2);
+    return {
+        experiment_module: 'svm-smo.kernel_trick',
+        dataset_source: state.datasetSource,
+        dataset_meta: state.datasetMeta,
+        headers: state.headers,
+        column_mapping: {
+            x_col_index: Number.isFinite(xCol) ? xCol : null,
+            y_col_index: Number.isFinite(yCol) ? yCol : null,
+            label_col_index: Number.isFinite(labelCol) ? labelCol : null,
+            x_col_name: state.headers[xCol] || null,
+            y_col_name: state.headers[yCol] || null,
+            label_col_name: state.headers[labelCol] || null,
+        },
+        map_expression: { ...state.mapExpr },
+        plane_params: { ...state.lastPlaneParams },
+        sample_count: state.points.length,
+        class_labels: [...new Set(state.points.map(p => p.label))],
+        current_accuracy_percent: state.latestAccuracy,
+        process_log: state.processLog,
+        uploaded_files: state.uploadedFiles,
+        user_result_summary: {
+            status_text: $('dataset-status')?.textContent || '',
+            accuracy_text: $('split-acc')?.textContent || ''
+        },
+        iteration_log: state.processLog.map((item, idx) => ({
+            iteration: idx + 1,
+            action: item.step,
+            detail: item.detail,
+            timestamp: item.timestamp
+        }))
+    };
+};

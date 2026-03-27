@@ -11,6 +11,8 @@
     border-radius: 12px;
     padding: 25px;
     box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
 }
 
 .viz-header {
@@ -29,6 +31,8 @@
 #function-canvas {
     width: 100%;
     height: 500px;
+    min-height: 400px;
+    flex-grow: 1;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: white;
@@ -59,40 +63,122 @@
     font-size: 14px;
 }
 
-select,
-input[type="range"] {
+select {
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 14px;
 }
 
-/* 算法控制面板 */
-.algorithm-panel {
+/* range 由 range-controls.css + range-slider.js 渲染，勿套用 select 的边框内边距 */
+
+/* 右侧多面板布局 */
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.control-panel {
     background: var(--card-bg);
     border-radius: 12px;
-    padding: 25px;
+    padding: 20px;
     box-shadow: var(--shadow);
+    box-sizing: border-box;
+    transition: all 0.3s ease;
 }
 
-.panel-section {
-    margin-bottom: 30px;
-}
-
-.panel-section h3 {
-    color: var(--primary-color);
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--border-color);
-    font-size: 1.3em;
 }
 
-.algorithm-selector {
+.panel-header h3 {
+    color: var(--primary-color);
+    margin: 0;
+    font-size: 1.2em;
+}
+
+.collapse-btn {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 5px;
+    transition: transform 0.3s ease;
+}
+
+.control-panel.collapsed {
+    padding-bottom: 10px;
+}
+
+.control-panel.collapsed .panel-header {
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.control-panel.collapsed .panel-content {
+    display: none;
+}
+
+.control-panel.collapsed .collapse-btn {
+    transform: rotate(-90deg);
+}
+
+/* 算法选择横向排列 (移动到左侧后) */
+.algorithm-select-row {
+    margin-top: 20px;
+}
+
+.algorithm-selector-horizontal {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.algorithm-selector-horizontal .algo-btn {
+    flex: 1;
+    max-width: 200px;
+}
+
+/* 实验数据与画布控制面板内部排列 */
+.data-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.data-buttons .control-btn {
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+}
+
+.pan-zoom-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.pan-buttons, .zoom-buttons {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    width: 100%;
 }
 
+.pan-buttons .control-btn, .zoom-buttons .control-btn {
+    flex: 1;
+    padding: 8px;
+    margin: 0;
+}
+
+/* 算法选择按钮样式 */
 .algo-btn {
     flex: 1;
     padding: 12px;
@@ -124,22 +210,6 @@ input[type="range"] {
     margin-bottom: 20px;
 }
 
-/* 画布缩放控制 */
-.pan-zoom-group {
-    margin-top: 10px;
-}
-
-.pan-zoom-row {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-.pan-buttons, .zoom-buttons {
-    display: flex;
-    gap: 5px;
-}
-
 /* 模态框内部样式 */
 .modal-body {
     margin-top: 15px;
@@ -166,7 +236,7 @@ input[type="range"] {
 .examples-section ul {
     margin-left: 20px;
     margin-top: 5px;
-    color: #8d6e63;
+    color: var(--text-light);
 }
 
 /* 响应式 */
@@ -180,4 +250,15 @@ input[type="range"] {
     #function-canvas {
         height: 420px;
     }
+    .right-column {
+        order: 2;
+    }
+}
+
+/* 实验笔记组件在流程观察页面的对齐调整 */
+.exp-notes-section {
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 40px;
+    box-sizing: border-box;
 }

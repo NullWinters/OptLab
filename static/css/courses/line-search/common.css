@@ -10,6 +10,8 @@
     --card-bg: #ffffff;
     --text-color: #5d4037;
     /* 深棕色 */
+    --text-light: #8d6e63;
+    /* 浅棕色 */
     --border-color: #d7ccc8;
     --shadow: 0 4px 6px rgba(216, 67, 21, 0.1);
 }
@@ -47,7 +49,7 @@ body {
 }
 
 .header .subtitle {
-    color: #8d6e63;
+    color: var(--text-light);
     font-size: 1.1em;
 }
 
@@ -271,4 +273,25 @@ footer {
     padding: 40px 20px;
     color: #a1887f;
     font-size: 14px;
+}
+
+/* 播放速度：在当前栏内水平居中，轨道随栏宽伸缩 */
+.playback-speed-group {
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.playback-speed-group > label {
+    width: 100%;
+    text-align: center;
+}
+
+.playback-speed-group .range-slider-wrap {
+    width: 100%;
 }

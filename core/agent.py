@@ -29,6 +29,14 @@ _DOCS_MAP = {
             "docs/公式/二分法.txt",
         ],
     },
+    "range_search_comparison": {
+        "guide": "docs/实验指导书/区间收缩法-性质对比.txt",
+        "formulas": [
+            "docs/公式/黄金分割法.txt",
+            "docs/公式/斐波那契数列法.txt",
+            "docs/公式/二分法.txt",
+        ],
+    },
     "point_search_observation": {
         "guide": "docs/实验指导书/点搜索-流程观察.txt",
         "formulas": [
@@ -37,7 +45,33 @@ _DOCS_MAP = {
             "docs/公式/割线法.txt",
         ],
     },
+    "point_search_comparison": {
+        "guide": "docs/实验指导书/点搜索-性质对比.txt",
+        "formulas": [
+            "docs/公式/梯度下降法.txt",
+            "docs/公式/牛顿法.txt",
+            "docs/公式/割线法.txt",
+        ],
+    },
+    "line_search_application": {
+        "guide": "docs/实验指导书/一维搜索方法应用实验.txt",
+        "formulas": [
+            "docs/公式/梯度下降法.txt",
+            "docs/公式/牛顿法.txt",
+            "docs/公式/割线法.txt",
+        ],
+    },
+    "simplex_method": {
+        "guide": "docs/实验指导书/单纯形法.txt",
+        "formulas": [],
+    },
     "svm_smo_index": {
+        "guide": "docs/实验指导书/SVM-SMO-课程主页.txt",
+        "formulas": [
+            "docs/公式/SVM基础概念.txt",
+        ],
+    },
+    "svm_smo_interaction": {
         "guide": "docs/实验指导书/SVM-SMO-课程主页.txt",
         "formulas": [
             "docs/公式/SVM基础概念.txt",

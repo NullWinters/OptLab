@@ -24,6 +24,7 @@ pip-wheel-metadata/
 .coverage
 .coverage.*
 htmlcov/
+tests/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -53,6 +54,7 @@ ENV/
 .DS_Store
 Thumbs.db
 Desktop.ini
+optlab.db
 
 # =========================
 # Project local / temp
