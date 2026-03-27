@@ -3,14 +3,8 @@
 {% block head %}
 <link rel="stylesheet" href="/static/css/courses/svm-smo/introduction.css">
 <link rel="stylesheet" href="/static/css/courses/svm-smo/kernel-trick.css">
-    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
-            }
-        }
-    </script>
+    <script src="/static/js/lib/math.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js'"></script>
+    <script src="/static/vendor/three/three.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js'"></script>
 {% endblock %}
 {% block content %}
 <div class="container" style="max-width: 1400px;">
@@ -169,5 +163,5 @@
         GUIDEBOOK: '这是支持向量机核技巧三维可视化页面。页面左侧是参数面板，右侧是Three.js三维场景。用户先上传CSV或加载预设数据，再选择x/y/标签列并可视化。可使用默认固定映射 φ(x, y)=(x², √2xy, y²)，也可自定义输入 φ(x, y)=(x_new, y_new, z_new) 表达式并应用，再播放升维动画观察可分性变化。超平面可平移和旋转，并实时显示按颜色标签计算的划分准确率。'
     };
 </script>
-<script type="module" src="/static/js/courses/svm-smo/kernel-trick.js"></script>
+<script src="/static/js/courses/svm-smo/kernel-trick.js"></script>
 {% endblock %}
