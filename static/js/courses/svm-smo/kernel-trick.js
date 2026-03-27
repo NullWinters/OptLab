@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 const $ = id => document.getElementById(id);
 const statusEl = $('dataset-status');
 const accEl = $('split-acc');
@@ -59,6 +57,7 @@ const state = {
     processLog: [],
     latestAccuracy: null,
     lastPlaneParams: { z: 0, yaw: 0, pitch: 0 },
+    autoFitTimer: null,
 };
 
 function trackNoteEvent(type, data) {
@@ -165,6 +164,11 @@ function refreshKernelText() {
     }
 }
 
+if (typeof window.THREE === 'undefined') {
+    setStatus('Three.js 加载失败，请刷新页面或检查静态资源路径。', true);
+    throw new Error('THREE is not available');
+}
+
 // ---------- Three.js ----------
 const container = $('scene');
 const scene = new THREE.Scene();
@@ -172,7 +176,13 @@ scene.background = new THREE.Color(0xfff9f2);
 
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 1000);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+let renderer;
+try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (err) {
+    setStatus(`WebGL 初始化失败：${err.message}`, true);
+    throw err;
+}
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 container.appendChild(renderer.domElement);
 
@@ -415,7 +425,10 @@ function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
     const normal = new THREE.Vector3(0, 0, 1)
         .applyEuler(new THREE.Euler(Math.PI / 2 + pitch, yaw, 0))
         .normalize();
-    const planePoint = new THREE.Vector3(0, zVal, 0);
+    const nx = normal.x;
+    const ny = normal.y;
+    const nz = normal.z;
+    const planeY = zVal;
 
     let posL0 = 0;
     let negL0 = 0;
@@ -425,8 +438,7 @@ function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
     for (let i = 0; i < state.points.length; i++) {
         const p = state.points[i];
         const m = state.currentMapped[i];
-        const v = new THREE.Vector3(m.x, m.z, m.y);
-        const signed = normal.dot(v.clone().sub(planePoint));
+        const signed = nx * (m.x - 0) + ny * (m.z - planeY) + nz * (m.y - 0);
         const positiveSide = signed >= 0;
 
         if (p.label === labels[0]) {
@@ -481,7 +493,7 @@ function autoFitPlaneFromCurrentPoints() {
         acc: -1
     };
 
-    const coarseStep = { yaw: 10, pitch: 10, z: 0.2 };
+    const coarseStep = { yaw: 15, pitch: 15, z: 0.4 };
     for (let yaw = -90; yaw <= 90; yaw += coarseStep.yaw) {
         for (let pitch = -90; pitch <= 90; pitch += coarseStep.pitch) {
             for (let z = -2; z <= 2.0001; z += coarseStep.z) {
@@ -493,7 +505,7 @@ function autoFitPlaneFromCurrentPoints() {
         }
     }
 
-    const refineStep = { yaw: 2, pitch: 2, z: 0.05 };
+    const refineStep = { yaw: 4, pitch: 4, z: 0.1 };
     const yawMin = Math.max(-90, best.yaw - 12);
     const yawMax = Math.min(90, best.yaw + 12);
     const pitchMin = Math.max(-90, best.pitch - 12);
@@ -508,6 +520,15 @@ function autoFitPlaneFromCurrentPoints() {
                 if (acc !== null && acc > best.acc) {
                     best = { yaw, pitch, z, acc };
                 }
+
+function scheduleAutoFit() {
+    if (state.autoFitTimer) {
+        clearTimeout(state.autoFitTimer);
+    }
+    state.autoFitTimer = setTimeout(() => {
+        autoFitPlaneFromCurrentPoints();
+    }, 0);
+}
             }
         }
     }
@@ -562,7 +583,7 @@ function visualizeFromSelection(showSuccessHint = true) {
     });
     trackNoteEvent('apply_columns', { x_col: xIdx, y_col: yIdx, label_col: lIdx, sample_count: parsed.length });
     createOrUpdatePoints();
-    autoFitPlaneFromCurrentPoints();
+    scheduleAutoFit();
     setStatus(`渲染完成：共 ${parsed.length} 个点，类别数 ${labels.size}。`);
     if (showSuccessHint) {
         setStatus(`渲染完成：共 ${parsed.length} 个点，类别数 ${labels.size}。点击“升维动画”查看核技巧效果。`);
@@ -741,7 +762,7 @@ $('animate-btn').addEventListener('click', () => {
         if (t < 1) {
             requestAnimationFrame(step);
         } else {
-            autoFitPlaneFromCurrentPoints();
+            scheduleAutoFit();
         }
     }
 
