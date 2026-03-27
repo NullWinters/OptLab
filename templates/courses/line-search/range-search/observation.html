@@ -1149,7 +1149,24 @@
             {id: "iteration-log-export-csv-btn", description: "导出实验数据按钮，将迭代记录导出为 CSV 文件", type: "normal"},
             {id: "iteration-log-save-to-profile-btn", description: "保存至个人中心按钮，将本次实验记录永久保存", type: "normal"}
         ],
-        GUIDEBOOK: '这是区间收缩法教学实验的流程观察页面。右侧面板集成了算法控制、参数状态显示、画布控制以及实验数据管理功能。'
+        GUIDEBOOK: `实验类型：区间收缩法 · 流程观察（单算法）
+
+实验目标：
+本实验支持黄金分割法、斐波那契数列法、二分法的搜索过程展示，用户每次可以选择其中一个算法并观察算法运行。
+
+实验步骤：
+1) 选择算法
+2) 选择或自定义目标函数
+3) 调整左右区间端点，黄金分割法与二分法需要调整精度，斐波那契数列法需要调整迭代次数和修正系数
+4) 在算法控制面板点击单步按钮算法执行一步后暂停
+5) 点击播放，算法会自动运行直至达到终止条件；拖动播放速度滑条可改变播放时算法的运行间隔
+6) 用户可在参数状态面板查看关键参数的实时数值
+7) 实验结束后填写最下方的思考题
+
+算法原理要点：
+- 黄金分割法：利用黄金分割比 0.618 确定试探点，每次迭代区间收缩比约为 0.618
+- 斐波那契数列法：利用斐波那契数列确定试探点，理论上可以达到最少的迭代次数
+- 二分法：每次取区间中点，通过导数符号判断保留哪一半区间，收缩比为 0.5`
     };
 </script>
 <script>
@@ -1179,6 +1196,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     final_length: finalRow ? Math.abs(finalRow.b - finalRow.a) : null
                 } : null,
                 iteration_log: log
+                // guidebook 由 experiment-notes.js 自动注入
             };
         }
     });

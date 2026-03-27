@@ -114,6 +114,9 @@
     if (cachedUser) renderLoggedIn(cachedUser);
     else renderLoggedOut();
 
+    // 只有存在 token 时才请求用户状态，避免未登录时产生 401 错误
+    if (typeof getStoredToken !== "function" || !getStoredToken()) return;
+
     apiGet("/auth/me")
       .then((user) => {
         try {
