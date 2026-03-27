@@ -42,7 +42,7 @@
                 <h3>示例数据加载</h3>
                 <div class="input-inline">
                     <div class="input-group" style="flex: 2;">
-                        <select id="example-select">
+                        <label for="example-select"></label><select id="example-select">
                             <option value="max">最大化示例</option>
                             <option value="min">最小化示例</option>
                             <option value="unbounded">无界解示例</option>
@@ -78,6 +78,7 @@
 
             <div class="panel-section">
                 <h3>系数输入表格</h3>
+                <p class="hint-text">已默认每个决策变量 x<sub>j</sub> ≥ 0 (j = 1, 2, ..., n)</p>
                 <div id="coeff-table-container">
                     <!-- 动态生成系数表格 -->
                 </div>
