@@ -19,101 +19,12 @@ agent = create_agent(
 # 项目根目录
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# page_id → 对应的文档文件映射
-_DOCS_MAP = {
-    "range_search_observation": {
-        "guide": "docs/实验指导书/区间收缩法-流程观察.txt",
-        "formulas": [
-            "docs/公式/黄金分割法.txt",
-            "docs/公式/斐波那契数列法.txt",
-            "docs/公式/二分法.txt",
-        ],
-    },
-    "range_search_comparison": {
-        "guide": "docs/实验指导书/区间收缩法-性质对比.txt",
-        "formulas": [
-            "docs/公式/黄金分割法.txt",
-            "docs/公式/斐波那契数列法.txt",
-            "docs/公式/二分法.txt",
-        ],
-    },
-    "point_search_observation": {
-        "guide": "docs/实验指导书/点搜索-流程观察.txt",
-        "formulas": [
-            "docs/公式/梯度下降法.txt",
-            "docs/公式/牛顿法.txt",
-            "docs/公式/割线法.txt",
-        ],
-    },
-    "point_search_comparison": {
-        "guide": "docs/实验指导书/点搜索-性质对比.txt",
-        "formulas": [
-            "docs/公式/梯度下降法.txt",
-            "docs/公式/牛顿法.txt",
-            "docs/公式/割线法.txt",
-        ],
-    },
-    "line_search_application": {
-        "guide": "docs/实验指导书/一维搜索方法应用实验.txt",
-        "formulas": [
-            "docs/公式/梯度下降法.txt",
-            "docs/公式/牛顿法.txt",
-            "docs/公式/割线法.txt",
-        ],
-    },
-    "simplex_method": {
-        "guide": "docs/实验指导书/单纯形法.txt",
-        "formulas": [],
-    },
-    "svm_smo_index": {
-        "guide": "docs/实验指导书/SVM-SMO-课程主页.txt",
-        "formulas": [
-            "docs/公式/SVM基础概念.txt",
-        ],
-    },
-    "svm_smo_interaction": {
-        "guide": "docs/实验指导书/SVM-SMO-课程主页.txt",
-        "formulas": [
-            "docs/公式/SVM基础概念.txt",
-        ],
-    },
-    "svm_smo_kernel_trick": {
-        "guide": "docs/实验指导书/SVM-核技巧-三维可视化.txt",
-        "formulas": [
-            "docs/公式/SVM核技巧.txt",
-        ],
-    },
-}
-
-
-def _load_docs(page_id: str) -> str:
-    mapping = _DOCS_MAP.get(page_id)
-    if not mapping:
-        return ""
-
-    parts = []
-
-    guide_path = os.path.join(_project_root, mapping["guide"])
-    if os.path.exists(guide_path):
-        with open(guide_path, "r", encoding="utf-8") as f:
-            parts.append("【实验指导书】\n" + f.read().strip())
-
-    for formula_path in mapping["formulas"]:
-        full_path = os.path.join(_project_root, formula_path)
-        if os.path.exists(full_path):
-            name = os.path.splitext(os.path.basename(formula_path))[0]
-            with open(full_path, "r", encoding="utf-8") as f:
-                parts.append(f"【{name}】\n" + f.read().strip())
-
-    return "\n\n".join(parts)
-
 
 async def ask_assistant(message: str, page_id: str, guidebook: str, buttons: list[dict]) -> AssistantSchema:
     buttons_desc = "\n".join(
         [f"- ID: `{b['id']}`, 描述: {b['description']}, 类型: {b['type']}" for b in buttons]
     )
 
-    docs_content = _load_docs(page_id)
 
     system_prompt = (
         "你是一个流程观察页面的操作助手，帮助用户理解和使用该页面的各项功能。\n\n"
@@ -121,8 +32,6 @@ async def ask_assistant(message: str, page_id: str, guidebook: str, buttons: lis
         f"以下是页面上所有可用的按钮/控件及其信息：\n{buttons_desc}\n\n"
     )
 
-    if docs_content:
-        system_prompt += f"以下是实验相关的文档资料（包含实验步骤说明和算法公式）：\n{docs_content}\n\n"
 
     system_prompt += (
         "用户会向你提问关于如何使用该页面的问题，也可能询问算法原理。"

@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.agent import ask_assistant, _load_docs
+from core.agent import ask_assistant
 from core.auth import get_current_user
 from core.chat_service import ChatService
 from dependencies import get_session
@@ -31,9 +31,9 @@ router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
 @router.get("/session", response_model=ChatSessionQueryOut)
 async def get_ai_session(
-    page_id: str = Query(..., description="页面标识符"),
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+        page_id: str = Query(..., description="页面标识符"),
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_session),
 ):
     """
     获取当前用户在指定页面的活跃会话
@@ -64,9 +64,9 @@ async def get_ai_session(
 
 @router.post("/session", response_model=dict)
 async def create_ai_session(
-    data: ChatSessionCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+        data: ChatSessionCreate,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_session),
 ):
     """
     为当前页面创建新会话（自动关闭旧会话）
@@ -86,9 +86,9 @@ async def create_ai_session(
 
 @router.post("/session/reset")
 async def reset_ai_session(
-    data: ChatSessionReset,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+        data: ChatSessionReset,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_session),
 ):
     """
     软删除当前页面的所有活跃会话
@@ -103,9 +103,9 @@ async def reset_ai_session(
 
 @router.post("/chat", response_model=ChatMessageResponse)
 async def chat(
-    data: ChatMessageCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_session),
+        data: ChatMessageCreate,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_session),
 ):
     """
     发送消息，支持上下文记忆
@@ -181,7 +181,7 @@ async def chat(
 
 
 async def _ask_with_context(
-    message: str, page_id: str, guidebook: str, buttons: list, history: list
+        message: str, page_id: str, guidebook: str, buttons: list, history: list
 ) -> AssistantSchema:
     """
     带上下文调用AI助手
@@ -199,16 +199,12 @@ async def _ask_with_context(
             for b in buttons
         ]
     )
-    docs_content = _load_docs(page_id)
 
     system_prompt = (
         "你是一个流程观察页面的操作助手，帮助用户理解和使用该页面的各项功能。\n\n"
         f"以下是页面指导书：\n{guidebook}\n\n"
         f"以下是页面上所有可用的按钮/控件及其信息：\n{buttons_desc}\n\n"
     )
-
-    if docs_content:
-        system_prompt += f"以下是实验相关的文档资料：\n{docs_content}\n\n"
 
     system_prompt += (
         "以下是你和用户的对话历史（最近的对话）：\n"
