@@ -533,6 +533,7 @@ async function _aiGen() {
             }
         }
         pd._behavior = _tracker.export();
+        pd.guidebook = (window.AI_CONFIG && window.AI_CONFIG.GUIDEBOOK) || '';
         console.log('[Notes] Sending AI request with data keys:', Object.keys(pd));
         
         var d=await apiRequest('/notes/'+encodeURIComponent(_cfg.experimentKey)+'/ai-generate',{

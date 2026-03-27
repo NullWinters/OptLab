@@ -146,6 +146,10 @@
 .exp-note-title-render .MathJax,
 .exp-note-title-render mjx-container {
     font-weight: 700;
+    max-width: 100%;
+    overflow-x: auto;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 /* 标题输入框 - 隐藏边框风格，加粗 */
@@ -254,7 +258,7 @@
     border: 1px dashed #FFE0B2;
     background: transparent;
     transition: border-color 0.2s, background 0.2s;
-    word-break: break-word;
+    word-break: normal;
     overflow-x: auto;
 }
 
@@ -265,10 +269,13 @@
 .exp-note-render-view.active { display: block; }
 
 /* MathJax overflow handling */
+.exp-note-render-view mjx-container,
 .exp-note-render-view .MathJax,
 .exp-note-render-view .MJX-TEX {
-    overflow-x: auto;
-    max-width: 100%;
+    display: inline-block;
+    max-width: none;
+    overflow-x: visible;
+    vertical-align: middle;
 }
 
 .exp-note-render-view p { margin: 0 0 8px; }
@@ -602,6 +609,32 @@
 .exp-notes-confirm-delete:hover {
     box-shadow: 0 4px 12px rgba(216, 67, 21, 0.4);
     transform: translateY(-1px);
+}
+
+/* 美化滚动条样式 */
+.exp-note-render-view::-webkit-scrollbar,
+.exp-note-title-render::-webkit-scrollbar {
+    height: 6px;
+    background: #FFF3E0;
+    border-radius: 3px;
+}
+
+.exp-note-render-view::-webkit-scrollbar-thumb,
+.exp-note-title-render::-webkit-scrollbar-thumb {
+    background: #FFCC80;
+    border-radius: 3px;
+}
+
+.exp-note-render-view::-webkit-scrollbar-thumb:hover,
+.exp-note-title-render::-webkit-scrollbar-thumb:hover {
+    background: #D84315;
+}
+
+/* Firefox 滚动条 */
+.exp-note-render-view,
+.exp-note-title-render {
+    scrollbar-width: thin;
+    scrollbar-color: #FFCC80 #FFF3E0;
 }
 
 /* 响应式 */
