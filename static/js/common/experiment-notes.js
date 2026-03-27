@@ -345,11 +345,16 @@ function init(cfg) {
 }
 
 function _shell(mount) {
+    const params = (window.location.search || '') + (window.location.hash || '');
+    const isDev = /[?&]dev(=|&|$)/.test(params);
+    const devBtnHtml = isDev ? '<button class="exp-notes-action-btn secondary" id="_enDevExport" style="background:#455a64;color:white;">导出开发数据</button>' : '';
+
     mount.innerHTML =
         '<section class="exp-notes-section">'+
         '<div class="exp-notes-header">'+
         '  <div class="exp-notes-header-left">'+
         '    <h2>实验笔记</h2>'+
+        '    ' + devBtnHtml +
         '    <span class="exp-notes-login-hint" id="_enHint" style="display:none">（未登录：仅本地填写与导出，无法保存到云端，<a href="/auth/login" class="exp-notes-login-link">立即登录</a>）</span>'+
         '  </div>'+
         '  <div class="exp-notes-actions">'+
@@ -363,14 +368,29 @@ function _shell(mount) {
         '</section>';
     _listEl = mount.querySelector('#_enList');
     _gStEl  = mount.querySelector('#_enGSt');
-    if (!isLoggedIn()) mount.querySelector('#_enHint').style.display='inline';
-    var saveBtn = mount.querySelector('#_enSave');
-    if (!isLoggedIn()) {
-        saveBtn.textContent = '本地暂存';
+
+    var logged = isLoggedIn();
+    if (!logged) {
+        var hint = mount.querySelector('#_enHint');
+        if (hint) hint.style.display = 'inline';
     }
-    saveBtn.addEventListener('click', _saveAll);
-    mount.querySelector('#_enExp').addEventListener('click',  _export);
-    mount.querySelector('#_enAI').addEventListener('click',   _aiGen);
+    
+    var saveBtn = mount.querySelector('#_enSave');
+    if (saveBtn) {
+        if (!logged) saveBtn.textContent = '本地暂存';
+        saveBtn.addEventListener('click', _saveAll);
+    }
+
+    var expBtn = mount.querySelector('#_enExp');
+    if (expBtn) expBtn.addEventListener('click', _export);
+
+    var aiBtn = mount.querySelector('#_enAI');
+    if (aiBtn) aiBtn.addEventListener('click', _aiGen);
+
+    if (isDev) {
+        var devBtn = mount.querySelector('#_enDevExport');
+        if (devBtn) devBtn.addEventListener('click', _exportDevData);
+    }
 }
 
 function _renderList() {
@@ -515,6 +535,29 @@ async function _export() {
         var name = _sanitizeFilename((i + 1) + '-' + payload.title) + ext;
         _downloadTextFile(name, payload.content, mime);
     });
+}
+
+async function _exportDevData() {
+    var pd = {};
+    if (typeof _cfg.getPageData === 'function') {
+        try {
+            pd = _cfg.getPageData() || {};
+        } catch (e) {
+            console.error('[Notes] Error collecting page data:', e);
+        }
+    }
+    // 注入行为轨迹
+    pd._behavior = _tracker.export();
+    
+    var trainItem = {
+        experiment_key: _cfg.experimentKey,
+        label: document.title,
+        experiment_data: pd
+    };
+
+    var jsonStr = JSON.stringify(trainItem, null, 2);
+    var name = 'train_' + _cfg.experimentKey + '_' + Date.now() + '.json';
+    _downloadTextFile(name, jsonStr, 'application/json');
 }
 
 async function _aiGen() {
