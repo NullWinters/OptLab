@@ -7,14 +7,21 @@
     <title>线性规划 - OptLab</title>
     <link rel="stylesheet" href="/static/css/courses/linear-programming/introduction.css">
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <!-- MathJax 3.x 推荐方式 -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <!-- 或使用更兼容的配置 -->
     <script>
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
             }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </head>
 
 <body>
@@ -59,8 +66,7 @@
         </div>
         <p>
             其中 \(x \in \mathbb{R}^n\) 是决策变量，\(c \in \mathbb{R}^n\) 是成本系数，\(A \in \mathbb{R}^{m\times n}\)
-            是约束矩阵，\(b \in \mathbb{R}^m\) 是右端项。我们通常假设 \(m < n\) 且 \(\text{rank} A = m\)，\(b \geq 0\)。
-        </p>
+            是约束矩阵，\(b \in \mathbb{R}^m\) 是右端项。我们通常假设 \(m < n\) 且 \(\text{rank} A=m\)，\(b \geq 0\)。 </p>
         <p>
             任何其他形式（如最大化、不等式约束）均可通过引入松弛变量或剩余变量转化为上述标准型。因此，掌握标准型的求解方法是理解线性规划的关键。
         </p>
@@ -201,6 +207,43 @@
             可见，最优解正是在某个基本可行解处取得。单纯形法的思想就是从一个基本可行解出发，沿着可行域的棱边转移到相邻的、使目标值更优的基本可行解，直至找到最优。
         </p>
     </div>
+
+
+    <div class="section">
+        <h2>松弛变量法</h2>
+        <p>
+            单纯形法要求从一个基本可行解开始迭代。对于形如下述不等式约束的线性规划问题（所有约束为“\(\le\)”且右端项非负）：</p>
+        <div class="math-block">
+            \[
+            \begin{array}{ll}
+            \text{maximize} & 3x_1 + 5x_2 \\
+            \text{subject to} & x_1 + 5x_2 \le 40 \\
+            & 2x_1 + x_2 \le 20 \\
+            & x_1 + x_2 \le 12 \\
+            & x_1, x_2 \ge 0
+            \end{array}
+            \]
+        </div>
+        <p>我们可以在每个不等式左侧添加一个非负的<strong>松弛变量</strong>，将不等式化为等式标准型：</p>
+        <div class="math-block">
+            \[
+            \begin{array}{ll}
+            \text{maximize} & 3x_1 + 5x_2 \\
+            \text{subject to} & x_1 + 5x_2 + x_3 = 40 \\
+            & 2x_1 + x_2 + x_4 = 20 \\
+            & x_1 + x_2 + x_5 = 12 \\
+            & x_1, x_2, x_3, x_4, x_5 \ge 0
+            \end{array}
+            \]
+        </div>
+        <p>此时，若取原变量 \(x_1 = 0, x_2 = 0\)，则松弛变量的取值恰好等于右端项：\(x_3 = 40, x_4 = 20, x_5 =
+            12\)，这组解显然满足所有约束且非负，因此是一个基本可行解（基变量为 \(x_3, x_4, x_5\)，基矩阵为单位阵）。</p>
+        <div class="highlight">
+            <strong>要点</strong>：只要线性规划的所有约束均为“\(\le\)”形式且右端项非负，添加松弛变量后即自动获得一个初始基本可行解，从而可以直接启动单纯形法。对于包含等式或“\(\ge\)”约束的一般问题，则需要通过人工变量法（如大M法或两阶段法）构造初始可行基。
+        </div>
+        <p>本例中，从初始基本可行解 \((x_1, x_2, x_3, x_4, x_5) = (0,0,40,20,12)\) 出发，通过单纯形法的换基迭代，最终移动到最优顶点
+            \((x_1, x_2) = (5,7)\)（对应松弛变量值可通过约束求得）。这正是上述交互演示所展示的过程。</p>
+    </div>
 </div>
 
 <script src="/static/js/courses/linear-programming/introduction.js"></script>
@@ -208,4 +251,5 @@
 <footer class="footer">
     线性规划 · OptLab 教学资源
 </footer>
+
 </html>
