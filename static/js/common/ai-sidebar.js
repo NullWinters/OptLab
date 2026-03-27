@@ -2,6 +2,7 @@
     // 高亮状态
     let highlightIds = [];
     let currentHighlightIndex = -1;
+    let uiRegistryMap = new Map();
 
     // DOM 引用
     const sidebar = document.getElementById('ai-assistant-sidebar');
@@ -11,8 +12,87 @@
     const inputField = document.getElementById('ai-input');
     const sendBtn = document.getElementById('ai-send-btn');
     const highlightOverlay = document.getElementById('ai-highlight-overlay');
+    const nextStepBtn = document.getElementById('ai-next-step-btn');
 
     if (!sidebar || !toggleBtn) return;
+
+    function ensureElementId(el, prefix) {
+        if (!el) return null;
+        if (el.id) return el.id;
+        if (el.dataset && el.dataset.aiAutoId) return el.dataset.aiAutoId;
+
+        const base = (prefix || 'ai-auto') + '-';
+        let idx = 1;
+        let candidate = base + idx;
+        while (document.getElementById(candidate)) {
+            idx++;
+            candidate = base + idx;
+        }
+        el.id = candidate;
+        if (el.dataset) el.dataset.aiAutoId = candidate;
+        return candidate;
+    }
+
+    function inferDescription(el) {
+        if (!el) return '页面控件';
+        const aria = el.getAttribute('aria-label');
+        if (aria) return aria;
+        const title = el.getAttribute('title');
+        if (title) return title;
+        const dataLabel = el.getAttribute('data-ai-label');
+        if (dataLabel) return dataLabel;
+        const text = (el.textContent || '').trim().replace(/\s+/g, ' ');
+        if (text) return text.length > 40 ? text.slice(0, 40) + '...' : text;
+        return el.tagName.toLowerCase() + ' 元素';
+    }
+
+    function buildRuntimeRegistry() {
+        const aiConfig = window.AI_CONFIG || {};
+        const baseRegistry = Array.isArray(aiConfig.BUTTON_REGISTRY) ? aiConfig.BUTTON_REGISTRY : [];
+        const map = new Map();
+
+        baseRegistry.forEach(function (item) {
+            if (item && item.id) {
+                map.set(item.id, {
+                    id: item.id,
+                    description: item.description || item.id,
+                    type: item.type || 'normal'
+                });
+            }
+        });
+
+        const interactiveSelector = 'button[id], input[id], select[id], textarea[id], [role="button"][id], [id].modal';
+        document.querySelectorAll(interactiveSelector).forEach(function (el) {
+            const id = el.id;
+            if (!id || map.has(id)) return;
+            map.set(id, {
+                id: id,
+                description: inferDescription(el),
+                type: 'normal'
+            });
+        });
+
+        const svgSelector = 'svg circle, svg rect, svg path, svg line, svg polyline, svg polygon, svg ellipse, svg text, svg g';
+        const svgElements = Array.prototype.slice.call(document.querySelectorAll(svgSelector), 0, 60);
+        svgElements.forEach(function (el, idx) {
+            const id = ensureElementId(el, 'svg-node');
+            if (!id || map.has(id)) return;
+            map.set(id, {
+                id: id,
+                description: inferDescription(el) + ' (SVG图元 ' + el.tagName.toLowerCase() + ' #' + (idx + 1) + ')',
+                type: 'svg'
+            });
+        });
+
+        uiRegistryMap = map;
+        return Array.from(map.values());
+    }
+
+    function stepMessageById(id, stepNo) {
+        const meta = uiRegistryMap.get(id);
+        const desc = meta ? meta.description : id;
+        return '步骤' + stepNo + '：请先操作「' + desc + '」。';
+    }
 
     // 侧边栏开关
     toggleBtn.addEventListener('click', function () {
@@ -34,7 +114,7 @@
 
         // 获取当前页面的配置
         const aiConfig = window.AI_CONFIG || {};
-        const registry = aiConfig.BUTTON_REGISTRY || [];
+        const registry = buildRuntimeRegistry();
         const guidebook = aiConfig.GUIDEBOOK || '';
         const pageId = aiConfig.PAGE_ID || 'default';
 
@@ -64,13 +144,20 @@
         })
         .then(function (data) {
             loadingEl.remove();
-            addMessage(data.text, 'bot');
 
             if (data.highlight_ids && data.highlight_ids.length > 0) {
-                highlightIds = data.highlight_ids;
+                highlightIds = data.highlight_ids.filter(function (id) {
+                    return !!document.getElementById(id);
+                });
                 currentHighlightIndex = 0;
-                highlightCurrentButton();
+                if (highlightIds.length > 0) {
+                    addMessage(stepMessageById(highlightIds[0], 1), 'bot');
+                    highlightCurrentButton();
+                    return;
+                }
             }
+
+            addMessage(data.text, 'bot');
         })
         .catch(function (err) {
             loadingEl && loadingEl.remove();
@@ -97,40 +184,52 @@
     }
 
     // ========== 高亮系统 ==========
+    function advanceGuideStep() {
+        const currentId = highlightIds[currentHighlightIndex];
+        const currentEl = currentId ? document.getElementById(currentId) : null;
+        if (currentEl && currentEl._aiClickHandler) {
+            currentEl.removeEventListener('click', currentEl._aiClickHandler);
+            delete currentEl._aiClickHandler;
+        }
+
+        currentHighlightIndex++;
+        if (currentHighlightIndex < highlightIds.length) {
+            addMessage(stepMessageById(highlightIds[currentHighlightIndex], currentHighlightIndex + 1), 'bot');
+            highlightCurrentButton();
+        } else {
+            clearHighlights();
+            addMessage('演示结束', 'system');
+        }
+    }
+
     function highlightCurrentButton() {
         if (currentHighlightIndex < 0 || currentHighlightIndex >= highlightIds.length) {
             clearHighlights();
             return;
         }
 
-        const btnId = highlightIds[currentHighlightIndex];
-        const btn = document.getElementById(btnId);
-        if (!btn) {
+        const targetId = highlightIds[currentHighlightIndex];
+        const targetEl = document.getElementById(targetId);
+        if (!targetEl) {
             currentHighlightIndex++;
             highlightCurrentButton();
             return;
         }
 
-        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
         setTimeout(function () {
-            positionOverlay(btn);
+            positionOverlay(targetEl);
             highlightOverlay.style.display = 'block';
         }, 350);
 
-        // 为当前按钮绑定点击事件，点击后跳转到下一个
-        btn._aiClickHandler = function () {
-            btn.removeEventListener('click', btn._aiClickHandler);
-            delete btn._aiClickHandler;
-            currentHighlightIndex++;
-            if (currentHighlightIndex < highlightIds.length) {
-                highlightCurrentButton();
-            } else {
-                clearHighlights();
-                addMessage('演示结束', 'system');
-            }
+        if (nextStepBtn) nextStepBtn.style.display = 'inline-flex';
+
+        // 为当前目标绑定点击事件，点击后跳转到下一个
+        targetEl._aiClickHandler = function () {
+            advanceGuideStep();
         };
-        btn.addEventListener('click', btn._aiClickHandler);
+        targetEl.addEventListener('click', targetEl._aiClickHandler);
     }
 
     function positionOverlay(el) {
@@ -144,6 +243,7 @@
 
     function clearHighlights() {
         if (highlightOverlay) highlightOverlay.style.display = 'none';
+        if (nextStepBtn) nextStepBtn.style.display = 'none';
         highlightIds.forEach(function (id) {
             const btn = document.getElementById(id);
             if (btn && btn._aiClickHandler) {
@@ -158,13 +258,20 @@
     // 滚动和窗口变化时重新定位高亮遮罩
     function repositionOverlay() {
         if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {
-            const btn = document.getElementById(highlightIds[currentHighlightIndex]);
-            if (btn && highlightOverlay && highlightOverlay.style.display !== 'none') {
-                positionOverlay(btn);
+            const el = document.getElementById(highlightIds[currentHighlightIndex]);
+            if (el && highlightOverlay && highlightOverlay.style.display !== 'none') {
+                positionOverlay(el);
             }
         }
     }
 
     window.addEventListener('scroll', repositionOverlay, true);
     window.addEventListener('resize', repositionOverlay);
+    if (nextStepBtn) {
+        nextStepBtn.addEventListener('click', function () {
+            if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {
+                advanceGuideStep();
+            }
+        });
+    }
 })();

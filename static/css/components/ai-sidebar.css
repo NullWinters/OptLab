@@ -70,6 +70,19 @@ body.ai-sidebar-open .ai-toggle-btn {
     flex-shrink: 0;
 }
 
+.ai-guide-actions {
+    padding: 8px 15px 0;
+    display: flex;
+    justify-content: flex-end;
+    background: #fafafa;
+}
+
+#ai-next-step-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 14px;
+}
+
 .ai-sidebar-header h3 {
     color: #d84315;
     margin: 0;
