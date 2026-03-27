@@ -4,22 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>课程列表 - OptLab</title>
+    <link rel="stylesheet" href="/static/css/components/top-nav.css">
     <link rel="stylesheet" href="/static/css/base/courses.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 <!-- 导航栏 -->
-<div class="container max-w-7xl">
-    <nav class="nav-bar">
-        <a href="/" class="nav-logo">
-            <i class="fas fa-flask"></i> OptLab
-        </a>
-        <div class="nav-links">
-            <a href="/">首页</a>
-            <a href="/courses/" class="active">课程中心</a>
-        </div>
-    </nav>
-</div>
+{% include 'components/_top_nav.html' %}
 
 <main class="main-content container max-w-5xl">
     <h1 class="page-title">课程中心</h1>
@@ -66,7 +57,7 @@
             <div class="course-content">
                 <div class="course-header">
                     <h2 class="course-title">线性规划与单纯形法</h2>
-                    <span class="course-status status-online">待完善</span>
+                    <span class="course-status status-online">已上线</span>
                 </div>
                 <p class="course-desc">研究线性约束条件下的线性目标函数极值问题，涵盖基本可行解原理与单纯形法。</p>
                 <div class="course-experiments">
@@ -94,7 +85,7 @@
             <div class="course-content">
                 <div class="course-header">
                     <h2 class="course-title">支持向量机与SMO</h2>
-                    <span class="course-status status-online">开发中</span>
+                    <span class="course-status status-online">已上线</span>
                 </div>
                 <p class="course-desc">探索经典的分类算法 SVM 及其背后的二次规划问题，学习如何利用 SMO 算法高效求解。</p>
                 <div class="course-experiments">
@@ -121,5 +112,8 @@
         <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
     </div>
 </footer>
+
+<script src="/static/js/api.js"></script>
+<script src="/static/js/main.js"></script>
 </body>
 </html>

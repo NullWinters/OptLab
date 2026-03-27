@@ -1,8 +1,3 @@
-/**
- * 点搜索可视化引擎 - 基于 D3.js
- */
-
-// helper: convert integer to Unicode subscript string (supports minus sign)
 function toSubscript(n) {
     const map = {'-':'\u208B','0':'\u2080','1':'\u2081','2':'\u2082','3':'\u2083','4':'\u2084','5':'\u2085','6':'\u2086','7':'\u2087','8':'\u2088','9':'\u2089'};
     return String(n).split('').map(ch => map[ch] || ch).join('');
@@ -10,66 +5,23 @@ function toSubscript(n) {
 
 export class PointSearchVisualizer {
     constructor(containerId, options = {}) {
-        this.containerId = containerId;
-        this.margin = options.margin || {top: 40, right: 40, bottom: 60, left: 60};
-        
         const container = document.getElementById(containerId);
+        this.containerId = containerId;
+        this.margin = options.margin || {top: 40, right: 40, bottom: 80, left: 60};
         this.width = options.width || container.clientWidth;
-        this.height = options.height || container.clientHeight || 400;
+        this.height = options.height || container.clientHeight || 340;
 
-        this.plotWidth = this.width - this.margin.left - this.margin.right;
-        this.plotHeight = this.height - this.margin.top - this.margin.bottom;
+        this.updateDimensions();
 
         this.currentExpr = null;
         this.currentDomain = [-5, 5];
 
-        // 动画与历史状态
         this.duration = options.duration || 400;
         this.currentHistory = [];
         this.currentAlgorithm = null;
         this.initialized = false;
 
         this.initSvg();
-
-        // 监听 resize 事件
-        window.addEventListener('resize', () => this.handleResize());
-    }
-
-    handleResize() {
-        const container = document.getElementById(this.containerId);
-        if (!container) return;
-
-        const newWidth = container.clientWidth;
-        const newHeight = container.clientHeight || 400;
-        
-        if (newWidth === 0 || (newWidth === this.width && newHeight === this.height)) return;
-
-        this.width = newWidth;
-        this.height = newHeight;
-        this.plotWidth = this.width - this.margin.left - this.margin.right;
-        this.plotHeight = this.height - this.margin.top - this.margin.bottom;
-
-        // 更新 SVG 视图和比例尺范围
-        this.svg
-            .attr('width', this.width)
-            .attr('height', this.height)
-            .attr('viewBox', `0 0 ${this.width} ${this.height}`);
-
-        this.xScale.range([0, this.plotWidth]);
-        this.yScale.range([this.plotHeight, 0]);
-
-        // 更新坐标轴位置
-        this.xAxisG.attr('transform', `translate(0,${this.plotHeight})`);
-
-        // 重绘内容 (resize 时不使用动画)
-        if (this.currentExpr) {
-            this.drawFunction(null, null, 0);
-        }
-
-        // 如果设置了回调，通知外部（如同步其他 UI 元素）
-        if (this.onResize) {
-            this.onResize();
-        }
     }
 
     initSvg() {
@@ -77,9 +29,10 @@ export class PointSearchVisualizer {
 
         this.svg = d3.select(`#${this.containerId}`)
             .append('svg')
-            .attr('width', this.width)
-            .attr('height', this.height)
-            .attr('viewBox', `0 0 ${this.width} ${this.height}`);
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', `0 0 ${this.width} ${this.height}`)
+            .attr('preserveAspectRatio', 'xMidYMid meet');
 
         this.plot = this.svg.append('g')
             .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
@@ -103,16 +56,36 @@ export class PointSearchVisualizer {
             .attr('stroke', '#d84315')
             .attr('stroke-width', 2);
 
-        // 先创建连线图层，再创建点图层，确保点始终显示在连线之上
         this.linesLayer = this.plot.append('g').attr('class', 'lines-layer');
         this.pointsLayer = this.plot.append('g').attr('class', 'points-layer');
     }
 
-    drawFunction(expr, domain, duration = null) {
+    updateDimensions() {
+        this.plotWidth = this.width - this.margin.left - this.margin.right;
+        this.plotHeight = this.height - this.margin.top - this.margin.bottom;
+    }
+
+    resize() {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+        this.width = container.clientWidth;
+        this.height = container.clientHeight || 340;
+        this.updateDimensions();
+
+        this.svg
+            .attr('viewBox', `0 0 ${this.width} ${this.height}`);
+
+        this.xScale.range([0, this.plotWidth]);
+        this.yScale.range([this.plotHeight, 0]);
+
+        if (this.currentExpr) {
+            this.drawFunction(this.currentExpr, this.currentDomain);
+        }
+    }
+
+    drawFunction(expr, domain) {
         if (expr) this.currentExpr = expr;
         if (domain) this.currentDomain = domain;
-
-        const t = (duration !== null) ? duration : this.duration;
 
         const xValues = d3.range(this.currentDomain[0], this.currentDomain[1], (this.currentDomain[1] - this.currentDomain[0]) / 200);
         const data = xValues.map(x => {
@@ -129,37 +102,34 @@ export class PointSearchVisualizer {
         this.xScale.domain(this.currentDomain);
         this.yScale.domain([yExtent[0] - yPadding, yExtent[1] + yPadding]);
 
-        // 平滑更新坐标轴与网格
-        this.updateAxes(t);
+        this.updateAxes(this.duration);
 
         const line = d3.line()
             .x(d => this.xScale(d.x))
             .y(d => this.yScale(d.y));
 
-        // 平滑更新曲线
         if (this.initialized) {
             this.functionPath.datum(data)
-                .transition().duration(t)
+                .transition().duration(this.duration)
                 .attr('d', line);
         } else {
             this.functionPath.datum(data).attr('d', line);
             this.initialized = true;
         }
 
-        // 缩放/平移后同步更新历史点位置
-        this.repositionHistory(t);
+        this.repositionHistory(true);
     }
 
-    updateAxes(duration = null) {
-        const t = (duration !== null) ? duration : this.duration;
-        this.xAxisG.transition().duration(t).call(d3.axisBottom(this.xScale));
-        this.yAxisG.transition().duration(t).call(d3.axisLeft(this.yScale));
+    updateAxes(duration = this.duration) {
+        this.xAxisG.transition().duration(duration)
+            .attr('transform', `translate(0,${this.plotHeight})`)
+            .call(d3.axisBottom(this.xScale));
+        this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
         
-        // Grid lines with transition
-        this.gridX.transition().duration(t)
+        this.gridX.transition().duration(duration)
             .attr('transform', `translate(0,${this.plotHeight})`)
             .call(d3.axisBottom(this.xScale).tickSize(-this.plotHeight).tickFormat(''));
-        this.gridY.transition().duration(t)
+        this.gridY.transition().duration(duration)
             .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
         
         this.gridLayer.selectAll(".tick line").attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
@@ -167,7 +137,6 @@ export class PointSearchVisualizer {
     }
 
     updateHistory(history, algorithm, animated = true) {
-        // 判断是否新增了迭代点（用于触发聚焦）
         const prevLen = this.currentHistory ? this.currentHistory.length : 0;
 
         // 保存当前状态
@@ -180,7 +149,6 @@ export class PointSearchVisualizer {
             return;
         }
 
-        // 1. 数据连接：路径 (只有一条)
         const pathSel = this.linesLayer.selectAll('path.history-path').data([history]);
         pathSel.enter()
             .append('path')
@@ -191,7 +159,6 @@ export class PointSearchVisualizer {
             .attr('stroke-dasharray', '5,5');
         pathSel.exit().remove();
 
-        // 2. 数据连接：点
         const circles = this.pointsLayer.selectAll('circle.iter-point').data(history, (d, i) => i);
         if (animated) {
             circles.exit().transition().duration(200).attr('r', 0).remove();
@@ -217,7 +184,6 @@ export class PointSearchVisualizer {
                 .attr('cy', d => this.yScale(d.y));
         }
 
-        // 3. 数据连接：标签
         const labels = this.pointsLayer.selectAll('text.iter-label').data(history, (d, i) => i);
         if (animated) {
             labels.exit().transition().duration(200).style('opacity', 0).remove();
@@ -357,12 +323,12 @@ export class PointSearchVisualizer {
     }
 
     // 在缩放/平移或更新历史时，根据当前比例尺与状态，平滑更新已绘制的迭代点、连线与样式
-    repositionHistory(durationOrAnimated = true) {
+    repositionHistory(animated = true) {
         if (!this.currentHistory || this.currentHistory.length === 0) return;
         
         const history = this.currentHistory;
         const algo = this.currentAlgorithm;
-        const t = (typeof durationOrAnimated === 'number') ? durationOrAnimated : (durationOrAnimated ? this.duration : 0);
+        const t = animated ? this.duration : 0;
 
         // 1. 更新连线
         const lineGen = d3.line()

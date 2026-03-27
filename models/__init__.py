@@ -1,16 +1,28 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy import MetaData
+from sqlalchemy.engine.url import make_url
+
 from settings import DB_URI
+
+url = make_url(DB_URI)
+engine_kwargs = {
+    "echo": True,
+    "pool_pre_ping": True,
+}
+
+# 仅对支持连接池的数据库（如 PostgreSQL）启用池参数，避免 SQLite 报错
+if url.get_backend_name().startswith("postgresql"):
+    engine_kwargs.update(
+        pool_size=10,
+        max_overflow=10,
+        pool_timeout=10,
+        pool_recycle=1800,
+    )
 
 engine = create_async_engine(
     DB_URI,
-    echo=True,
-    pool_size=10,
-    max_overflow=10,
-    pool_timeout=10,
-    pool_recycle=1800,
-    pool_pre_ping=True,
+    **engine_kwargs,
 )
 
 AsyncSessionFactory = sessionmaker(
@@ -19,6 +31,7 @@ AsyncSessionFactory = sessionmaker(
     autoflush=True,
     expire_on_commit=False,
 )
+
 
 class Base(DeclarativeBase):
     metadata = MetaData(
@@ -31,4 +44,10 @@ class Base(DeclarativeBase):
         }
     )
 
+
 from .user import User
+from .experiment import ExperimentNote
+from .experiment_record import ExperimentRecord
+from .note_item import NoteItem
+from .chat_session import ChatSession
+from .chat_message import ChatMessage

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}点搜索 - 流程观察{% endblock %}
+{% block title %}点搜索 - OptLab{% endblock %}
 {% block head %}
 <!-- D3.js 可视化库 -->
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
@@ -76,7 +76,8 @@
 
             <!-- 可视化控制 -->
             <div class="viz-controls">
-                <div class="slider-row">
+                <div class="slider-row"
+                     style="display: flex; gap: 20px; justify-content: center; align-items: flex-start; flex-wrap: wrap;">
                     <div class="control-group">
                         <label for="initial-x0">初始点 x<sub>0</sub>:</label>
                         <input type="range" id="initial-x0" min="-10" max="10" step="0.1" value="1">
@@ -102,7 +103,108 @@
                     </div>
                 </div>
 
-                <div class="control-group pan-zoom-group">
+                <!-- 算法选择 (移动至此) -->
+                <div class="algorithm-select-row">
+                    <div class="algorithm-selector-horizontal">
+                        <button class="algo-btn active" id="gd-btn">
+                            梯度下降法
+                        </button>
+                        <button class="algo-btn" id="newton-btn">
+                            牛顿法
+                        </button>
+                        <button class="algo-btn" id="secant-btn">
+                            割线法
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧：多面板控制栏 -->
+        <aside class="right-column">
+            <!-- 算法控制 -->
+            <div class="control-panel" id="algo-control-panel">
+                <div class="panel-header">
+                    <h3>算法控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-buttons">
+                        <button class="control-btn btn-primary" id="play-btn">
+                            播放
+                        </button>
+                        <button class="control-btn btn-secondary" id="pause-btn">
+                            暂停
+                        </button>
+                        <button class="control-btn btn-primary" id="step-btn">
+                            单步
+                        </button>
+                        <button class="control-btn btn-accent" id="reset-btn">
+                            重置
+                        </button>
+                    </div>
+
+                    <!-- 速度控制 -->
+                    <div class="control-group playback-speed-group" style="width: 100%; align-items: stretch;">
+                        <label for="speed-control">播放速度：</label>
+                        <input type="range" id="speed-control" min="100" max="2000" step="1" value="1000"
+                               style="width: 100%;">
+                        <span id="speed-value" style="text-align: center;">正常</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 参数状态 -->
+            <div class="control-panel" id="param-status-panel">
+                <div class="panel-header">
+                    <h3>当前参数状态</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="parameter-display">
+                        <table class="param-table">
+                            <thead>
+                            <tr>
+                                <th>参数</th>
+                                <th>值</th>
+                            </tr>
+                            </thead>
+                            <tbody id="param-table-body">
+                            <!-- 动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实验数据 -->
+            <div class="control-panel" id="exp-data-panel">
+                <div class="panel-header">
+                    <h3>实验数据</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="data-buttons">
+                        <button id="iteration-log-open-btn" class="control-btn btn-primary">
+                            查看实验数据
+                        </button>
+                        <button id="iteration-log-export-csv-btn" class="control-btn btn-secondary">
+                            导出实验数据
+                        </button>
+                        <button id="iteration-log-save-to-profile-btn" class="control-btn btn-accent">
+                            保存至个人中心
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 画布控制 -->
+            <div class="control-panel" id="canvas-control-panel">
+                <div class="panel-header">
+                    <h3>画布控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
                     <div class="pan-zoom-row">
                         <div class="pan-buttons">
                             <button id="pan-left-btn" class="control-btn btn-primary">向左</button>
@@ -115,81 +217,59 @@
                     </div>
                 </div>
             </div>
-        </section>
-        <!-- 右侧：控制面板 -->
-        <section class="algorithm-panel">
-            <!-- 算法选择 -->
-            <div class="panel-section">
-                <h3>选择算法</h3>
-                <div class="algorithm-selector">
-                    <button class="algo-btn active" id="gd-btn">
-                        梯度下降法
-                    </button>
-                    <button class="algo-btn" id="newton-btn">
-                        牛顿法
-                    </button>
-                    <button class="algo-btn" id="secant-btn">
-                        割线法
-                    </button>
-                </div>
-            </div>
-            <!-- 算法控制按钮 -->
-            <div class="panel-section">
-                <h3>算法控制</h3>
-                <div class="control-buttons">
-                    <button class="control-btn btn-primary" id="play-btn">
-                        播放
-                    </button>
-                    <button class="control-btn btn-secondary" id="pause-btn">
-                        暂停
-                    </button>
-                    <button class="control-btn btn-primary" id="step-btn">
-                        单步
-                    </button>
-                    <button class="control-btn btn-accent" id="reset-btn">
-                        重置
-                    </button>
-                </div>
-
-                <!-- 速度控制 -->
-                <div class="control-group">
-                    <label for="speed-control">播放速度：</label>
-                    <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000">
-                    <span id="speed-value">正常</span>
-                </div>
-            </div>
-
-            <!-- 参数显示 -->
-            <div class="panel-section">
-                <h3>当前参数状态</h3>
-                <div class="parameter-display">
-                    <table class="param-table">
-                        <thead>
-                        <tr>
-                            <th>参数</th>
-                            <th>值</th>
-                        </tr>
-                        </thead>
-                        <tbody id="param-table-body">
-                        <!-- 动态填充 -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
+        </aside>
     </div>
 
-    <!-- 实验笔记区域 -->
-    <section class="questions">
-        <h2>实验笔记</h2>
-
-        <div class="question-item">
-            <h4>点此设置标题</h4>
-            <label for="observation-q1"></label>
-            <textarea class="answer-input" placeholder="在此记录你的思考..." id="observation-q1"></textarea>
+    <!-- 迭代数据查看模态框（与区间收缩页面统一样式） -->
+    <div id="iteration-log-modal" class="modal" style="display: none;">
+        <div class="modal-content"
+             style="max-width: 880px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">本次实验迭代数据</h3>
+                <span id="iteration-log-close" class="close-modal" style="cursor: pointer;">&times;</span>
+            </div>
+            <div class="modal-body" style="margin-top: 10px; overflow: auto;">
+                <div style="font-size: 13px; color: #555; margin-bottom: 8px;">
+                    <div>实验函数：<span id="iteration-log-summary-func">--</span></div>
+                    <div>算法：<span id="iteration-log-summary-algo">--</span></div>
+                    <div>初始点设置：x₀ = <span id="iteration-log-summary-x0">--</span>，
+                        <span id="iteration-log-summary-x-prev-wrapper" style="display: none;">
+                        x₋₁ = <span id="iteration-log-summary-x-prev">--</span>，
+                    </span>
+                        学习率/参数：<span id="iteration-log-summary-alpha">--</span>
+                    </div>
+                    <div>终止条件：<span id="iteration-log-summary-target">--</span></div>
+                    <div>总迭代步数：<span id="iteration-log-summary-count">--</span></div>
+                </div>
+                <div id="iteration-log-final-summary"
+                     style="font-size: 13px; color: #b71c1c; background: #fff3e0; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: none;">
+                    <!-- 最终收敛结果由脚本填充 -->
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                    <tr>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">当前点 xₖ</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">函数值 f(xₖ)</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">导数/近似导数
+                        </th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">状态</th>
+                    </tr>
+                    </thead>
+                    <tbody id="iteration-log-body"></tbody>
+                </table>
+            </div>
         </div>
-    </section>
+    </div>
+
+    {% block experiment_notes %}
+    {% include 'components/_experiment_notes.html' %}
+    {% endblock %}
 </div>
+<footer>
+    一维搜索方法 · OptLab 教学资源
+</footer>
 {% endblock %}
 
 {% block scripts %}
@@ -208,20 +288,16 @@
             {id: "secant-btn", description: "割线法切换按钮", type: "normal"},
             {id: "play-btn", description: "自动播放按钮", type: "normal"},
             {id: "step-btn", description: "单步迭代按钮", type: "normal"},
-            {id: "reset-btn", description: "重置实验按钮", type: "normal"}
+            {id: "reset-btn", description: "重置实验按钮", type: "normal"},
+            {id: "iteration-log-open-btn", description: "查看实验数据按钮", type: "normal"},
+            {id: "iteration-log-export-csv-btn", description: "导出实验数据按钮", type: "normal"},
+            {id: "iteration-log-save-to-profile-btn", description: "保存实验数据至个人中心按钮", type: "normal"},
+            {id: "pan-left-btn", description: "画布向左平移按钮", type: "normal"},
+            {id: "pan-right-btn", description: "画布向右平移按钮", type: "normal"},
+            {id: "zoom-in-btn", description: "画布放大按钮", type: "normal"},
+            {id: "zoom-out-btn", description: "画布缩小按钮", type: "normal"}
         ],
-        GUIDEBOOK: `这是点搜索流程观察页面。
-        页面布局：
-        - 顶部为导航栏
-        - 左侧为函数可视化画布和参数调节区（初始点、学习率、迭代次数）
-        - 右侧为算法选择和实时参数状态显示
-        - 底部为实验笔记区
-        
-        使用流程：
-        1. 在右侧选择想要观察的算法（梯度下降、牛顿、割线）。
-        2. 在左侧调节初始参数，或点击“自定义函数”输入新函数。
-        3. 点击“单步”或“播放”观察点在函数曲线上的移动过程。
-        4. 观察右侧实时更新的迭代k、函数值f(x)和导数值。`
+        GUIDEBOOK: '这是点搜索流程观察页面。右侧面板集成了算法控制、参数状态显示、实验数据管理以及画布平移缩放功能。'
     };
 </script>
 
@@ -260,7 +336,7 @@
     const AppState = {
         currentAlgorithm: 'gd',
         isPlaying: false,
-        speed: 1000,
+        speed: 1100,
         functionType: 'quadratic',
         x0: 1.0,
         x_prev: 0.0,
@@ -269,15 +345,194 @@
         timer: null,
         solver: null,
         visualizer: null,
-        status: '未运行'
+        status: '未运行',
+        // 本次实验的初始设置与迭代日志
+        initialX0: 1.0,
+        initialXPrev: 0.0,
+        initialAlpha: 0.01,
+        initialN: 10,
+        functionExpr: '',
+        iterationLog: []
     };
+    window.AppState = AppState;
 
     document.addEventListener('DOMContentLoaded', () => {
         initFunctionSelect();
         initVisualizer();
         setupEventListeners();
+
+        // 立即执行一次初始重构，确保内部状态 (currentExpr, initialized) 已就绪
         resetApp();
+
+        // 初始进入页面 50ms 后，强制执行一次 resize 以确保布局稳定
+        // 从而触发图形高度缩放自适应以及横轴位置随画布高度变化的平移移动效果
+        setTimeout(() => {
+            if (AppState.visualizer) {
+                AppState.visualizer.resize();
+            }
+        }, 50);
+
+        initExperimentNotePersistence();
+        initPanelCollapsible();
     });
+
+    function initPanelCollapsible() {
+        document.querySelectorAll('.collapse-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const panel = btn.closest('.control-panel');
+                panel.classList.toggle('collapsed');
+                // 面板折叠/展开会改变右侧高度，从而可能改变左侧容器高度，触发画布尺寸重算
+                if (AppState.visualizer) {
+                    setTimeout(() => {
+                        AppState.visualizer.resize();
+                    }, 310); // 对应 CSS 中 0.3s 的 transition 动画时间
+                }
+            });
+        });
+    }
+
+    // 实验笔记持久化：点搜索 · 流程观察
+    function initExperimentNotePersistence() {
+        if (typeof apiGet !== "function") {
+            return;
+        }
+
+        const experimentKey = "line-search.point_search.observation";
+        const answerInputs = Array.from(
+            document.querySelectorAll(".questions .answer-input")
+        );
+        if (!answerInputs.length) return;
+
+        const statusEl = document.createElement("div");
+        statusEl.style.fontSize = "12px";
+        statusEl.style.color = "#666";
+        statusEl.style.marginTop = "8px";
+        statusEl.textContent = "";
+        const container = document.querySelector(".questions");
+        if (container) container.appendChild(statusEl);
+
+        async function loadNote() {
+            try {
+                const note = await apiGet(
+                    `/experiments/notes/${encodeURIComponent(experimentKey)}`
+                );
+                if (note && note.extra_data && Array.isArray(note.extra_data.answers)) {
+                    note.extra_data.answers.forEach((text, idx) => {
+                        if (answerInputs[idx]) {
+                            answerInputs[idx].value = text || "";
+                        }
+                    });
+                    statusEl.textContent = "已加载上次保存的回答。";
+                }
+            } catch (err) {
+                console.debug("load experiment note skipped:", err);
+            }
+        }
+
+        let saveTimer = null;
+
+        async function saveNote() {
+            const answers = answerInputs.map((el) => el.value || "");
+            const reflection = answers.join("\n\n");
+            const payload = {
+                reflection,
+                extra_data: {
+                    answers,
+                },
+            };
+            try {
+                await apiRequest(
+                    `/experiments/notes/${encodeURIComponent(experimentKey)}`,
+                    {
+                        method: "PUT",
+                        body: JSON.stringify(payload),
+                    }
+                );
+                statusEl.textContent = "回答已自动保存。";
+            } catch (err) {
+                console.debug("save experiment note failed:", err);
+                statusEl.textContent = "保存回答失败，请检查登录状态后重试。";
+            }
+        }
+
+        answerInputs.forEach((el) => {
+            el.addEventListener("input", () => {
+                statusEl.textContent = "正在编辑，稍后将自动保存...";
+                if (saveTimer) clearTimeout(saveTimer);
+                saveTimer = setTimeout(saveNote, 800);
+            });
+        });
+
+        const saveBtn = document.getElementById("answers-save-btn");
+        const clearBtn = document.getElementById("answers-clear-btn");
+        const exportBtn = document.getElementById("answers-export-btn");
+        if (saveBtn) {
+            saveBtn.addEventListener("click", () => {
+                if (saveTimer) clearTimeout(saveTimer);
+                saveNote();
+            });
+        }
+        if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+                answerInputs.forEach((el) => {
+                    el.value = "";
+                });
+                if (saveTimer) clearTimeout(saveTimer);
+                saveNote();
+            });
+        }
+
+        if (exportBtn) {
+            exportBtn.addEventListener("click", async () => {
+                if (typeof getStoredToken !== "function") {
+                    alert("当前环境不支持导出实验思考。");
+                    return;
+                }
+                const token = getStoredToken();
+                if (!token) {
+                    alert("请先登录后再导出实验思考。");
+                    return;
+                }
+                try {
+                    const res = await fetch(
+                        `/experiments/notes/${encodeURIComponent(experimentKey)}/export`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                            },
+                        },
+                    );
+                    if (!res.ok) {
+                        let msg = "导出实验思考失败，请稍后重试。";
+                        try {
+                            const text = await res.text();
+                            const data = text ? JSON.parse(text) : null;
+                            if (data && typeof data.detail === "string") {
+                                msg = data.detail;
+                            }
+                        } catch {
+                            // ignore
+                        }
+                        alert(msg);
+                        return;
+                    }
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${experimentKey}-thoughts.md`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    URL.revokeObjectURL(url);
+                } catch (e) {
+                    alert("导出实验思考时发生错误，请检查网络连接后重试。");
+                }
+            });
+        }
+
+        loadNote();
+    }
 
     function initFunctionSelect() {
         const select = document.getElementById('function-select');
@@ -330,7 +585,7 @@
             resetApp(true);
         });
         document.getElementById('speed-control').addEventListener('input', (e) => {
-            AppState.speed = 2100 - parseInt(e.target.value);
+            AppState.speed = Math.round(2100 - Number(e.target.value));
             const speedText = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
             document.getElementById('speed-value').textContent = speedText;
             if (AppState.isPlaying) {
@@ -343,6 +598,12 @@
         document.getElementById('pan-right-btn').addEventListener('click', () => AppState.visualizer.pan(1));
         document.getElementById('zoom-in-btn').addEventListener('click', () => AppState.visualizer.zoom(1.2));
         document.getElementById('zoom-out-btn').addEventListener('click', () => AppState.visualizer.zoom(0.8));
+
+        window.addEventListener('resize', () => {
+            if (AppState.visualizer) {
+                AppState.visualizer.resize();
+            }
+        });
 
         document.getElementById('function-select').addEventListener('change', (e) => {
             if (e.target.value === 'custom_trigger') {
@@ -388,6 +649,262 @@
                 document.getElementById('expr-error').textContent = '错误: ' + e.message;
             }
         });
+
+        // 迭代数据查看/导出
+        const logOpenBtn = document.getElementById('iteration-log-open-btn');
+        const logExportCsvBtn = document.getElementById('iteration-log-export-csv-btn');
+        const logModal = document.getElementById('iteration-log-modal');
+        const logCloseBtn = document.getElementById('iteration-log-close');
+
+        function renderIterationLog() {
+            const tbody = document.getElementById('iteration-log-body');
+            const funcSpan = document.getElementById('iteration-log-summary-func');
+            const algoSpan = document.getElementById('iteration-log-summary-algo');
+            const x0Span = document.getElementById('iteration-log-summary-x0');
+            const xPrevWrapper = document.getElementById('iteration-log-summary-x-prev-wrapper');
+            const xPrevSpan = document.getElementById('iteration-log-summary-x-prev');
+            const alphaSpan = document.getElementById('iteration-log-summary-alpha');
+            const targetSpan = document.getElementById('iteration-log-summary-target');
+            const countSpan = document.getElementById('iteration-log-summary-count');
+            const finalBox = document.getElementById('iteration-log-final-summary');
+
+            const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+
+            if (!log.length) {
+                if (tbody) {
+                    tbody.innerHTML =
+                        '<tr><td colspan="6" style="padding: 8px 4px; color: #777;">当前尚无迭代数据，请先运行一次完整实验。</td></tr>';
+                }
+                if (funcSpan) funcSpan.textContent = '--';
+                if (algoSpan) algoSpan.textContent = '--';
+                if (x0Span) x0Span.textContent = '--';
+                if (xPrevWrapper) xPrevWrapper.style.display = 'none';
+                if (alphaSpan) alphaSpan.textContent = '--';
+                if (targetSpan) targetSpan.textContent = '--';
+                if (countSpan) countSpan.textContent = '0';
+                if (finalBox) {
+                    finalBox.style.display = 'none';
+                    finalBox.textContent = '';
+                }
+                return;
+            }
+
+            const first = log[0];
+            const final =
+                [...log].reverse().find(row => row.is_complete && row.result != null) || null;
+
+            if (funcSpan) funcSpan.textContent = first.function || '当前选择的测试函数';
+            if (algoSpan) algoSpan.textContent = first.algorithm || '--';
+            if (x0Span) x0Span.textContent =
+                typeof first.initial_x0 === 'number' ? Number(first.initial_x0).toFixed(6) : '--';
+            if (xPrevWrapper && xPrevSpan) {
+                if (typeof first.initial_x_prev === 'number') {
+                    xPrevWrapper.style.display = 'inline';
+                    xPrevSpan.textContent = Number(first.initial_x_prev).toFixed(6);
+                } else {
+                    xPrevWrapper.style.display = 'none';
+                }
+            }
+            if (alphaSpan) alphaSpan.textContent = first.initial_alpha != null
+                ? String(first.initial_alpha)
+                : '—';
+            if (targetSpan) targetSpan.textContent = first.target || '--';
+            if (countSpan) countSpan.textContent = String(log.length);
+
+            if (final && finalBox) {
+                const reasonMap = {
+                    max_iter: '达到最大迭代次数，未收敛',
+                    grad_zero: '梯度接近 0，但未达到收敛判据',
+                    hessian_zero: '二阶导接近 0，无法继续更新',
+                    secant_den_zero: '割线分母接近 0，无法继续更新'
+                };
+                finalBox.style.display = 'block';
+                if (final.has_converged && final.result != null) {
+                    const xStar = Number(final.result).toFixed(6);
+                    const gradStr = final.df_x != null ? Number(final.df_x).toFixed(6) : '—';
+                    finalBox.textContent =
+                        `本次实验收敛结果：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 收敛到近似最优点 x* ≈ ${xStar}，对应函数值 f(x*) ≈ ${Number(final.f_x).toFixed(6)}，导数/近似导数 ≈ ${gradStr}。`;
+                } else {
+                    const reasonText = reasonMap[final.termination_reason] || '未收敛终止';
+                    finalBox.textContent =
+                        `本次实验终止：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 已停止，原因：${reasonText}。`;
+                }
+            } else if (finalBox) {
+                finalBox.style.display = 'none';
+                finalBox.textContent = '';
+            }
+
+            if (tbody) {
+                tbody.innerHTML = log.map(row => {
+                    let statusLabel;
+                    if (!row.is_complete) {
+                        statusLabel = '进行中';
+                    } else if (row.has_converged) {
+                        statusLabel = '已收敛';
+                    } else {
+                        switch (row.termination_reason) {
+                            case 'max_iter':
+                                statusLabel = '已终止（迭代次数用完，未收敛）';
+                                break;
+                            case 'grad_zero':
+                                statusLabel = '已终止（梯度≈0，未满足精度）';
+                                break;
+                            case 'hessian_zero':
+                                statusLabel = '已终止（二阶导≈0，无法更新）';
+                                break;
+                            case 'secant_den_zero':
+                                statusLabel = '已终止（割线分母≈0）';
+                                break;
+                            default:
+                                statusLabel = '已终止（未收敛）';
+                        }
+                    }
+                    const isFinal = final && row.iteration === final.iteration && row.algorithm === final.algorithm;
+                    const rowStyle = isFinal
+                        ? 'background-color: #fff8e1; font-weight: 600;'
+                        : '';
+                    return `<tr style="${rowStyle}">
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.iteration}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.algorithm}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.x).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${Number(row.f_x).toFixed(6)}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${row.df_x != null ? Number(row.df_x).toFixed(6) : '—'}</td>
+    <td style="border-bottom: 1px solid #eee; padding: 4px;">${statusLabel}</td>
+</tr>`;
+                }).join('');
+            }
+        }
+
+        if (logOpenBtn && logModal && logCloseBtn) {
+            logOpenBtn.addEventListener('click', () => {
+                renderIterationLog();
+                logModal.style.display = 'flex';
+            });
+            logCloseBtn.addEventListener('click', () => {
+                logModal.style.display = 'none';
+            });
+            logModal.addEventListener('click', (e) => {
+                if (e.target === logModal) {
+                    logModal.style.display = 'none';
+                }
+            });
+        }
+
+        if (logExportCsvBtn) {
+            logExportCsvBtn.addEventListener('click', () => {
+                const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+                if (!log.length) {
+                    alert('当前尚无迭代数据，请先运行一次完整实验。');
+                    return;
+                }
+                const first = log[0];
+                const esc = v => {
+                    const s = String(v ?? '');
+                    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+                };
+                const summary = [
+                    ['项目', '值'],
+                    ['原函数/目标', AppState.functionExpr || (first && first.function) || ''],
+                    ['算法', (first && first.algorithm) || ''],
+                    ['初始参数', JSON.stringify(first ? {
+                        initial_x0: first.initial_x0,
+                        initial_x_prev: first.initial_x_prev,
+                        initial_alpha: first.initial_alpha,
+                        initial_n: first.initial_n
+                    } : {})],
+                    []
+                ];
+                const header = [
+                    'iteration',
+                    'algorithm',
+                    'function',
+                    'x',
+                    'f_x',
+                    'df_x',
+                    'ddf_x',
+                    'target',
+                    'initial_x0',
+                    'initial_x_prev',
+                    'initial_alpha',
+                    'initial_n',
+                    'is_complete',
+                    'has_converged',
+                    'termination_reason',
+                    'result',
+                    'timestamp'
+                ];
+                const rows = log.map(row => [
+                    row.iteration,
+                    row.algorithm,
+                    row.function,
+                    row.x,
+                    row.f_x,
+                    row.df_x != null ? row.df_x : '',
+                    row.ddf_x != null ? row.ddf_x : '',
+                    row.target || '',
+                    row.initial_x0,
+                    row.initial_x_prev != null ? row.initial_x_prev : '',
+                    row.initial_alpha != null ? row.initial_alpha : '',
+                    row.initial_n,
+                    row.is_complete ? 'true' : 'false',
+                    row.has_converged ? 'true' : 'false',
+                    row.termination_reason || '',
+                    row.result != null ? row.result : '',
+                    row.timestamp || ''
+                ]);
+                const csvLines = [...summary, header, ...rows].map(cols => cols.map(esc).join(',')).join('\n');
+
+                const blob = new Blob([csvLines], {type: 'text/csv;charset=utf-8;'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'line-search.point_search.observation-iterations.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        const logSaveToProfileBtn = document.getElementById('iteration-log-save-to-profile-btn');
+        if (logSaveToProfileBtn) {
+            logSaveToProfileBtn.addEventListener('click', async () => {
+                if (typeof apiPost !== 'function' || !getStoredToken()) {
+                    alert('请先登录后再保存至个人中心。');
+                    return;
+                }
+                const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+                if (!log.length) {
+                    alert('当前尚无迭代数据，请先运行一次完整实验后再保存。');
+                    return;
+                }
+                const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
+                if (alias == null || String(alias).trim() === '') return;
+                const first = log[0];
+                const algo = AppState.currentAlgorithm;
+                const initial_state = algo === 'gd'
+                    ? {x_0: AppState.initialX0, N: AppState.initialN, alpha: AppState.initialAlpha}
+                    : algo === 'newton'
+                        ? {x_0: AppState.initialX0, N: AppState.initialN}
+                        : {x_prev: AppState.initialXPrev, x_0: AppState.initialX0, N: AppState.initialN};
+                const payload = {
+                    algorithm_name: first.algorithm || (algo === 'gd' ? '梯度下降法' : algo === 'newton' ? '牛顿法' : '割线法'),
+                    test_function: AppState.functionExpr || first.function,
+                    initial_state,
+                    iteration_data: log,
+                };
+                try {
+                    await apiPost('/experiments/records', {
+                        alias: String(alias).trim(),
+                        source_page: 'line-search.point_search.observation',
+                        payload,
+                    });
+                    alert('已保存至个人中心。');
+                } catch (e) {
+                    alert('保存失败，请检查登录状态后重试。');
+                }
+            });
+        }
     }
 
     function switchAlgorithm(algo) {
@@ -406,6 +923,14 @@
         pause(true);
         const funcInfo = FunctionLibrary[AppState.functionType];
         const expr = funcInfo.expression;
+
+        // 记录本次实验的初始设置
+        AppState.initialX0 = AppState.x0;
+        AppState.initialXPrev = AppState.x_prev;
+        AppState.initialAlpha = AppState.alpha;
+        AppState.initialN = AppState.n;
+        AppState.functionExpr = funcInfo && funcInfo.formula ? funcInfo.formula : String(expr || AppState.functionType);
+        AppState.iterationLog = [];
 
         if (AppState.currentAlgorithm === 'gd') {
             AppState.solver = new GradientDescent(expr, AppState.x0, AppState.alpha, AppState.n);
@@ -432,6 +957,48 @@
             AppState.visualizer.autoZoom(AppState.solver.history, {dragging: true});
             updateUI(true); // 传入 isDragging 标志
         }
+    }
+
+    function recordIteration() {
+        if (!AppState.solver) return;
+        const solver = AppState.solver;
+        const history = solver.history || [];
+        if (!history.length) return;
+        const last = history[history.length - 1];
+
+        const algoLabel =
+            AppState.currentAlgorithm === 'gd'
+                ? '梯度下降法'
+                : AppState.currentAlgorithm === 'newton'
+                    ? '牛顿法'
+                    : '割线法';
+
+        let targetLabel;
+        if (AppState.currentAlgorithm === 'gd') {
+            targetLabel = `学习率 α = ${AppState.alpha}；最大迭代次数 N = ${AppState.n}`;
+        } else {
+            targetLabel = `最大迭代次数 N = ${AppState.n}`;
+        }
+
+        AppState.iterationLog.push({
+            iteration: solver.currentIteration,
+            algorithm: algoLabel,
+            function: AppState.functionExpr,
+            x: typeof last.x === 'number' ? last.x : solver.xk,
+            f_x: typeof last.y === 'number' ? last.y : solver.evaluate(solver.xk),
+            df_x: typeof last.df === 'number' ? last.df : (typeof solver.derivative === 'function' ? solver.derivative(solver.xk) : null),
+            ddf_x: typeof last.ddf === 'number' ? last.ddf : null,
+            target: targetLabel,
+            initial_x0: AppState.initialX0,
+            initial_x_prev: AppState.currentAlgorithm === 'secant' ? AppState.initialXPrev : null,
+            initial_alpha: AppState.currentAlgorithm === 'gd' ? AppState.initialAlpha : null,
+            initial_n: AppState.initialN,
+            is_complete: solver.isComplete,
+            has_converged: !!solver.hasConverged,
+            termination_reason: solver.terminationReason || null,
+            result: solver.isComplete && solver.hasConverged ? solver.result : null,
+            timestamp: new Date().toISOString()
+        });
     }
 
     function play() {
@@ -481,6 +1048,7 @@
         const moved = AppState.solver.iterate();
         if (moved) {
             AppState.visualizer.autoZoom(AppState.solver.history);
+            recordIteration();
         }
         AppState.status = AppState.solver.isComplete ? '已完成' : '已暂停';
         updateUI();
@@ -520,5 +1088,44 @@
         document.getElementById('step-btn').disabled = allComplete || AppState.isPlaying;
         document.getElementById('pause-btn').disabled = allComplete || !AppState.isPlaying;
     }
+
+    window.AppState = AppState;
+    window.FunctionLibrary = FunctionLibrary;
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        ExperimentNotes.init({
+            experimentKey: 'line-search.point_search.observation',
+            mountSelector: '#exp-notes-mount',
+            getPageData: function () {
+                var st = window.AppState;
+                if (!st) return {};
+                const log = st.iterationLog || [];
+                const algoLabel = st.currentAlgorithm === 'gd' ? '梯度下降法'
+                    : st.currentAlgorithm === 'newton' ? '牛顿法' : '割线法';
+                // 提取收敛结果
+                const finalRow = log.slice().reverse().find(function (r) {
+                    return r.is_complete && r.result != null;
+                }) || null;
+                return {
+                    algorithm: algoLabel,
+                    function: st.functionExpr,
+                    initial_x0: st.initialX0,
+                    initial_x_prev: st.currentAlgorithm === 'secant' ? st.initialXPrev : null,
+                    alpha: st.currentAlgorithm === 'gd' ? st.initialAlpha : null,
+                    n: st.initialN,
+                    convergence_result: finalRow ? {
+                        iteration: finalRow.iteration,
+                        x_star: finalRow.result,
+                        f_x_star: finalRow.f_x,
+                        df_x_star: finalRow.df_x,
+                        has_converged: finalRow.has_converged,
+                        termination_reason: finalRow.termination_reason
+                    } : null,
+                    iteration_log: log
+                };
+            }
+        });
+    });
 </script>
 {% endblock %}

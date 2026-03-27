@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}个人中心 - OptLab{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="/static/css/base/account.css">
+{% endblock %}
+
+{% block ai_sidebar %}{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    {% include 'components/_top_nav.html' %}
+
+    <main class="account-main">
+        <h1 class="account-title">个人中心</h1>
+
+        <section class="account-card">
+            <h2 class="account-card-title">实验记录</h2>
+            <div id="record-list-loading" class="account-placeholder">加载中…</div>
+            <div id="record-list-empty" class="account-placeholder is-hidden">暂无实验记录，在实验页运行算法后点击「保存至个人中心」即可保存。</div>
+            <ul id="record-list" class="record-list"></ul>
+        </section>
+    </main>
+
+    <footer class="account-footer">
+        <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+    </footer>
+
+    <div id="record-detail-modal" class="record-modal modal is-hidden">
+        <div class="record-modal-panel">
+            <div class="record-modal-header">
+                <h3>实验数据</h3>
+                <button id="record-detail-close" class="record-modal-close" aria-label="关闭">&times;</button>
+            </div>
+            <div id="record-detail-body" class="record-modal-body"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/profile.js"></script>
+{% endblock %}

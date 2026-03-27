@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+
+{% block title %}单纯形法 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/courses/linear-programming/simplex.css">
+<!-- D3.js -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<!-- MathJax -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+    };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="index.html" class="back-btn">返回</a>
+
+    <header class="header">
+        <h1>单纯形法教学实验</h1>
+        <p class="subtitle">单纯形表迭代步骤与可视化观察</p>
+    </header>
+
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">
+            算法介绍
+        </button>
+        <button class="nav-btn active">
+            单纯形法
+        </button>
+    </nav>
+
+    <div class="main-layout">
+        <!-- 左侧输入与控制面板 -->
+        <aside class="input-panel">
+            <div class="panel-section">
+                <h3>示例数据加载</h3>
+                <div class="input-inline">
+                    <div class="input-group" style="flex: 2;">
+                        <label for="example-select"></label><select id="example-select">
+                            <option value="max">最大化示例</option>
+                            <option value="min">最小化示例</option>
+                            <option value="unbounded">无界解示例</option>
+                            <option value="degenerate">退化解示例</option>
+                            <option value="multiple">多重最优解示例</option>
+                        </select>
+                    </div>
+                    <button id="load-example-btn" class="action-btn primary" style="flex: 1;">加载</button>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>问题规模设定</h3>
+                <div class="input-inline">
+                    <div class="input-group">
+                        <label for="num-vars">变量数 (n):</label>
+                        <input type="number" id="num-vars" min="1" max="15" value="2" step="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="num-constraints">约束数 (m):</label>
+                        <input type="number" id="num-constraints" min="1" max="15" value="3" step="1">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>求解类型</h3>
+                <div class="radio-group">
+                    <label><input type="radio" name="solve-type" value="max" checked> 最大化 (Maximize)</label>
+                    <label><input type="radio" name="solve-type" value="min"> 最小化 (Minimize)</label>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3>系数输入表格</h3>
+                <p class="hint-text">已默认每个决策变量 x<sub>j</sub> ≥ 0 (j = 1, 2, ..., n)</p>
+                <div id="coeff-table-container">
+                    <!-- 动态生成系数表格 -->
+                </div>
+            </div>
+
+            <div class="panel-actions">
+                <button id="reset-btn" class="action-btn secondary">重置</button>
+                <button id="check-btn" class="action-btn secondary">检查输入</button>
+                <button id="solve-btn" class="action-btn primary">求解</button>
+            </div>
+        </aside>
+
+        <!-- 右侧结果展示区 -->
+        <main class="result-area">
+            <div id="visualization-2d" class="viz-container hidden">
+                <h3>二维可视化 (n=2)</h3>
+                <div id="lp-viz"></div>
+                <p class="viz-caption">展示可行域与当前基解位置</p>
+            </div>
+
+            <div id="iteration-results" class="results-container">
+                <div class="placeholder-text">
+                    请在左侧输入参数并点击“求解”开始实验。
+                </div>
+            </div>
+        </main>
+    </div>
+
+    {% block experiment_notes %}
+    {% include 'components/_experiment_notes.html' %}
+    {% endblock %}
+</div>
+
+<footer class="footer">
+    线性规划 · OptLab 教学资源
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'simplex_method',
+        BUTTON_REGISTRY: [
+            { id: "example-select", description: "预设场景选择下拉框", type: "normal" },
+            { id: "load-example-btn", description: "加载示例数据按钮", type: "normal" },
+            { id: "num-vars", description: "设置变量数量输入框", type: "normal" },
+            { id: "num-constraints", description: "设置约束数量输入框", type: "normal" },
+            { id: "reset-btn", description: "重置输入数据按钮", type: "normal" },
+            { id: "check-btn", description: "校验输入数据准确性按钮", type: "normal" },
+            { id: "solve-btn", description: "执行单纯形法求解按钮", type: "normal" }
+        ],
+        GUIDEBOOK: `这是线性规划——单纯形法教学实验页面。
+        
+        页面主要由左侧控制面板和右侧结果展示区组成：
+        - 左侧面板：用于配置线性规划问题的具体参数。
+            1. **示例加载**：可以快速选择并加载几种典型的线性规划场景（如：最大化、无界解、退化解等）。
+            2. **问题规模设定**：调整变量数 (n) 和约束数 (m) 来构建问题模型。
+            3. **求解类型**：选择目标函数是要求极大值 (max) 还是极小值 (min)。
+            4. **系数输入**：根据设定的规模，在动态生成的表格中填入目标函数系数、约束方程系数以及右端项 (b)。
+            5. **操作按钮**：包含重置数据、检查输入、以及最核心的“求解”功能。
+            
+        - 右侧展示区：展示算法的执行结果。
+            1. **二维可视化**：当决策变量数为 2 时，会通过 D3.js 绘制出可行域几何图形，并实时追踪单纯形法的顶点迭代过程。
+            2. **单纯形表迭代**：逐步展示单纯形法从初始基可行解到最优解的每一张单纯形表。
+            
+        使用流程：
+        1. 设定或加载线性规划问题。
+        2. 确认输入数据无误后点击“求解”。
+        3. 观察单纯形表的基变换过程及其在几何空间中的对应路径。`
+    };
+
+    window.EXPERIMENT_NOTES_CONFIG = {
+        experimentKey: 'linear-programming.simplex',
+        mountSelector: '#exp-notes-mount',
+        getPageData: function () {
+            var numVars = document.getElementById('num-vars');
+            var numConstraints = document.getElementById('num-constraints');
+            var solveType = document.querySelector('input[name="solve-type"]:checked');
+
+            var n = numVars ? parseInt(numVars.value) : null;
+            var m = numConstraints ? parseInt(numConstraints.value) : null;
+
+            function safeNum(v) {
+                var x = parseFloat(v);
+                return Number.isFinite(x) ? x : null;
+            }
+
+            var objective = [];
+            var constraints = [];
+            if (Number.isInteger(n) && Number.isInteger(m)) {
+                for (var j = 1; j <= n; j++) {
+                    var cEl = document.getElementById('c-' + j);
+                    objective.push(cEl ? safeNum(cEl.value) : null);
+                }
+                for (var i = 1; i <= m; i++) {
+                    var row = [];
+                    for (var k = 1; k <= n; k++) {
+                        var aEl = document.getElementById('a-' + i + '-' + k);
+                        row.push(aEl ? safeNum(aEl.value) : null);
+                    }
+                    var bEl = document.getElementById('b-' + i);
+                    constraints.push({ coeffs: row, b: bEl ? safeNum(bEl.value) : null });
+                }
+            }
+
+            var cards = document.querySelectorAll('#iteration-results .iteration-card');
+            var finalAlert = document.querySelector('#iteration-results .alert:last-child');
+
+            return {
+                num_vars: n,
+                num_constraints: m,
+                solve_type: solveType ? solveType.value : null,
+                objective_coeffs: objective,
+                constraints: constraints,
+                iteration_card_count: cards ? cards.length : 0,
+                result_text: finalAlert ? finalAlert.textContent : '',
+                user_result_summary: {
+                    has_2d_viz: document.getElementById('visualization-2d')
+                        ? !document.getElementById('visualization-2d').classList.contains('hidden')
+                        : false
+                }
+            };
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var btnMap = {
+            "solve-btn": "求解",
+            "check-btn": "检查输入",
+            "reset-btn": "重置",
+            "load-example-btn": "加载示例"
+        };
+        Object.keys(btnMap).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', function() {
+                ExperimentNotes.trackEvent('control', {action: btnMap[id]});
+            }, {capture: true});
+        });
+
+        var exampleSelect = document.getElementById('example-select');
+        if (exampleSelect) {
+            exampleSelect.addEventListener('change', function() {
+                ExperimentNotes.trackEvent('param_change', { param: 'example_select', value: exampleSelect.value });
+            }, {capture: true});
+        }
+        var numVars = document.getElementById('num-vars');
+        if (numVars) {
+            numVars.addEventListener('change', function() {
+                ExperimentNotes.trackEvent('param_change', { param: 'num_vars', value: numVars.value });
+            }, {capture: true});
+        }
+        var numConstraints = document.getElementById('num-constraints');
+        if (numConstraints) {
+            numConstraints.addEventListener('change', function() {
+                ExperimentNotes.trackEvent('param_change', { param: 'num_constraints', value: numConstraints.value });
+            }, {capture: true});
+        }
+        document.querySelectorAll('input[name="solve-type"]').forEach(function(el){
+            el.addEventListener('change', function(){
+                ExperimentNotes.trackEvent('param_change', { param: 'solve_type', value: el.value });
+            }, {capture: true});
+        });
+    });
+</script>
+<script src="/static/js/courses/linear-programming/simplex.js"></script>
+{% endblock %}

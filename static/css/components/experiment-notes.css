@@ -1,0 +1,645 @@
+/* ===================================================================
+   实验笔记组件样式 - experiment-notes.css
+   与现有 UI 风格（暖橘红色调）统一
+=================================================================== */
+
+.exp-notes-section {
+    margin-top: 40px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 4px 16px rgba(216, 67, 21, 0.07);
+    border-top: 4px solid #D84315;
+}
+
+.exp-notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.exp-notes-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.exp-notes-header h2 {
+    margin: 0;
+    color: #D84315;
+    font-size: 1.4em;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+}
+
+.exp-notes-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* 未登录提示 */
+.exp-notes-login-hint {
+    font-size: 12px;
+    color: #9E9E9E;
+    margin: 0;
+    font-style: italic;
+}
+
+.exp-notes-login-link {
+    color: #D84315;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+    font-weight: 700;
+}
+
+.exp-notes-login-link:hover {
+    color: #BF360C;
+}
+
+/* 全局状态消息 */
+.exp-notes-global-status {
+    font-size: 12px;
+    color: #9E9E9E;
+    margin: 0 0 12px 0;
+    min-height: 18px;
+    transition: color 0.3s;
+}
+.exp-notes-global-status.saving { color: #FF8F00; }
+.exp-notes-global-status.saved  { color: #43A047; }
+.exp-notes-global-status.error  { color: #E53935; }
+
+/* 笔记列表容器 */
+.exp-notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 40px;
+}
+
+/* 空状态 - 添加笔记按钮居中 */
+.exp-notes-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px;
+    gap: 16px;
+    border: 2px dashed #FFE0B2;
+    border-radius: 12px;
+    background: #FFFAF0;
+    transition: border-color 0.2s;
+}
+
+.exp-notes-empty:hover {
+    border-color: #FFCC80;
+}
+
+.exp-notes-empty p {
+    margin: 0;
+    color: #BCAAA4;
+    font-size: 0.95em;
+}
+
+/* 笔记卡片 */
+.exp-note-card {
+    background: #FFFAF0;
+    border: 1px solid #FFE0B2;
+    border-radius: 12px;
+    padding: 20px 22px 14px;
+    position: relative;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.exp-note-card:hover {
+    box-shadow: 0 4px 14px rgba(216, 67, 21, 0.1);
+}
+
+.exp-note-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* 标题：编辑框与预览（MathJax）共用区域 */
+.exp-note-title-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.exp-note-title-render {
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #4E342E;
+    line-height: 1.45;
+    padding: 3px 4px;
+    word-break: break-word;
+}
+
+.exp-note-title-render .MathJax,
+.exp-note-title-render mjx-container {
+    font-weight: 700;
+    max-width: 100%;
+    overflow-x: auto;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* 标题输入框 - 隐藏边框风格，加粗 */
+.exp-note-title-input {
+    flex: 1;
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #4E342E;
+    padding: 3px 4px;
+    outline: none;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    font-family: inherit;
+    line-height: 1.5;
+    min-width: 0;
+}
+
+.exp-note-title-input:hover {
+    border-bottom-color: #FFCC80;
+}
+
+.exp-note-title-input:focus {
+    border-bottom-color: #D84315;
+    background: rgba(255, 245, 235, 0.6);
+    border-radius: 4px 4px 0 0;
+}
+
+.exp-note-title-input::placeholder {
+    color: #D7CCC8;
+    font-weight: 400;
+}
+
+/* 删除按钮 */
+.exp-note-delete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #D7CCC8;
+    font-size: 15px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    transition: color 0.2s, background 0.2s;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.exp-note-delete-btn:hover {
+    color: #D84315;
+    background: #FFEBEE;
+}
+
+/* 内容区域 */
+.exp-note-body {
+    position: relative;
+    margin-bottom: 6px;
+}
+
+/* 内容文本框 */
+.exp-note-content-input {
+    width: 100%;
+    min-height: 96px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 0.92em;
+    color: #5D4037;
+    padding: 8px 8px;
+    outline: none;
+    resize: vertical;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+    line-height: 1.7;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    box-sizing: border-box;
+    display: block;
+}
+
+.exp-note-content-input:hover {
+    border-color: #FFE0B2;
+    background: rgba(255, 250, 245, 0.8);
+}
+
+.exp-note-content-input:focus {
+    border-color: #D84315;
+    background: #FFF8F0;
+    box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.06);
+}
+
+.exp-note-content-input::placeholder {
+    color: #D7CCC8;
+    font-family: inherit;
+}
+
+/* Markdown / LaTeX 渲染视图 */
+.exp-note-render-view {
+    display: none;
+    min-height: 60px;
+    padding: 12px 14px;
+    font-size: 0.93em;
+    color: #5D4037;
+    line-height: 1.85;
+    cursor: text;
+    border-radius: 8px;
+    border: 1px dashed #FFE0B2;
+    background: transparent;
+    transition: border-color 0.2s, background 0.2s;
+    word-break: normal;
+    overflow-x: auto;
+}
+
+.exp-note-render-view:hover {
+    background: rgba(255, 250, 245, 0.6);
+}
+
+.exp-note-render-view.active { display: block; }
+
+/* MathJax overflow handling */
+.exp-note-render-view mjx-container,
+.exp-note-render-view .MathJax,
+.exp-note-render-view .MJX-TEX {
+    display: inline-block;
+    max-width: none;
+    overflow-x: visible;
+    vertical-align: middle;
+}
+
+.exp-note-render-view p { margin: 0 0 8px; }
+.exp-note-render-view p:last-child { margin-bottom: 0; }
+.exp-note-render-view h1,
+.exp-note-render-view h2,
+.exp-note-render-view h3 {
+    color: #D84315;
+    margin: 12px 0 6px;
+}
+.exp-note-render-view .exp-note-section-header {
+    display: block;
+    color: #D84315;
+    font-size: 1.0em;
+    font-weight: 700;
+    margin: 18px 0 6px;
+    padding: 3px 0 4px;
+    border-bottom: 1.5px solid #FFE0B2;
+    letter-spacing: 0.03em;
+}
+.exp-note-render-view .exp-note-section-header:first-child {
+    margin-top: 4px;
+}
+.exp-note-render-view code {
+    background: #FFF3E0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.88em;
+    font-family: 'SFMono-Regular', 'Consolas', monospace;
+}
+.exp-note-render-view pre {
+    background: #FFF3E0;
+    padding: 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+.exp-note-render-view blockquote {
+    border-left: 3px solid #D84315;
+    padding-left: 12px;
+    margin: 8px 0 8px 0;
+    color: #8D6E63;
+    font-style: italic;
+}
+.exp-note-render-view ul,
+.exp-note-render-view ol {
+    padding-left: 20px;
+    margin: 4px 0 8px;
+}
+.exp-note-render-view table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0;
+    font-size: 0.9em;
+}
+.exp-note-render-view th,
+.exp-note-render-view td {
+    border: 1px solid #FFE0B2;
+    padding: 6px 10px;
+    text-align: left;
+}
+.exp-note-render-view th {
+    background: #FFF3E0;
+    font-weight: 700;
+}
+
+/* 笔记底部状态栏 */
+.exp-note-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.exp-note-status {
+    font-size: 11px;
+    color: #D7CCC8;
+    min-height: 16px;
+    transition: color 0.3s;
+}
+
+.exp-note-status.saving { color: #FF8F00; }
+.exp-note-status.saved  { color: #43A047; }
+.exp-note-status.error  { color: #E53935; }
+
+.exp-note-footer-actions {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.exp-note-toggle-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid #FFE0B2;
+    background: #FFF3E0;
+    color: #8D6E63;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.exp-note-toggle-btn:hover {
+    background: #FFE0B2;
+    color: #D84315;
+}
+
+/* ── 主操作按钮 ── */
+.exp-notes-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    background: linear-gradient(135deg, #D84315, #FF8F00);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    box-shadow: 0 2px 8px rgba(216, 67, 21, 0.25);
+    font-family: inherit;
+}
+
+.exp-notes-add-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 16px rgba(216, 67, 21, 0.32);
+}
+
+.exp-notes-add-btn:active { transform: translateY(0); }
+
+/* 工具按钮（导出、AI 生成、保存等） */
+.exp-notes-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 7px 15px;
+    border-radius: 8px;
+    font-size: 0.87em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-family: inherit;
+}
+
+.exp-notes-action-btn.secondary {
+    background: #FFF3E0;
+    color: #D84315;
+    border: 1px solid #FFE0B2;
+}
+.exp-notes-action-btn.secondary:hover {
+    background: #FFE0B2;
+    box-shadow: 0 2px 8px rgba(216, 67, 21, 0.12);
+}
+
+.exp-notes-action-btn.ai {
+    background: linear-gradient(135deg, #5C6BC0, #7E57C2);
+    color: white;
+    box-shadow: 0 2px 8px rgba(92, 107, 192, 0.28);
+}
+.exp-notes-action-btn.ai:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(92, 107, 192, 0.38);
+}
+.exp-notes-action-btn.ai:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* AI 生成加载动画 */
+@keyframes exp-notes-spin {
+    to { transform: rotate(360deg); }
+}
+.exp-notes-ai-spinner {
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: exp-notes-spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+
+/* 删除确认弹窗 */
+.exp-notes-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.38);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: exp-notes-fadein 0.15s ease;
+}
+
+@keyframes exp-notes-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.exp-notes-confirm-box {
+    background: white;
+    border-radius: 14px;
+    padding: 28px 30px 22px;
+    max-width: 360px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    text-align: center;
+    animation: exp-notes-slideup 0.18s ease;
+}
+
+@keyframes exp-notes-slideup {
+    from { transform: translateY(12px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+
+.exp-notes-confirm-box p {
+    margin: 0 0 20px;
+    color: #4E342E;
+    font-size: 0.97em;
+    line-height: 1.6;
+}
+
+.exp-notes-confirm-box strong {
+    color: #D84315;
+}
+
+.exp-notes-confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.exp-notes-export-box {
+    max-width: 460px;
+    text-align: left;
+}
+
+.exp-notes-export-format {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    color: #6D4C41;
+    font-size: 0.9em;
+}
+
+.exp-notes-export-format-select {
+    border: 1px solid #FFE0B2;
+    border-radius: 8px;
+    padding: 6px 10px;
+    background: #fff;
+    color: #5D4037;
+    font-family: inherit;
+}
+
+.exp-notes-export-title {
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.exp-notes-export-title mjx-container,
+.exp-notes-export-title .MathJax {
+    font-size: 0.96em;
+}
+
+.exp-notes-export-list {
+    max-height: 260px;
+    overflow: auto;
+    border: 1px solid #FFE0B2;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 14px;
+    background: #FFFAF0;
+}
+
+.exp-notes-export-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #5D4037;
+}
+
+.exp-notes-export-item:hover {
+    background: #FFF3E0;
+}
+
+.exp-notes-export-checkbox {
+    width: 15px;
+    height: 15px;
+}
+
+.exp-notes-confirm-cancel {
+    padding: 8px 22px;
+    border: 1px solid #D7CCC8;
+    background: white;
+    color: #8D6E63;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.exp-notes-confirm-cancel:hover {
+    background: #EFEBE9;
+}
+
+.exp-notes-confirm-delete {
+    padding: 8px 22px;
+    border: none;
+    background: linear-gradient(135deg, #D84315, #BF360C);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    box-shadow: 0 2px 6px rgba(216, 67, 21, 0.3);
+}
+.exp-notes-confirm-delete:hover {
+    box-shadow: 0 4px 12px rgba(216, 67, 21, 0.4);
+    transform: translateY(-1px);
+}
+
+/* 美化滚动条样式 */
+.exp-note-render-view::-webkit-scrollbar,
+.exp-note-title-render::-webkit-scrollbar {
+    height: 6px;
+    background: #FFF3E0;
+    border-radius: 3px;
+}
+
+.exp-note-render-view::-webkit-scrollbar-thumb,
+.exp-note-title-render::-webkit-scrollbar-thumb {
+    background: #FFCC80;
+    border-radius: 3px;
+}
+
+.exp-note-render-view::-webkit-scrollbar-thumb:hover,
+.exp-note-title-render::-webkit-scrollbar-thumb:hover {
+    background: #D84315;
+}
+
+/* Firefox 滚动条 */
+.exp-note-render-view,
+.exp-note-title-render {
+    scrollbar-width: thin;
+    scrollbar-color: #FFCC80 #FFF3E0;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+    .exp-notes-section { padding: 20px 16px; }
+    .exp-notes-header { flex-direction: column; align-items: flex-start; }
+    .exp-note-card { padding: 14px 14px 10px; }
+}

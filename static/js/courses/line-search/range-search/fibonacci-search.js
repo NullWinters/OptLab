@@ -17,6 +17,8 @@ export class FibonacciSearch {
         this.currentIteration = 0;
         this.history = [];
         this.isComplete = false;
+        this.hasConverged = false;
+        this.terminationReason = null; // 'converged' | 'max_iter'
         this.result = null;
     }
 
@@ -57,6 +59,8 @@ export class FibonacciSearch {
         // 若 k=N，输出结果
         if (k >= N) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
             this.result = (this.a + this.b) / 2;
             return false;
         }
@@ -107,6 +111,8 @@ export class FibonacciSearch {
         // 检查是否完成
         if (this.currentIteration >= N) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
             this.result = (this.a + this.b) / 2;
         }
 

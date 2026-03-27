@@ -12,12 +12,16 @@ export class GradientDescent {
         this.currentIteration = 0;
         this.xk = x0;
         this.isComplete = false;
+        this.hasConverged = false;
+        this.terminationReason = null; // 'converged' | 'max_iter' | 'grad_zero'
         const df = this.derivative(x0);
         this.history = [{ x: x0, y: this.evaluate(x0), df: df }];
 
         // 如果导数几乎为0，直接停止
         if (Math.abs(df) < 1e-10) {
             this.isComplete = true;
+            this.hasConverged = false;
+            this.terminationReason = 'grad_zero';
         }
     }
 
@@ -30,16 +34,33 @@ export class GradientDescent {
     }
 
     iterate() {
-        if (this.isComplete || this.currentIteration >= this.n) {
+        const gradTol = 1e-6;
+        const xTol = 1e-8;
+
+        if (this.isComplete) {
+            return false;
+        }
+
+        if (this.currentIteration >= this.n) {
             this.isComplete = true;
+            this.hasConverged = false;
+            this.terminationReason = 'max_iter';
             return false;
         }
 
         const df = this.derivative(this.xk);
 
-        // 导数为0停止条件
-        if (Math.abs(df) < 1e-10) {
+        // 导数近似 0：根据步长判断是否算收敛
+        if (Math.abs(df) < gradTol) {
             this.isComplete = true;
+            const step = this.alpha * df;
+            if (Math.abs(step) < xTol) {
+                this.hasConverged = true;
+                this.terminationReason = 'converged';
+            } else {
+                this.hasConverged = false;
+                this.terminationReason = 'grad_zero';
+            }
             return false;
         }
 
@@ -54,6 +75,8 @@ export class GradientDescent {
 
         if (this.currentIteration >= this.n) {
             this.isComplete = true;
+            this.hasConverged = false;
+            this.terminationReason = 'max_iter';
         }
         return true;
     }
@@ -72,12 +95,16 @@ export class NewtonsMethod {
         this.currentIteration = 0;
         this.xk = x0;
         this.isComplete = false;
+        this.hasConverged = false;
+        this.terminationReason = null; // 'converged' | 'max_iter' | 'grad_zero' | 'hessian_zero'
         const df = this.derivative(x0);
         this.history = [{ x: x0, y: this.evaluate(x0), df: df, ddf: this.secondDerivative(x0) }];
 
         // 如果导数几乎为0，直接停止
         if (Math.abs(df) < 1e-10) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
         }
     }
 
@@ -95,24 +122,37 @@ export class NewtonsMethod {
     }
 
     iterate() {
-        if (this.isComplete || this.currentIteration >= this.n) {
+        const gradTol = 1e-6;
+        const hessianTol = 1e-8;
+
+        if (this.isComplete) {
+            return false;
+        }
+
+        if (this.currentIteration >= this.n) {
             this.isComplete = true;
+            this.hasConverged = false;
+            this.terminationReason = 'max_iter';
             return false;
         }
 
         const df = this.derivative(this.xk);
         
-        // 导数为0停止条件
-        if (Math.abs(df) < 1e-10) {
+        // 导数近似 0：视为正常收敛
+        if (Math.abs(df) < gradTol) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
             return false;
         }
 
         const ddf = this.secondDerivative(this.xk);
         
-        // 避免除以0
-        if (Math.abs(ddf) < 1e-10) {
+        // 避免除以0：异常终止
+        if (Math.abs(ddf) < hessianTol) {
             this.isComplete = true;
+            this.hasConverged = false;
+            this.terminationReason = 'hessian_zero';
             return false;
         }
 
@@ -128,6 +168,13 @@ export class NewtonsMethod {
 
         if (this.currentIteration >= this.n) {
             this.isComplete = true;
+            if (Math.abs(nextDf) < gradTol) {
+                this.hasConverged = true;
+                this.terminationReason = 'converged';
+            } else {
+                this.hasConverged = false;
+                this.terminationReason = 'max_iter';
+            }
         }
         return true;
     }
@@ -146,6 +193,8 @@ export class SecantMethod {
         
         this.currentIteration = 0;
         this.isComplete = false;
+        this.hasConverged = false;
+        this.terminationReason = null; // 'converged' | 'max_iter' | 'grad_zero' | 'secant_den_zero'
         
         const df_prev = this.derivative(x_prev);
         const df_k = this.derivative(x0);
@@ -156,9 +205,11 @@ export class SecantMethod {
             { x: x0, y: this.evaluate(x0), df: df_k }
         ];
 
-        // 如果当前点导数几乎为0，直接停止
+        // 如果当前点导数几乎为0，直接停止（视为已收敛）
         if (Math.abs(df_k) < 1e-10) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
         }
     }
 
@@ -171,24 +222,37 @@ export class SecantMethod {
     }
 
     iterate() {
-        if (this.isComplete || this.currentIteration >= this.n) {
+        const gradTol = 1e-6;
+        const denTol = 1e-8;
+
+        if (this.isComplete) {
+            return false;
+        }
+
+        if (this.currentIteration >= this.n) {
             this.isComplete = true;
+            this.hasConverged = false;
+            this.terminationReason = 'max_iter';
             return false;
         }
 
         const df_k = this.derivative(this.xk);
         
-        // 导数为0停止条件
-        if (Math.abs(df_k) < 1e-10) {
+        // 导数为0：认为已收敛
+        if (Math.abs(df_k) < gradTol) {
             this.isComplete = true;
+            this.hasConverged = true;
+            this.terminationReason = 'converged';
             return false;
         }
         const df_prev = this.derivative(this.x_prev);
         
         // 割线法公式: x_{k+1} = x_k - (x_k - x_{k-1}) * f'(x_k) / (f'(x_k) - f'(x_{k-1}))
         const denom = df_k - df_prev;
-        if (Math.abs(denom) < 1e-10) {
+        if (Math.abs(denom) < denTol) {
             this.isComplete = true;
+            this.hasConverged = false;
+            this.terminationReason = 'secant_den_zero';
             return false;
         }
 
@@ -204,6 +268,13 @@ export class SecantMethod {
 
         if (this.currentIteration >= this.n) {
             this.isComplete = true;
+            if (Math.abs(nextDf) < gradTol) {
+                this.hasConverged = true;
+                this.terminationReason = 'converged';
+            } else {
+                this.hasConverged = false;
+                this.terminationReason = 'max_iter';
+            }
         }
         return true;
     }

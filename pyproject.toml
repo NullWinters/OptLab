@@ -5,12 +5,15 @@ description = "Optimization Lab on Web"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
+    "apscheduler>=3.10.4",
     "dotenv>=0.9.9",
     "fastapi[standard]>=0.128.0",
     "langchain>=1.2.10",
     "langchain-deepseek>=1.0.1",
     "pwdlib[argon2]>=0.3.0",
     "sqlalchemy[asyncio]>=2.0.47",
+    "python-jose[cryptography]>=3.3.0",
+    "aiosqlite>=0.19.0",
     "uvicorn>=0.40.0",
 ]
 

@@ -1,202 +1,215 @@
 {% extends 'base.html' %}
 
-{% block title %}区间收缩法 - 性质对比{% endblock %}
+{% block title %}区间收缩法 - OptLab{% endblock %}
+
+{% block experiment_notes %}{% endblock %}
 
 {% block head %}
-    <!-- D3.js 可视化库 -->
-    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <!-- Math.js 科学计算库 -->
-    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
-    <!-- 自定义样式 -->
-    <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
-    <link rel="stylesheet" href="/static/css/courses/line-search/comparison.css">
-    <style>
-        /* 三算法控制面板布局 */
+<!-- D3.js 可视化库 -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<!-- Math.js 科学计算库 -->
+<script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+<!-- 自定义样式 -->
+<link rel="stylesheet" href="/static/css/courses/line-search/common.css">
+<link rel="stylesheet" href="/static/css/courses/line-search/comparison.css">
+<style>
+    /* 三算法控制面板布局 */
+    .triple-control-panel {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin: 20px 0;
+    }
+
+    .algorithm-panel {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+        transition: transform 0.3s ease;
+    }
+
+    .algorithm-panel:hover {
+        transform: translateY(-5px);
+    }
+
+    .algorithm-panel h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    .golden-panel {
+        border-top: 5px solid #d84315;
+    }
+
+    .fibonacci-panel {
+        border-top: 5px solid #f9a825;
+    }
+
+    .bisection-panel {
+        border-top: 5px solid #6d4c41;
+    }
+
+    /* 性能可视化对比面板 */
+    .comparison-visualization-section {
+        flex: 1;
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+        min-width: 0;
+    }
+
+    .viz-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .viz-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: #333;
+    }
+
+    /* 切换按钮样式 */
+    .viz-tabs {
+        display: flex;
+        background: #f0f2f5;
+        padding: 5px;
+        border-radius: 8px;
+        gap: 5px;
+    }
+
+    .viz-tab {
+        padding: 8px 20px;
+        border: none;
+        background: transparent;
+        color: #666;
+        cursor: pointer;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .viz-tab:hover {
+        color: var(--primary-color);
+    }
+
+    .viz-tab.active {
+        background: white;
+        color: var(--primary-color);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    #comparison-canvas {
+        width: 100%;
+        height: 500px;
+        background: #fafafa;
+        border: 1px solid #f0f0f0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    /* 性能仪表盘 */
+    .performance-dashboard {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-top: 30px;
+    }
+
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        text-align: center;
+    }
+
+    .metric-card h3 {
+        margin-top: 0;
+        color: #555;
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+
+    .metric-comparison {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        margin: 20px 0;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .metric-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 80px;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+        color: #888;
+    }
+
+    .metric-value {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .metric-divider {
+        width: 1px;
+        height: 30px;
+        background: #eee;
+    }
+
+    .winner-tag {
+        display: inline-block;
+        padding: 5px 15px;
+        background: #f1f8e9;
+        color: #558b2f;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* 响应式适配 */
+    @media (max-width: 1200px) {
         .triple-control-panel {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .algorithm-panel {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            box-sizing: border-box;
-            transition: transform 0.3s ease;
-        }
-
-        .algorithm-panel:hover {
-            transform: translateY(-5px);
-        }
-
-        .algorithm-panel h3 {
-            margin-top: 0;
-            color: var(--primary-color);
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-
-        .golden-panel { border-top: 5px solid #d84315; }
-        .fibonacci-panel { border-top: 5px solid #f9a825; }
-        .bisection-panel { border-top: 5px solid #6d4c41; }
-
-        /* 性能可视化对比面板 */
-        .comparison-visualization-section {
-            flex: 1;
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            box-sizing: border-box;
-            min-width: 0;
-        }
-
-        .viz-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .viz-header h2 {
-            margin: 0;
-            font-size: 1.5rem;
-            color: #333;
-        }
-
-        /* 切换按钮样式 */
-        .viz-tabs {
-            display: flex;
-            background: #f0f2f5;
-            padding: 5px;
-            border-radius: 8px;
-            gap: 5px;
-        }
-
-        .viz-tab {
-            padding: 8px 20px;
-            border: none;
-            background: transparent;
-            color: #666;
-            cursor: pointer;
-            border-radius: 6px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .viz-tab:hover {
-            color: var(--primary-color);
-        }
-
-        .viz-tab.active {
-            background: white;
-            color: var(--primary-color);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        #comparison-canvas {
-            width: 100%;
-            height: 500px;
-            background: #fafafa;
-            border: 1px solid #f0f0f0;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        /* 性能仪表盘 */
-        .performance-dashboard {
-            display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-top: 30px;
         }
+    }
 
-        .metric-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            text-align: center;
-        }
-
-        .metric-card h3 {
-            margin-top: 0;
-            color: #555;
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-        }
-
-        .metric-comparison {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            margin: 20px 0;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .metric-item {
-            display: flex;
+    @media (max-width: 992px) {
+        .comparison-main-layout {
             flex-direction: column;
-            gap: 8px;
-            min-width: 80px;
         }
 
-        .metric-label {
-            font-size: 0.8rem;
-            color: #888;
+        .left-column {
+            width: 100% !important;
         }
 
-        .metric-value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--primary-color);
+        .triple-control-panel {
+            grid-template-columns: 1fr;
         }
 
-        .metric-divider {
-            width: 1px;
-            height: 30px;
-            background: #eee;
+        .performance-dashboard {
+            grid-template-columns: 1fr;
         }
-
-        .winner-tag {
-            display: inline-block;
-            padding: 5px 15px;
-            background: #f1f8e9;
-            color: #558b2f;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        /* 响应式适配 */
-        @media (max-width: 1200px) {
-            .triple-control-panel {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 992px) {
-            .comparison-main-layout {
-                flex-direction: column;
-            }
-            .global-controls {
-                width: 100% !important;
-            }
-            .triple-control-panel {
-                grid-template-columns: 1fr;
-            }
-            .performance-dashboard {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -216,7 +229,7 @@
         <button class="nav-btn" onclick="window.location.href='observation.html'">
             流程观察
         </button>
-        <button class="nav-btn active" onclick="window.location.href='comparison.html'">
+        <button class="nav-btn active">
             性质对比
         </button>
     </nav>
@@ -228,13 +241,14 @@
             <h3>黄金分割法</h3>
             <div class="control-group">
                 <label for="golden-epsilon">精度 ε :</label>
-                <input type="range" id="golden-epsilon" min="0.001" max="1" step="0.001" value="0.5">
+                <input type="range" id="golden-epsilon" min="0.001" max="1" step="0.001" value="0.5"
+                    style="width: 100%;">
                 <span id="golden-epsilon-value">0.500</span>
             </div>
             <div class="parameter-display">
                 <table class="param-table">
                     <tbody id="golden-param-body">
-                    <!-- 动态填充 -->
+                        <!-- 动态填充 -->
                     </tbody>
                 </table>
             </div>
@@ -251,14 +265,14 @@
                 <div class="control-group" style="flex: 1; min-width: 150px;">
                     <label for="fib-epsilon">修正系数 ε :</label>
                     <input type="range" id="fib-epsilon" min="0.001" max="0.1" step="0.001" value="0.01"
-                           style="width: 100%;">
+                        style="width: 100%;">
                     <span id="fib-epsilon-value">0.010</span>
                 </div>
             </div>
             <div class="parameter-display">
                 <table class="param-table">
                     <tbody id="fib-param-body">
-                    <!-- 动态填充 -->
+                        <!-- 动态填充 -->
                     </tbody>
                 </table>
             </div>
@@ -268,13 +282,13 @@
             <h3>二分法</h3>
             <div class="control-group">
                 <label for="bis-epsilon">精度 ε :</label>
-                <input type="range" id="bis-epsilon" min="0.001" max="1" step="0.001" value="0.5">
+                <input type="range" id="bis-epsilon" min="0.001" max="1" step="0.001" value="0.5" style="width: 100%;">
                 <span id="bis-epsilon-value">0.500</span>
             </div>
             <div class="parameter-display">
                 <table class="param-table">
                     <tbody id="bis-param-body">
-                    <!-- 动态填充 -->
+                        <!-- 动态填充 -->
                     </tbody>
                 </table>
             </div>
@@ -283,70 +297,150 @@
 
     <!-- 对比可视化区域布局 -->
     <div class="comparison-main-layout">
-        <!-- 全局控制面板 (移至侧边) -->
-        <div class="global-controls">
-            <h3>全局控制</h3>
-            <div class="control-group">
-                <label for="function-select">测试函数:</label>
-                <div style="display: flex; gap: 5px;">
-                    <select id="function-select" style="width: 180px;">
-                        <!-- 动态填充 -->
-                    </select>
-                    <button id="custom-func-btn" class="control-btn btn-primary"
-                            style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
-                    </button>
+        <!-- 左侧多面板 -->
+        <div class="left-column">
+            <!-- 全局控制面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>全局控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-group">
+                        <label for="function-select">测试函数:</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="function-select" style="width: 180px;">
+                                <!-- 动态填充 -->
+                            </select>
+                            <button id="custom-func-btn" class="control-btn btn-primary"
+                                style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                        <div class="control-group" style="flex: 1; min-width: 120px;">
+                            <label for="initial-a">初始区间左端点 a:</label>
+                            <input type="range" id="initial-a" min="-10" max="10" step="0.1" value="0"
+                                style="width: 100%;">
+                            <span id="a-value">0.0</span>
+                        </div>
+
+                        <div class="control-group" style="flex: 1; min-width: 120px;">
+                            <label for="initial-b">初始区间右端点 b:</label>
+                            <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10"
+                                style="width: 100%;">
+                            <span id="b-value">10.0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <div class="control-group" style="flex: 1; min-width: 120px;">
-                    <label for="initial-a">初始区间左端点 a:</label>
-                    <input type="range" id="initial-a" min="-10" max="10" step="0.1" value="0" style="width: 100%;">
-                    <span id="a-value">0.0</span>
+            <!-- 算法控制面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>算法控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
                 </div>
+                <div class="panel-content">
+                    <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
+                        <button id="play-btn" class="control-btn btn-primary">播放</button>
+                        <button id="pause-btn" class="control-btn btn-secondary">暂停</button>
+                        <button id="step-btn" class="control-btn btn-primary">单步</button>
+                        <button id="reset-btn" class="control-btn btn-accent">重置</button>
+                    </div>
 
-                <div class="control-group" style="flex: 1; min-width: 120px;">
-                    <label for="initial-b">初始区间右端点 b:</label>
-                    <input type="range" id="initial-b" min="-10" max="10" step="0.1" value="10"
-                           style="width: 100%;">
-                    <span id="b-value">10.0</span>
+                    <div class="control-group" style="margin-top: 5px;">
+                        <label for="speed-control">播放速度:</label>
+                        <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
+                            style="width: 100%;">
+                        <span id="speed-value">正常</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
-                <button id="play-btn" class="control-btn btn-primary">播放</button>
-                <button id="pause-btn" class="control-btn btn-secondary">暂停</button>
-                <button id="step-btn" class="control-btn btn-primary">单步</button>
-                <button id="reset-btn" class="control-btn btn-accent">重置</button>
+            <!-- 实验数据面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>实验数据</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="iteration-log-toolbar">
+                        <button type="button" class="control-btn btn-primary"
+                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
+                            查看实验数据
+                        </button>
+                        <button type="button" class="control-btn btn-secondary"
+                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-export-csv-btn">
+                            导出实验数据
+                        </button>
+                        <div class="dropdown-wrap" style="width: 100%;">
+                            <button type="button" class="control-btn btn-accent"
+                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                                id="save-profile-dropdown-trigger">
+                                保存至个人中心 ▾
+                            </button>
+                            <div id="save-profile-dropdown" class="dropdown-panel hidden">
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                    data-algo="黄金分割法">黄金分割法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                    data-algo="斐波那契法">斐波那契法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                    data-algo="二分法">二分法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="all">
+                                    总体对比数据
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr); margin-top: 10px;">
-                <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
-                </button>
-                <button id="pan-right-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向右
-                </button>
-                <button id="zoom-in-btn" class="control-btn btn-primary" style="background-color: #795548;">放大
-                </button>
-                <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
-                </button>
-            </div>
-
-            <div class="control-group" style="margin-top: 5px;">
-                <label for="speed-control">播放速度:</label>
-                <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000">
-                <span id="speed-value">正常</span>
+            <!-- 画布控制面板 -->
+            <div class="control-panel">
+                <div class="panel-header">
+                    <h3>画布控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
+                        <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
+                        </button>
+                        <button id="pan-right-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向右
+                        </button>
+                        <button id="zoom-in-btn" class="control-btn btn-primary" style="background-color: #795548;">放大
+                        </button>
+                        <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <section class="comparison-visualization-section">
+        <section class="comparison-visualization-section" style="display: flex; flex-direction: column;">
             <div class="viz-header">
                 <h2>性能可视化对比</h2>
+                <div style="display: flex; gap: 15px; align-items: center; background: #f0f2f5; padding: 5px 15px; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; color: #d84315; font-weight: bold;">
+                        <input type="checkbox" id="show-golden" checked> 黄金分割法
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; color: #f9a825; font-weight: bold;">
+                        <input type="checkbox" id="show-fibonacci" checked> 斐波那契数列法
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; color: #6d4c41; font-weight: bold;">
+                        <input type="checkbox" id="show-bisection" checked> 二分法
+                    </label>
+                </div>
                 <div class="viz-tabs">
                     <button class="viz-tab active" data-view="trajectory">搜索轨迹</button>
                     <button class="viz-tab" data-view="convergence">收敛速度</button>
                 </div>
             </div>
-            <div id="comparison-canvas"></div>
+            <div id="comparison-canvas" style="flex-grow: 1; height: auto; min-height: 500px;"></div>
         </section>
     </div>
 
@@ -361,7 +455,7 @@
                 <div class="input-group">
                     <label for="custom-expr-input">输入函数表达式 f(x):</label>
                     <input type="text" id="custom-expr-input" placeholder="例如: x^2 - 4*x + 4"
-                           style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
+                        style="width: 100%; padding: 10px; font-size: 1.2em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;">
                     <div id="expr-error" style="color: red; font-size: 0.9em; margin-top: 5px; min-height: 1.2em;">
                     </div>
                 </div>
@@ -425,37 +519,49 @@
         </div>
     </section>
 
-    <!-- 洞察分析区 -->
-
-    <div class="guidance-questions">
-        <h2>观察并回答问题</h2>
-        <div class="question-item">
-            <h4>问题 1：速度比较</h4>
-            <p>黄金分割法与斐波那契数列法在前期的迭代曲线几乎重合，请分析原因。</p>
-            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+    {% include 'components/_experiment_notes.html' %}
+</div>
+<!-- 迭代数据查看模态框 -->
+<div id="iteration-log-modal" class="modal" style="display: none;">
+    <div class="modal-content"
+        style="max-width: 920px; width: 96%; max-height: 80vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;" id="iteration-log-modal-title">区间收缩性质对比 · 本次实验迭代数据</h3>
+            <span id="iteration-log-close" class="close-modal" style="cursor: pointer;">&times;</span>
         </div>
-
-        <div class="question-item">
-            <h4>问题 2：区间精度</h4>
-            <p>为什么斐波那契数列法总是能求出更精确的区间精度？</p>
-            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
-        </div>
-
-        <div class="question-item">
-            <h4>问题 3：极限分析</h4>
-            <p>斐波那契数列法能比二分法更快收敛吗？请尝试记录一组可行情形。</p>
-            <textarea class="answer-input" placeholder="在此记录你的观察..."></textarea>
+        <div class="modal-body" style="margin-top: 10px; overflow: auto;">
+            <div style="font-size: 13px; color: #555; margin-bottom: 8px;">
+                <div>实验函数：<span id="iteration-log-summary-func">--</span></div>
+                <div>初始区间：[<span id="iteration-log-summary-a">--</span>, <span id="iteration-log-summary-b">--</span>]
+                </div>
+                <div>总迭代记录条数：<span id="iteration-log-summary-count">--</span></div>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">算法</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">迭代编号 k</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">左端点 aₖ</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">右端点 bₖ</th>
+                        <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">区间长度</th>
+                    </tr>
+                </thead>
+                <tbody id="iteration-log-body"></tbody>
+            </table>
         </div>
     </div>
 </div>
+<footer>
+    一维搜索方法 · OptLab 教学资源
+</footer>
 {% endblock %}
 
 {% block scripts %}
 <script type="module">
-    import {FunctionLibrary, calculateFunction} from '/static/js/courses/line-search/range-search/function-utils.js';
-    import {ComparisonController} from '/static/js/courses/line-search/range-search/comparison-controller.js';
-    import {ComparisonVisualizer} from '/static/js/courses/line-search/range-search/comparison-visualizer.js';
-    import {PerformanceMetrics} from '/static/js/courses/line-search/range-search/performance-metrics.js';
+    import { FunctionLibrary, calculateFunction } from '/static/js/courses/line-search/range-search/function-utils.js';
+    import { ComparisonController } from '/static/js/courses/line-search/range-search/comparison-controller.js';
+    import { ComparisonVisualizer } from '/static/js/courses/line-search/range-search/comparison-visualizer.js';
+    import { ComparisonSummary } from '/static/js/courses/line-search/range-search/comparison-summary.js';
 
     // 状态管理
     const AppState = {
@@ -464,6 +570,7 @@
         currentView: 'trajectory', // 'trajectory' or 'convergence'
         selectedFuncId: 'quadratic',
         yScaleType: 'log', // 'log' or 'linear'
+        visibleAlgorithms: { golden: true, fibonacci: true, bisection: true },
 
         // 运行状态
         runStatus: '未运行', // '未运行', '播放中', '已暂停', '已完成'
@@ -481,7 +588,7 @@
         bisEps: 0.5,
 
         subStep: 0, // 0: 初始, 1: a_try, 2: b_try, 3: compare, 4: update
-        currentTrialPoints: {golden: null, fibonacci: null, bisection: null}
+        currentTrialPoints: { golden: null, fibonacci: null, bisection: null }
     };
 
     // 初始化
@@ -505,7 +612,9 @@
     }
 
     function initVisualizer() {
-        AppState.visualizer = new ComparisonVisualizer('comparison-canvas');
+        AppState.visualizer = new ComparisonVisualizer('comparison-canvas', {
+            margin: {top: 80, right: 40, bottom: 60, left: 60}
+        });
         AppState.visualizer.onResize = () => {
             updateVisualization();
         };
@@ -561,7 +670,7 @@
                     return;
                 }
 
-                const result = math.evaluate(expr, {x: 1});
+                const result = math.evaluate(expr, { x: 1 });
                 if (typeof result !== 'number' && typeof result !== 'object') {
                     throw new Error("表达式计算结果无效");
                 }
@@ -714,6 +823,216 @@
                 AppState.visualizer.zoomConvergence(0.8);
             }
         });
+
+        // 实验数据相关
+        document.getElementById('iteration-log-open-btn').addEventListener('click', () => {
+            renderIterationLog();
+            document.getElementById('iteration-log-modal').style.display = 'flex';
+        });
+        document.getElementById('iteration-log-close').addEventListener('click', () => {
+            document.getElementById('iteration-log-modal').style.display = 'none';
+        });
+        document.getElementById('iteration-log-export-csv-btn').addEventListener('click', exportIterationLog);
+        
+        // 可见性控制
+        ['golden', 'fibonacci', 'bisection'].forEach(key => {
+            const cb = document.getElementById(`show-${key === 'fibonacci' ? 'fibonacci' : (key === 'golden' ? 'golden' : 'bisection')}`);
+            if (cb) {
+                cb.addEventListener('change', (e) => {
+                    AppState.visibleAlgorithms[key] = e.target.checked;
+                    updateVisualization();
+                });
+            }
+        });
+
+        // 保存至个人中心下拉
+        const dropdownTrigger = document.getElementById('save-profile-dropdown-trigger');
+        const dropdownPanel = document.getElementById('save-profile-dropdown');
+        if (dropdownTrigger && dropdownPanel) {
+            dropdownTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownPanel.classList.toggle('hidden');
+            });
+            document.addEventListener('click', () => dropdownPanel.classList.add('hidden'));
+        }
+
+        document.querySelectorAll('.save-profile-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const type = btn.dataset.type;
+                const algo = btn.dataset.algo;
+                saveToProfile(type, algo);
+            });
+        });
+
+        // 面板折叠逻辑
+        document.querySelectorAll('.collapse-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const panel = btn.closest('.control-panel');
+                panel.classList.toggle('collapsed');
+
+                // 折叠动画结束后重新计算画布尺寸
+                setTimeout(() => {
+                    if (AppState.visualizer && AppState.visualizer.onResize) {
+                        AppState.visualizer.onResize();
+                    }
+                }, 310);
+            });
+        });
+    }
+
+    function renderIterationLog() {
+        const tbody = document.getElementById('iteration-log-body');
+        const histories = AppState.controller.histories;
+        const func = AppState.controller.expr || '当前测试函数';
+
+        document.getElementById('iteration-log-summary-func').textContent = func;
+        document.getElementById('iteration-log-summary-a').textContent = AppState.a.toFixed(2);
+        document.getElementById('iteration-log-summary-b').textContent = AppState.b.toFixed(2);
+
+        let allLogs = [];
+        const algoNames = {
+            golden: '黄金分割法',
+            fibonacci: '斐波那契法',
+            bisection: '二分法'
+        };
+
+        ['golden', 'fibonacci', 'bisection'].forEach(key => {
+            const history = histories[key] || [];
+            history.forEach(step => {
+                allLogs.push({
+                    algo: algoNames[key],
+                    iter: step.iter,
+                    a: step.a,
+                    b: step.b,
+                    len: Math.abs(step.b - step.a)
+                });
+            });
+        });
+
+        // 按迭代次数和算法排序
+        allLogs.sort((x, y) => x.iter - y.iter || x.algo.localeCompare(y.algo));
+
+        document.getElementById('iteration-log-summary-count').textContent = allLogs.length;
+
+        if (allLogs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">暂无实验数据，请先运行实验</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = allLogs.map(row => `
+            <tr>
+                <td>${row.algo}</td>
+                <td>${row.iter}</td>
+                <td>${row.a.toFixed(6)}</td>
+                <td>${row.b.toFixed(6)}</td>
+                <td>${row.len.toFixed(6)}</td>
+            </tr>
+        `).join('');
+    }
+
+    function exportIterationLog() {
+        const histories = AppState.controller.histories;
+        const algoNames = {
+            golden: '黄金分割法',
+            fibonacci: '斐波那契法',
+            bisection: '二分法'
+        };
+
+        let csvContent = "\ufeff"; // UTF-8 BOM
+        csvContent += "算法,迭代步数,a,b,区间长度\n";
+
+        ['golden', 'fibonacci', 'bisection'].forEach(key => {
+            const history = histories[key] || [];
+            history.forEach(step => {
+                const len = Math.abs(step.b - step.a);
+                csvContent += `${algoNames[key]},${step.iter},${step.a},${step.b},${len}\n`;
+            });
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `experiment_data_range_search_${new Date().getTime()}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async function saveToProfile(type, algoName) {
+        if (typeof apiPost !== 'function' || !getStoredToken()) {
+            alert('请先登录后再保存至个人中心。');
+            return;
+        }
+
+        const histories = AppState.controller.histories || {};
+        const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
+        if (alias == null || String(alias).trim() === '') return;
+
+        const toRows = (history, label) => (history || []).map(step => ({
+            algorithm: label,
+            iteration: step.iter,
+            a: step.a,
+            b: step.b,
+            interval_length: Math.abs(step.b - step.a),
+            timestamp: new Date().toISOString()
+        }));
+
+        const initialState = {
+            initial_a: AppState.a,
+            initial_b: AppState.b,
+            golden_eps: AppState.goldenEps,
+            fib_n: AppState.fibN,
+            fib_eps: AppState.fibEps,
+            bis_eps: AppState.bisEps
+        };
+
+        let payload;
+
+        if (type === 'all') {
+            const allRows = [
+                ...toRows(histories.golden, '黄金分割法'),
+                ...toRows(histories.fibonacci, '斐波那契法'),
+                ...toRows(histories.bisection, '二分法')
+            ];
+            if (!allRows.length) {
+                alert('当前尚无迭代数据，请先运行一次实验。');
+                return;
+            }
+            payload = {
+                algorithm_name: '区间收缩法性质对比（总体）',
+                test_function: AppState.controller.expr,
+                initial_state: initialState,
+                iteration_data: allRows
+            };
+        } else {
+            const keyMap = { '黄金分割法': 'golden', '斐波那契法': 'fibonacci', '二分法': 'bisection' };
+            const key = keyMap[algoName];
+            const rows = toRows(histories[key], algoName);
+            if (!rows.length) {
+                alert('当前尚无该算法的迭代数据。');
+                return;
+            }
+            payload = {
+                algorithm_name: algoName,
+                test_function: AppState.controller.expr,
+                initial_state: initialState,
+                iteration_data: rows
+            };
+        }
+
+        try {
+            await apiPost('/experiments/records', {
+                alias: String(alias).trim(),
+                source_page: 'line-search.range_search.comparison',
+                payload
+            });
+            alert('已保存至个人中心。');
+        } catch (e) {
+            console.error(e);
+            alert('保存出错，请检查网络或登录状态');
+        }
     }
 
     function doInit() {
@@ -727,7 +1046,7 @@
 
         AppState.runStatus = '未运行';
         AppState.subStep = 0;
-        AppState.currentTrialPoints = {golden: null, fibonacci: null, bisection: null};
+        AppState.currentTrialPoints = { golden: null, fibonacci: null, bisection: null };
 
         const funcType = AppState.selectedFuncId;
         const expr = FunctionLibrary[funcType].expression;
@@ -870,7 +1189,8 @@
             AppState.visualizer.drawDualTrajectories(
                 AppState.controller.histories.golden,
                 AppState.controller.histories.fibonacci,
-                AppState.controller.histories.bisection
+                AppState.controller.histories.bisection,
+                AppState.visibleAlgorithms
             );
 
             // 更新试探点显示
@@ -892,7 +1212,8 @@
                     fAlgo.isComplete ? null : AppState.currentTrialPoints.fibonacci,
                     bAlgo.isComplete ? null : bAlgo,
                     func,
-                    options
+                    options,
+                    AppState.visibleAlgorithms
                 );
             } else {
                 AppState.visualizer.clearTrialPoints();
@@ -906,13 +1227,14 @@
                 () => {
                     const newType = AppState.visualizer.animateToggleConvergenceScale();
                     AppState.yScaleType = newType;
-                }
+                },
+                AppState.visibleAlgorithms
             );
         }
     }
 
     function showFinalMetrics() {
-        const metrics = PerformanceMetrics.calculate(
+        const metrics = ComparisonSummary.calculate(
             AppState.controller.histories.golden,
             AppState.controller.histories.fibonacci,
             AppState.controller.histories.bisection
@@ -925,14 +1247,14 @@
             document.getElementById('metric-iter-fib').textContent = metrics.iterations.fibonacci;
             document.getElementById('metric-iter-bis').textContent = metrics.iterations.bisection;
 
-            const iterWinnerMap = {golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法'};
+            const iterWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
             document.getElementById('winner-iter').textContent = iterWinnerMap[metrics.iterations.winner] + '胜出';
 
             document.getElementById('metric-prec-golden').textContent = metrics.precision.golden;
             document.getElementById('metric-prec-fib').textContent = metrics.precision.fibonacci;
             document.getElementById('metric-prec-bis').textContent = metrics.precision.bisection;
 
-            const precWinnerMap = {golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法'};
+            const precWinnerMap = { golden: '黄金分割法', fibonacci: '斐波那契法', bisection: '二分法' };
             document.getElementById('winner-prec').textContent = precWinnerMap[metrics.precision.winner] + '更精确';
         }
     }
@@ -959,7 +1281,64 @@
             { id: "reset-btn", description: "重置按钮", type: "normal" },
             { id: "speed-control", description: "播放速度滑块，调节算法自动运行的速度", type: "normal" }
         ],
-        GUIDEBOOK: '这是一个区间收缩法性质对比页面。你可以同时运行三种算法并对比它们的搜索轨迹和收敛速度。'
+        GUIDEBOOK: `这是区间收缩法性质对比页面。
+        页面布局：
+        - 顶部为算法控制面板，可单独调节黄金分割法、斐波那契法及二分法的特定参数。
+        - 左侧为多级控制面板，包括：
+          1. 全局控制：调节测试函数和初始搜索区间。
+          2. 算法控制：控制播放、暂停、单步运行和重置，以及调节速度。
+          3. 实验数据：查看、导出及保存实验历史。
+          4. 画布控制：对可视化画布进行平移和缩放。
+        - 右侧为性能可视化对比区，支持“搜索轨迹”和“收敛速度”两种视图切换。`
+    };
+
+    window.EXPERIMENT_NOTES_CONFIG = {
+        experimentKey: 'line-search.range_search.comparison',
+        getPageData: function () {
+            var st = window.AppState;
+            if (!st || !st.controller) return {};
+            var hs = st.controller.histories || {};
+            function pickFinal(arr) {
+                if (!Array.isArray(arr) || !arr.length) return null;
+                var r = arr[arr.length - 1];
+                return {
+                    iteration: r.iter,
+                    a: r.a,
+                    b: r.b,
+                    length: Math.abs((r.b || 0) - (r.a || 0)),
+                    x_star: ((r.a || 0) + (r.b || 0)) / 2
+                };
+            }
+            return {
+                function: st.controller.expr,
+                initial_range: [st.controller.a, st.controller.b],
+                params: {
+                    golden_epsilon: st.goldenEps,
+                    fibonacci_n: st.fibN,
+                    fibonacci_epsilon: st.fibEps,
+                    bisection_epsilon: st.bisEps
+                },
+                histories: hs,
+                iteration_log: {
+                    golden: hs.golden || [],
+                    fibonacci: hs.fibonacci || [],
+                    bisection: hs.bisection || []
+                },
+                convergence_result: {
+                    golden: pickFinal(hs.golden),
+                    fibonacci: pickFinal(hs.fibonacci),
+                    bisection: pickFinal(hs.bisection)
+                },
+                user_result_summary: {
+                    metric_iter_golden: document.getElementById('metric-iter-golden') ? document.getElementById('metric-iter-golden').textContent : '',
+                    metric_iter_fib: document.getElementById('metric-iter-fib') ? document.getElementById('metric-iter-fib').textContent : '',
+                    metric_iter_bis: document.getElementById('metric-iter-bis') ? document.getElementById('metric-iter-bis').textContent : '',
+                    metric_prec_golden: document.getElementById('metric-prec-golden') ? document.getElementById('metric-prec-golden').textContent : '',
+                    metric_prec_fib: document.getElementById('metric-prec-fib') ? document.getElementById('metric-prec-fib').textContent : '',
+                    metric_prec_bis: document.getElementById('metric-prec-bis') ? document.getElementById('metric-prec-bis').textContent : ''
+                }
+            };
+        }
     };
 </script>
 {% endblock %}
