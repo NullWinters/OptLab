@@ -216,10 +216,6 @@
             }
 
             addMessage(data.text, 'bot');
-        })
-        .catch(function (err) {
-                highlightCurrentButton();
-            }
         } catch (err) {
             loadingEl && loadingEl.remove();
             addMessage('抱歉，请求出错：' + err.message, 'bot error');
