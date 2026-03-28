@@ -4,7 +4,6 @@ import json
 import asyncio
 from dotenv import load_dotenv
 from openai import OpenAI
-from typing import List, Union, Optional
 
 # 将项目根目录添加到 sys.path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -73,12 +72,12 @@ async def test():
     evaluator = TeacherEvaluator()
 
     # 3. 寻找测试数据
-    data_files = [f for f in os.listdir(".") if f.startswith("train_") and f.endswith(".json")]
+    data_files = [f for f in os.listdir(".") if f.startswith("test_") and f.endswith(".json")]
     if not data_files:
         dataset_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "datasets")
         if os.path.exists(dataset_dir):
             data_files = [os.path.join(dataset_dir, f) for f in os.listdir(dataset_dir) if
-                          f.endswith(".json") or f.endswith(".jsonl")]
+                          (f.endswith(".json") or f.endswith(".jsonl")) and f.startswith("test_")]
 
     if not data_files:
         print("Error: No test data found. Please export data from the web interface first.")
