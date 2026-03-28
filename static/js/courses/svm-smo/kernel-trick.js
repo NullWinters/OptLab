@@ -1,3 +1,6 @@
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+window.THREE = THREE;
+
 const $ = id => document.getElementById(id);
 const statusEl = $('dataset-status');
 const accEl = $('split-acc');
@@ -520,15 +523,6 @@ function autoFitPlaneFromCurrentPoints() {
                 if (acc !== null && acc > best.acc) {
                     best = { yaw, pitch, z, acc };
                 }
-
-function scheduleAutoFit() {
-    if (state.autoFitTimer) {
-        clearTimeout(state.autoFitTimer);
-    }
-    state.autoFitTimer = setTimeout(() => {
-        autoFitPlaneFromCurrentPoints();
-    }, 0);
-}
             }
         }
     }
@@ -538,6 +532,15 @@ function scheduleAutoFit() {
     $('plane-pitch').value = String(Math.round(best.pitch));
     updatePlane();
     setStatus(`已自动拟合超平面，当前最佳划分准确率约 ${best.acc.toFixed(1)}%。`);
+}
+
+function scheduleAutoFit() {
+    if (state.autoFitTimer) {
+        clearTimeout(state.autoFitTimer);
+    }
+    state.autoFitTimer = setTimeout(() => {
+        autoFitPlaneFromCurrentPoints();
+    }, 0);
 }
 
 function visualizeFromSelection(showSuccessHint = true) {
@@ -583,7 +586,7 @@ function visualizeFromSelection(showSuccessHint = true) {
     });
     trackNoteEvent('apply_columns', { x_col: xIdx, y_col: yIdx, label_col: lIdx, sample_count: parsed.length });
     createOrUpdatePoints();
-    scheduleAutoFit();
+    updatePlane();
     setStatus(`渲染完成：共 ${parsed.length} 个点，类别数 ${labels.size}。`);
     if (showSuccessHint) {
         setStatus(`渲染完成：共 ${parsed.length} 个点，类别数 ${labels.size}。点击“升维动画”查看核技巧效果。`);
@@ -761,8 +764,6 @@ $('animate-btn').addEventListener('click', () => {
 
         if (t < 1) {
             requestAnimationFrame(step);
-        } else {
-            scheduleAutoFit();
         }
     }
 
