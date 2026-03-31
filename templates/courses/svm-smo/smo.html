@@ -122,7 +122,7 @@
                             <td><span id="param-i">-</span>, <span id="param-j">-</span></td>
                         </tr>
                         <tr>
-                            <td>乘子值 α_i, α_j</td>
+                            <td>乘子 α<sub>i</sub>, α<sub>j</sub></td>
                             <td><span id="param-alpha-i">-</span>, <span id="param-alpha-j">-</span></td>
                         </tr>
                         <tr>
@@ -194,7 +194,7 @@
             {id: 'slider-tol', description: '调整收敛精度tol', type: 'normal'},
             {id: 'slider-max-iter', description: '设置算法最大允许的迭代次数', type: 'normal'}
         ],
-        GUIDEBOOK: '这是SMO算法交互网页，用于通过可视化方式展示线性SVM的优化过程。用户可以上传二维数据集，并根据需要选择数据集中的哪些列分别作为x列、y列和标签列。之后利用控制面板中的播放、单步按钮观察算法如何逐步调整拉格朗日乘子，进而改变分离超平面的位置。页面右侧实时展示算法的关键参数。鼠标悬停在画布上的数据点可以查看该点的详细信息。'
+        GUIDEBOOK: '这是一个SMO优化支持向量机交互实验，用户可以点击播放、暂停、单步、重置按钮控制算法运行，可以通过滑动条调节SMO算法参数。'
     };
 </script>
 {% endblock %}
