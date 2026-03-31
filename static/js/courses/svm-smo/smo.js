@@ -637,7 +637,10 @@ const App = {
     },
 
     reset() {
-        this.pause();
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
         this.smo = new SMO(this.data, this.C, this.tol, this.maxIter);
         this.state = 'unstarted';
         this.pushProcessStep('reset_algorithm', {
@@ -736,11 +739,13 @@ const App = {
                 const alpha = this.smo ? this.smo.alphas[d.id] : 0;
                 const error = this.smo ? this.smo.errors[d.id] : 0;
                 this.tooltip.transition().duration(200).style("opacity", .9);
+                const yiEi = d.label * error;
                 this.tooltip.html(`
                     <b>编号:</b> ${d.id}<br/>
                     <b>坐标:</b> (${d.x.toFixed(2)}, ${d.y.toFixed(2)})<br/>
                     <b>乘子 α:</b> ${alpha.toFixed(4)}<br/>
-                    <b>偏差 E:</b> ${error.toFixed(4)}
+                    <b>偏差 E:</b> ${error.toFixed(4)}<br/>
+                    <b>y<sub>i</sub>*E<sub>i</sub>:</b> ${yiEi.toFixed(4)}
                 `);
 
                 const [mouseX, mouseY] = d3.pointer(event, this.container.node());
@@ -761,7 +766,7 @@ const App = {
 
         // Highlighting
         this.highlightLayer.selectAll("*").remove();
-        if (this.smo && this.smo.i !== -1) {
+        if (this.smo && this.smo.i !== -1 && this.data[this.smo.i]) {
             const pi = this.data[this.smo.i];
             this.highlightLayer.append("circle")
                 .attr("cx", this.xScale(pi.x))
@@ -771,8 +776,21 @@ const App = {
                 .attr("stroke", "#f1c40f")
                 .attr("stroke-width", 3)
                 .attr("stroke-dasharray", "4 2");
+
+            const text_i = this.highlightLayer.append("text")
+                .attr("x", this.xScale(pi.x) + 12)
+                .attr("y", this.yScale(pi.y) + 5)
+                .attr("fill", "#f1c40f")
+                .attr("font-weight", "bold")
+                .attr("style", "font-family: Arial, sans-serif; pointer-events: none;");
+            
+            text_i.append("tspan").text("a");
+            text_i.append("tspan")
+                .attr("baseline-shift", "sub")
+                .attr("font-size", "0.7em")
+                .text("i");
         }
-        if (this.smo && this.smo.j !== -1 && this.smo.subStep !== 1) {
+        if (this.smo && this.smo.j !== -1 && this.smo.subStep !== 1 && this.data[this.smo.j]) {
             const pj = this.data[this.smo.j];
             this.highlightLayer.append("circle")
                 .attr("cx", this.xScale(pj.x))
@@ -782,33 +800,49 @@ const App = {
                 .attr("stroke", "#f39c12")
                 .attr("stroke-width", 3)
                 .attr("stroke-dasharray", "4 2");
+
+            const text_j = this.highlightLayer.append("text")
+                .attr("x", this.xScale(pj.x) + 12)
+                .attr("y", this.yScale(pj.y) + 5)
+                .attr("fill", "#f39c12")
+                .attr("font-weight", "bold")
+                .attr("style", "font-family: Arial, sans-serif; pointer-events: none;");
+
+            text_j.append("tspan").text("a");
+            text_j.append("tspan")
+                .attr("baseline-shift", "sub")
+                .attr("font-size", "0.7em")
+                .text("j");
         }
 
         // Plane
         this.planeLayer.selectAll("*").remove();
         if (this.smo && (this.smo.w[0] !== 0 || this.smo.w[1] !== 0)) {
-            this.drawBoundary(this.smo.w, this.smo.b, "#5f3a1f", 2, false); // Main
-            this.drawBoundary(this.smo.w, this.smo.b + 1, "#8f6a4f", 1, true); // +1
-            this.drawBoundary(this.smo.w, this.smo.b - 1, "#8f6a4f", 1, true); // -1
+            this.drawBoundary(this.smo.w, this.smo.b, "#5f3a1f", 2, false, "分离超平面", 0);
+            this.drawBoundary(this.smo.w, this.smo.b + 1, "#8f6a4f", 1, true, "间隔边界", -1);
+            this.drawBoundary(this.smo.w, this.smo.b - 1, "#8f6a4f", 1, true, "间隔边界", 1);
         }
     },
 
-    drawBoundary(w, b, color, width, dashed) {
-        // w0*x + w1*y + b = 0  =>  y = (-w0*x - b) / w1
+    drawBoundary(w, bOffset, color, width, dashed, title, target) {
+        // w0*x + w1*y + bOffset = 0  =>  y = (-w0*x - bOffset) / w1
         const x1 = this.xScale.domain()[0];
         const x2 = this.xScale.domain()[1];
         let p1, p2;
 
         if (Math.abs(w[1]) > 1e-9) {
-            p1 = [x1, (-w[0] * x1 - b) / w[1]];
-            p2 = [x2, (-w[0] * x2 - b) / w[1]];
+            p1 = [x1, (-w[0] * x1 - bOffset) / w[1]];
+            p2 = [x2, (-w[0] * x2 - bOffset) / w[1]];
         } else {
-            const vx = -b / w[0];
+            const vx = -bOffset / w[0];
             p1 = [vx, this.yScale.domain()[0]];
             p2 = [vx, this.yScale.domain()[1]];
         }
 
-        this.planeLayer.append("line")
+        const group = this.planeLayer.append("g");
+
+        // Visible line
+        group.append("line")
             .attr("x1", this.xScale(p1[0]))
             .attr("y1", this.yScale(p1[1]))
             .attr("x2", this.xScale(p2[0]))
@@ -817,6 +851,50 @@ const App = {
             .attr("stroke-width", width)
             .attr("stroke-dasharray", dashed ? "5,5" : "none")
             .attr("clip-path", "url(#clip)");
+
+        // Wide invisible line for easier hovering
+        group.append("line")
+            .attr("x1", this.xScale(p1[0]))
+            .attr("y1", this.yScale(p1[1]))
+            .attr("x2", this.xScale(p2[0]))
+            .attr("y2", this.yScale(p2[1]))
+            .attr("stroke", "transparent")
+            .attr("stroke-width", 10)
+            .attr("cursor", "pointer")
+            .attr("clip-path", "url(#clip)")
+            .on("mouseover", (event) => {
+                this.tooltip.transition().duration(200).style("opacity", .9);
+                
+                const fmtNum = (val, isFirst = false) => {
+                    const sign = val >= 0 ? (isFirst ? "" : "+ ") : (isFirst ? "-" : "- ");
+                    return sign + Math.abs(val).toFixed(3);
+                };
+
+                const w0Str = fmtNum(w[0], true);
+                const w1Part = fmtNum(w[1]) + "x<sub>2</sub>";
+                const bPart = fmtNum(this.smo.b);
+                const expr = `${w0Str}x<sub>1</sub> ${w1Part} ${bPart} = ${target}`;
+
+                this.tooltip.html(`
+                    <b>${title}</b><br/>
+                    <b>表达式:</b><br/>
+                    <span style="font-family: 'Times New Roman', Times, serif;">${expr}</span>
+                `);
+
+                const [mouseX, mouseY] = d3.pointer(event, this.container.node());
+                this.tooltip
+                    .style("left", (mouseX + 15) + "px")
+                    .style("top", (mouseY - 15) + "px");
+            })
+            .on("mousemove", (event) => {
+                const [mouseX, mouseY] = d3.pointer(event, this.container.node());
+                this.tooltip
+                    .style("left", (mouseX + 15) + "px")
+                    .style("top", (mouseY - 15) + "px");
+            })
+            .on("mouseout", () => {
+                this.tooltip.transition().duration(500).style("opacity", 0);
+            });
     },
 
     updateUI() {
@@ -849,14 +927,14 @@ const App = {
         document.getElementById('param-alpha-i').innerText = this.smo.i === -1 ? '-' : this.smo.alphas[this.smo.i].toFixed(4);
         document.getElementById('param-alpha-j').innerText = (this.smo.j === -1 || this.smo.subStep === 1) ? '-' : this.smo.alphas[this.smo.j].toFixed(4);
 
-        if (this.smo.i !== -1) {
+        if (this.smo.i !== -1 && this.data[this.smo.i]) {
             const p = this.data[this.smo.i];
             document.getElementById('param-coord-i').innerText = `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
         } else {
             document.getElementById('param-coord-i').innerText = '-';
         }
 
-        if (this.smo.j !== -1 && this.smo.subStep !== 1) {
+        if (this.smo.j !== -1 && this.smo.subStep !== 1 && this.data[this.smo.j]) {
             const p = this.data[this.smo.j];
             document.getElementById('param-coord-j').innerText = `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`;
         } else {
