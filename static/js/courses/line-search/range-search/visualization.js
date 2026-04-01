@@ -377,15 +377,16 @@ export class OptimizationVisualizer {
             .attr('y', 20 + yOffset)
             .attr('fill', d => {
                 const dfm = getDerivative(d.m);
-                const dfa = getDerivative(d.a);
-                return dfm * dfa > 0 ? '#e53935' : '#f9a825';
+                if (Math.abs(dfm) < 1e-10) return customColor || '#4caf50'; // 找到最优解，若有 customColor 则使用，否则绿色
+                return customColor || (dfm * getDerivative(d.a) > 0 ? '#e53935' : '#f9a825');
             })
             .text(d => {
                 const dfm = getDerivative(d.m);
                 const dfa = getDerivative(d.a);
+                const label = (labelPrefix && Math.abs(dfm) >= 1e-10) ? `${labelPrefix}: ` : '';
+                if (Math.abs(dfm) < 1e-10) return `f'(m)=0 \u2192 \u8f93\u51fa\u6781\u5c0f\u503c\u70b9`;
                 const result = dfm * dfa > 0 ? '>' : '<';
-                const label = labelPrefix ? `${labelPrefix}: ` : '';
-                return `${label}f'(m) · f'(a) ${result} 0`;
+                return `${label}f'(m) \u00b7 f'(a) ${result} 0`;
             })
             .style('opacity', 1);
     }

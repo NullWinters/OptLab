@@ -7,21 +7,15 @@
     <title>线性规划 - OptLab</title>
     <link rel="stylesheet" href="/static/css/courses/linear-programming/introduction.css">
     <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-    <!-- MathJax 3.x 推荐方式 -->
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-
-    <!-- 或使用更兼容的配置 -->
     <script>
         window.MathJax = {
             tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']]
-            },
-            svg: {
-                fontCache: 'global'
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
             }
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
@@ -224,7 +218,7 @@
             \end{array}
             \]
         </div>
-        <p>我们可以在每个不等式左侧添加一个非负的<strong>松弛变量</strong>，将不等式化为等式标准型：</p>
+        <p>在每个不等式左侧添加一个非负的<strong>松弛变量</strong>，将不等式化为等式标准型：</p>
         <div class="math-block">
             \[
             \begin{array}{ll}

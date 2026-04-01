@@ -3,7 +3,6 @@
 {% block title %}最小二乘与利润优化 - OptLab{% endblock %}
 
 {% block head %}
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
 <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
@@ -81,8 +80,6 @@
                  style="display: none; margin-bottom: 15px; background: #fffde7; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color);">
                 <label>价格列：<select id="priceColSelect"></select></label>
                 <label style="margin-left: 10px;">需求列：<select id="demandColSelect"></select></label>
-                <button class="btn btn-primary" id="applyColSelection" style="padding: 2px 10px; margin-left: 10px;">应用
-                </button>
             </div>
             <div class="data-table-container">
                 <table>
@@ -95,7 +92,7 @@
                     <tbody id="dataTableBody"></tbody>
                 </table>
             </div>
-            <p>样本数量: <span id="sampleCount" class="value-display">0</span></p>
+            <p>样本数量: <span id="sampleCount" class="value-display">0</span> <button class="btn btn-primary" id="applyColSelection" style="display: none; padding: 2px 10px; margin-left: 10px;">应用</button></p>
         </div>
 
         <!-- 拟合可视化布局 -->

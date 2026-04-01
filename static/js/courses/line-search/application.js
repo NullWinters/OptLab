@@ -24,8 +24,8 @@ class BisectionSearch {
         this.history.push({ x: mid, y: this.func(mid), a: this.a, b: this.b, df: dmid });
 
         if (Math.abs(dmid) < 1e-10) {
-            this.a = 0;
-            this.b = 0;
+            this.a = mid;
+            this.b = mid;
             this.isComplete = true;
             return false;
         } else if (dmid * da > 0) {
@@ -534,7 +534,11 @@ class SecantMethod {
                         const mid = (algo.a + algo.b) / 2;
                         const dmid = algo.df(mid);
                         const da = algo.df(algo.a);
-                        compareInfo = (dmid * da > 0) ? "f'(m) 与 f'(a) 同号 → 舍弃左区间" : "f'(m) 与 f'(b) 同号 → 舍弃右区间";
+                        if (Math.abs(dmid) < 1e-10) {
+                            compareInfo = "f'(m)=0 \u2192 输出极小值点";
+                        } else {
+                            compareInfo = (dmid * da > 0) ? "f'(m) \u4e0e f'(a) \u540c\u53f7 \u2192 \u820d\u5f03\u5de6\u533a\u95f4" : "f'(m) \u4e0e f'(b) \u540c\u53f7 \u2192 \u820d\u5f03\u53f3\u533a\u95f4";
+                        }
                     }
                 } else {
                     const l = algo.b - algo.a;
@@ -1304,6 +1308,7 @@ class SecantMethod {
             window.ExperimentNotes.trackEvent('dataset_reset_default', { sample_count: prices.length });
         }
         document.getElementById('columnSelector').style.display = 'none';
+        document.getElementById('applyColSelection').style.display = 'none';
         updateAll();
     }
 
@@ -1340,6 +1345,7 @@ class SecantMethod {
             priceSelect.value = 0;
             demandSelect.value = 1;
             document.getElementById('columnSelector').style.display = 'block';
+            document.getElementById('applyColSelection').style.display = 'inline-block';
             updateDataFromSelectedColumns();
         };
         reader.readAsText(file);

@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    let lastSolvedData = null; // 用于存储最后一次求解的数据，以便在 resize 时重绘
+
     // 初始化表格
     generateCoeffTable();
 
@@ -68,6 +70,28 @@ document.addEventListener('DOMContentLoaded', function() {
     checkBtn.addEventListener('click', validateInputs);
     solveBtn.addEventListener('click', solveSimplex);
     loadExampleBtn.addEventListener('click', loadExample);
+
+    // 面板折叠逻辑
+    const togglePanelBtn = document.getElementById('toggle-panel-btn');
+    const panelContent = document.getElementById('panel-content');
+    const stickyWrapper = document.querySelector('.input-panel-sticky-wrapper');
+
+    if (togglePanelBtn && panelContent) {
+        togglePanelBtn.addEventListener('click', function() {
+            const isCollapsed = panelContent.classList.toggle('collapsed');
+            stickyWrapper.classList.toggle('is-collapsed', isCollapsed);
+            
+            // 更新按钮图标和提示
+            const icon = togglePanelBtn.querySelector('i');
+            if (isCollapsed) {
+                icon.style.transform = 'rotate(180deg)';
+                togglePanelBtn.title = '展开';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+                togglePanelBtn.title = '收起';
+            }
+        });
+    }
 
     // 约束数量限制处理
     function handleConstraintCountChange() {
@@ -387,8 +411,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 4. 二维可视化 (如果 n=2)
         if (n === 2) {
+            lastSolvedData = {
+                c: [...c],
+                a: a.map(r => [...r]),
+                b: [...b],
+                steps: JSON.parse(JSON.stringify(steps)), // 深度克隆以防止修改
+                solveType: solveType
+            };
             render2DViz(c, a, b, steps, solveType);
         } else {
+            lastSolvedData = null;
             viz2dContainer.classList.add('hidden');
         }
     }
@@ -574,9 +606,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = d3.select('#lp-viz');
         container.selectAll('*').remove();
 
-        const margin = {top: 20, right: 30, bottom: 40, left: 40};
+        const margin = {top: 40, right: 50, bottom: 50, left: 60};
         const width = container.node().clientWidth - margin.left - margin.right;
-        const height = 400 - margin.top - margin.bottom;
+        const height = container.node().clientHeight - margin.top - margin.bottom;
 
         const svg = container.append('svg')
             .attr('width', width + margin.left + margin.right)
@@ -640,7 +672,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 绘制迭代路径
-        drawIterationPath(svg, steps, scales);
+        drawIterationPath(svg, steps, scales, infoPanel);
     }
 
     /**
@@ -696,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let detailsHtml = details.map(d => `<div class="details-item">${d}</div>`).join('');
 
                 const content = `
-                    <div class="panel-header">
+                    <div class="float-panel-header">
                         <span class="panel-title">${title}</span>
                         ${badgeHtml}
                     </div>
@@ -1006,6 +1038,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (uniquePoints.length < 2) return;
+        
+        // 绘制透明的交互线（增大命中区域）
+        const interactiveLine = svg.append('line')
+            .attr('x1', xScale(uniquePoints[0][0]))
+            .attr('y1', yScale(uniquePoints[0][1]))
+            .attr('x2', xScale(uniquePoints[1][0]))
+            .attr('y2', yScale(uniquePoints[1][1]))
+            .attr('stroke', 'transparent')
+            .attr('stroke-width', 20)
+            .style('cursor', 'pointer');
 
         // 绘制约束线
         const line = svg.append('line')
@@ -1016,7 +1058,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr('y2', yScale(uniquePoints[1][1]))
             .attr('stroke', '#666')
             .attr('stroke-width', 1.5)
-            .attr('stroke-dasharray', '4');
+            .attr('stroke-dasharray', '4')
+            .style('pointer-events', 'none'); // 让事件透传到交互线
 
         // 绘制单个约束的可行域填充
         const feasiblePolygon = calculateConstraintFeasibleRegion(constraint, bounds);
@@ -1051,13 +1094,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 添加悬停事件
-        line.on('mouseover', function(event) {
-            d3.select(this).attr('stroke-width', 2.5);
+        interactiveLine.on('mouseover', function(event) {
+            line.attr('stroke-width', 3).attr('stroke', 'var(--primary-color)');
             infoPanel.show(title, badge, equation, details, event);
         }).on('mousemove', function(event) {
             infoPanel.move(event);
         }).on('mouseout', function() {
-            d3.select(this).attr('stroke-width', 1.5);
+            line.attr('stroke-width', 1.5).attr('stroke', '#666');
             infoPanel.hide();
         });
     }
@@ -1372,12 +1415,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (points.length < 2) return;
 
+        // 绘制透明的交互线（增大命中区域）
+        const interactiveLine = svg.append('line')
+            .attr('x1', xScale(points[0][0]))
+            .attr('y1', yScale(points[0][1]))
+            .attr('x2', xScale(points[1][0]))
+            .attr('y2', yScale(points[1][1]))
+            .attr('stroke', 'transparent')
+            .attr('stroke-width', 20)
+            .style('cursor', 'pointer');
+
         const line = svg.append('line')
             .attr('class', 'objective-line')
             .attr('x1', xScale(points[0][0]))
             .attr('y1', yScale(points[0][1]))
             .attr('x2', xScale(points[1][0]))
-            .attr('y2', yScale(points[1][1]));
+            .attr('y2', yScale(points[1][1]))
+            .style('pointer-events', 'none'); // 让事件透传到交互线
 
         // 生成信息面板内容
         const title = '目标函数';
@@ -1389,13 +1443,13 @@ document.addEventListener('DOMContentLoaded', function() {
         ];
 
         // 添加悬停事件
-        line.on('mouseover', function(event) {
-            d3.select(this).attr('stroke-width', 3);
+        interactiveLine.on('mouseover', function(event) {
+            line.attr('stroke-width', 4);
             infoPanel.show(title, badge, equation, details, event);
         }).on('mousemove', function(event) {
             infoPanel.move(event);
         }).on('mouseout', function() {
-            d3.select(this).attr('stroke-width', 2);
+            line.attr('stroke-width', 2);
             infoPanel.hide();
         });
     }
@@ -1403,7 +1457,7 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * 绘制迭代路径
      */
-    function drawIterationPath(svg, steps, scales) {
+    function drawIterationPath(svg, steps, scales, infoPanel) {
         const {xScale, yScale} = scales;
         const pathData = [];
 
@@ -1427,7 +1481,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr('class', 'iteration-path')
             .attr('d', line);
 
-        svg.selectAll('.iteration-dot')
+        const dots = svg.selectAll('.iteration-dot')
             .data(pathData)
             .enter()
             .append('circle')
@@ -1435,8 +1489,42 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr('cx', d => xScale(d.x))
             .attr('cy', d => yScale(d.y))
             .attr('r', 5)
-            .attr('fill', 'var(--primary-color)')
-            .append('title')
-            .text(d => `迭代 ${d.iter}: (${d.x.toFixed(2)}, ${d.y.toFixed(2)})`);
+            .attr('fill', 'var(--primary-color)');
+
+        // 添加悬停事件
+        dots.on('mouseover', function(event, d) {
+            d3.select(this).attr('r', 8);
+            
+            const title = `迭代 ${d.iter}`;
+            const badge = d.iter === 0 ? '起始' : (d.iter === steps.length - 1 ? '最优' : `第 ${d.iter} 步`);
+            const equation = `(x₁, x₂) = (${d.x.toFixed(4)}, ${d.y.toFixed(4)})`;
+            const details = [
+                `x₁ 坐标: ${d.x.toFixed(4)}`,
+                `x₂ 坐标: ${d.y.toFixed(4)}`
+            ];
+            
+            infoPanel.show(title, badge, equation, details, event);
+        }).on('mousemove', function(event) {
+            infoPanel.move(event);
+        }).on('mouseout', function() {
+            d3.select(this).attr('r', 5);
+            infoPanel.hide();
+        });
     }
+    // 窗口尺寸自适应
+    let resizeTimer = null;
+    window.addEventListener('resize', function() {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (lastSolvedData && parseInt(numVarsInput.value) === 2) {
+                render2DViz(
+                    lastSolvedData.c,
+                    lastSolvedData.a,
+                    lastSolvedData.b,
+                    lastSolvedData.steps,
+                    lastSolvedData.solveType
+                );
+            }
+        }, 300);
+    });
 });

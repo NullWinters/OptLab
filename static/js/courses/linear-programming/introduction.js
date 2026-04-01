@@ -280,7 +280,9 @@ function initObservationViz() {
             }
         }
 
-        if (window.MathJax) MathJax.typesetPromise();
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            MathJax.typesetPromise().catch((err) => console.log('MathJax typeset failed: ' + err));
+        }
     }
 
     window.iterate = function(enteringVar) {

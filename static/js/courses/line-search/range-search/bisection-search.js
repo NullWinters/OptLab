@@ -90,6 +90,8 @@ export class BisectionSearch {
             this.hasConverged = true;
             this.terminationReason = 'converged';
             this.result = m;
+            this.a = m;
+            this.b = m;
         } else if (df_m * df_a > 0) {
             decision = '导数与左端点同号，舍弃左半区间';
         } else {
