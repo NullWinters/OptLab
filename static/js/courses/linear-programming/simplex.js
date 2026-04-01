@@ -11,9 +11,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetBtn = document.getElementById('reset-btn');
     const checkBtn = document.getElementById('check-btn');
     const iterationResults = document.getElementById('iteration-results');
+    const simplexIterationCards = document.getElementById('simplex-iteration-cards');
+    const leftColumn = document.querySelector('.left-column');
     const viz2dContainer = document.getElementById('visualization-2d');
     const exampleSelect = document.getElementById('example-select');
     const loadExampleBtn = document.getElementById('load-example-btn');
+    const simplexLogOpenBtn = document.getElementById('simplex-log-open-btn');
+    const simplexLogExportJsonBtn = document.getElementById('simplex-log-export-json-btn');
+    const simplexLogSaveToProfileBtn = document.getElementById('simplex-log-save-to-profile-btn');
+    const simplexLogModal = document.getElementById('simplex-log-modal');
+    const simplexLogCloseBtn = document.getElementById('simplex-log-close');
+    const simplexLogSummary = document.getElementById('simplex-log-summary');
+    const simplexLogBody = document.getElementById('simplex-log-body');
+
+    let lastRunRecord = null;
+    let leftResizeObserver = null;
 
     const examples = {
         'max': {
@@ -62,6 +74,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始化表格
     generateCoeffTable();
+    setEmptyState('请在左侧输入参数并点击"求解"开始实验。');
+    syncResultCanvasHeight();
+    window.addEventListener('resize', syncResultCanvasHeight);
+    if (window.ResizeObserver && leftColumn) {
+        leftResizeObserver = new ResizeObserver(function () { syncResultCanvasHeight(); });
+        leftResizeObserver.observe(leftColumn);
+    }
 
     // 事件监听
     numVarsInput.addEventListener('change', generateCoeffTable);
@@ -76,11 +95,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const panelContent = document.getElementById('panel-content');
     const stickyWrapper = document.querySelector('.input-panel-sticky-wrapper');
 
+    if (simplexLogOpenBtn) simplexLogOpenBtn.addEventListener('click', openSimplexLogModal);
+    if (simplexLogExportJsonBtn) simplexLogExportJsonBtn.addEventListener('click', exportSimplexLogAsJson);
+    if (simplexLogSaveToProfileBtn) simplexLogSaveToProfileBtn.addEventListener('click', saveSimplexLogToProfile);
+    if (simplexLogCloseBtn) simplexLogCloseBtn.addEventListener('click', closeSimplexLogModal);
+    if (simplexLogModal) {
+        simplexLogModal.addEventListener('click', function (e) {
+            if (e.target === simplexLogModal) closeSimplexLogModal();
+        });
+    }
+
     if (togglePanelBtn && panelContent) {
         togglePanelBtn.addEventListener('click', function() {
             const isCollapsed = panelContent.classList.toggle('collapsed');
             stickyWrapper.classList.toggle('is-collapsed', isCollapsed);
-            
+
             // 更新按钮图标和提示
             const icon = togglePanelBtn.querySelector('i');
             if (isCollapsed) {
@@ -91,6 +120,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 togglePanelBtn.title = '收起';
             }
         });
+    }
+
+
+    function syncResultCanvasHeight() {
+        if (!leftColumn || !iterationResults) return;
+
+        // 仅在宽屏（非 Grid 1x1）时同步
+        if (window.innerWidth <= 1024) {
+            iterationResults.style.maxHeight = '';
+            return;
+        }
+
+        const inputPanel = leftColumn.querySelector('.input-panel');
+        const dataPanel = leftColumn.querySelector('.experiment-data-panel');
+
+        if (inputPanel && dataPanel) {
+            // 精确计算左侧真实内容高度 (gap: 14px)
+            const gap = 14;
+            const target = inputPanel.offsetHeight + gap + dataPanel.offsetHeight;
+            iterationResults.style.maxHeight = target + 'px';
+        } else {
+            // 回退方案：使用整体高度
+            const leftHeight = Math.ceil(leftColumn.getBoundingClientRect().height);
+            const target = Math.max(leftHeight, 820);
+            iterationResults.style.maxHeight = target + 'px';
+        }
+    }
+
+    function setEmptyState(message) {
+        if (!simplexIterationCards) return;
+        simplexIterationCards.classList.add('is-empty');
+        simplexIterationCards.classList.remove('has-results');
+        simplexIterationCards.innerHTML = '<div class="placeholder-text">' + message + '</div>';
+        syncResultCanvasHeight();
     }
 
     // 约束数量限制处理
@@ -144,8 +207,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (bInput) bInput.value = data.b[i];
         });
 
-        iterationResults.innerHTML = '<div class="placeholder-text">已加载示例数据，点击"求解"开始实验。</div>';
+        setEmptyState('已加载示例数据，点击"求解"开始实验。');
         viz2dContainer.classList.add('hidden');
+        lastRunRecord = null;
     }
 
     /**
@@ -189,8 +253,279 @@ document.addEventListener('DOMContentLoaded', function() {
         numConstraintsInput.value = 3;
         document.querySelector('input[name="solve-type"][value="max"]').checked = true;
         generateCoeffTable();
-        iterationResults.innerHTML = '<div class="placeholder-text">请在左侧输入参数并点击"求解"开始实验。</div>';
+        setEmptyState('请在左侧输入参数并点击"求解"开始实验。');
         viz2dContainer.classList.add('hidden');
+        lastRunRecord = null;
+    }
+
+    function getSimplexStatusLabel(status) {
+        if (status === 'optimal') return '达到最优';
+        if (status === 'unbounded') return '检测到无界';
+        if (status === 'max_iter') return '达到最大迭代次数';
+        return '迭代中';
+    }
+
+    function createSimplexRecordPayload() {
+        if (!lastRunRecord || !Array.isArray(lastRunRecord.steps) || !lastRunRecord.steps.length) {
+            return null;
+        }
+        const objectiveValue = typeof lastRunRecord.finalObjectiveValue === 'number'
+            ? lastRunRecord.finalObjectiveValue
+            : null;
+
+        return {
+            algorithm_name: '单纯形法',
+            test_function: lastRunRecord.solveType === 'max' ? 'Max Z' : 'Min Z',
+            initial_state: {
+                n: lastRunRecord.n,
+                m: lastRunRecord.m,
+                solve_type: lastRunRecord.solveType,
+                objective_coeffs: lastRunRecord.objective,
+                constraints: lastRunRecord.constraints
+            },
+            result: {
+                status: lastRunRecord.status,
+                status_label: getSimplexStatusLabel(lastRunRecord.status),
+                objective_value: objectiveValue,
+                solution: lastRunRecord.solution
+            },
+            iteration_data: lastRunRecord.steps.map(function (step) {
+                return {
+                    iteration: step.iteration,
+                    status: step.status,
+                    entering: step.entering,
+                    leaving: step.leaving,
+                    basis: step.basis,
+                    cB: step.cB,
+                    b: step.b,
+                    sigma: step.sigma,
+                    theta: step.theta,
+                    tableau: {
+                        cj: step.cj,
+                        a: step.a,
+                        b: step.b,
+                        cB: step.cB,
+                        basis: step.basis,
+                        sigma: step.sigma,
+                        theta: step.theta
+                    }
+                };
+            })
+        };
+    }
+
+    function formatCellNumber(value, digits) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '—';
+        return n.toFixed(typeof digits === 'number' ? digits : 4);
+    }
+
+    function buildTableauDetailHtml(tableau) {
+        if (!tableau || !Array.isArray(tableau.a) || !Array.isArray(tableau.cj)) {
+            return '<div class="simplex-tableau-empty">无可用矩阵数据</div>';
+        }
+
+        const header = ['cB', 'Basis', 'b']
+            .concat(tableau.cj.map(function (_, idx) { return 'x' + (idx + 1); }))
+            .concat(['θ']);
+
+        const bArr = Array.isArray(tableau.b) ? tableau.b : [];
+        const cBArr = Array.isArray(tableau.cB) ? tableau.cB : [];
+        const basisArr = Array.isArray(tableau.basis) ? tableau.basis : [];
+        const thetaArr = Array.isArray(tableau.theta) ? tableau.theta : [];
+        const sigmaArr = Array.isArray(tableau.sigma) ? tableau.sigma : [];
+
+        let html = '<div class="simplex-tableau-wrap"><table class="simplex-tableau-table"><thead><tr>';
+        header.forEach(function (h) { html += '<th>' + h + '</th>'; });
+        html += '</tr></thead><tbody>';
+
+        tableau.a.forEach(function (row, rowIdx) {
+            html += '<tr>' +
+                '<td>' + formatCellNumber(cBArr[rowIdx], 4) + '</td>' +
+                '<td>' + (basisArr[rowIdx] || '--') + '</td>' +
+                '<td>' + formatCellNumber(bArr[rowIdx], 4) + '</td>';
+            for (let j = 0; j < tableau.cj.length; j++) {
+                html += '<td>' + formatCellNumber(row[j], 4) + '</td>';
+            }
+            html += '<td>' + (thetaArr[rowIdx] == null ? '—' : formatCellNumber(thetaArr[rowIdx], 4)) + '</td>' +
+                '</tr>';
+        });
+
+        html += '<tr class="sigma-row">' +
+            '<td>σj</td><td></td><td></td>';
+        for (let j = 0; j < tableau.cj.length; j++) {
+            html += '<td>' + formatCellNumber(sigmaArr[j], 4) + '</td>';
+        }
+        html += '<td></td></tr>';
+
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function bindTableauExpandEvents() {
+        if (!simplexLogBody) return;
+        simplexLogBody.querySelectorAll('.simplex-expand-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const step = btn.getAttribute('data-step');
+                const detailRow = simplexLogBody.querySelector('tr[data-detail-row="' + step + '"]');
+                if (!detailRow) return;
+                const expanded = detailRow.classList.toggle('hidden');
+                btn.textContent = expanded ? '展开完整 tableau' : '收起 tableau';
+            });
+        });
+    }
+
+    function openSimplexLogModal() {
+        const payload = createSimplexRecordPayload();
+        if (!payload) {
+            alert('当前尚无实验数据，请先运行一次单纯形法求解。');
+            return;
+        }
+        if (simplexLogSummary) {
+            simplexLogSummary.innerHTML =
+                '<div>求解类型：' + (lastRunRecord.solveType === 'max' ? '最大化' : '最小化') + '</div>' +
+                '<div>规模：n = ' + lastRunRecord.n + '，m = ' + lastRunRecord.m + '</div>' +
+                '<div>终止状态：' + getSimplexStatusLabel(lastRunRecord.status) + '</div>' +
+                '<div>迭代步数：' + payload.iteration_data.length + '</div>';
+        }
+        if (simplexLogBody) {
+            simplexLogBody.innerHTML = payload.iteration_data.map(function (row) {
+                const statusLabel = getSimplexStatusLabel(row.status);
+                const bText = Array.isArray(row.b) ? row.b.map(function (v) { return Number(v).toFixed(4); }).join(', ') : '--';
+                const basisText = Array.isArray(row.basis) ? row.basis.join(', ') : '--';
+                const detailHtml = buildTableauDetailHtml(row.tableau);
+                return '<tr>' +
+                    '<td>' + row.iteration + '</td>' +
+                    '<td>' + (row.entering || '—') + '</td>' +
+                    '<td>' + (row.leaving || '—') + '</td>' +
+                    '<td>' + statusLabel + '</td>' +
+                    '<td>' + basisText + '</td>' +
+                    '<td>' + bText + '</td>' +
+                    '<td><button type="button" class="simplex-expand-btn" data-step="' + row.iteration + '">展开完整 tableau</button></td>' +
+                    '</tr>' +
+                    '<tr class="hidden" data-detail-row="' + row.iteration + '">' +
+                    '<td colspan="7">' + detailHtml + '</td>' +
+                    '</tr>';
+            }).join('');
+            bindTableauExpandEvents();
+        }
+        simplexLogModal.classList.remove('hidden');
+    }
+
+    function closeSimplexLogModal() {
+        if (!simplexLogModal) return;
+        simplexLogModal.classList.add('hidden');
+    }
+
+    function exportSimplexLogAsJson() {
+        const payload = createSimplexRecordPayload();
+        if (!payload) {
+            alert('当前尚无实验数据，请先运行一次单纯形法求解。');
+            return;
+        }
+
+        function compactNums(arr) {
+            return (Array.isArray(arr) ? arr : []).map(function (v) { return Number(v).toFixed(4); }).join(', ');
+        }
+
+        function compactConstraints(items) {
+            return (Array.isArray(items) ? items : []).map(function (it, idx) {
+                return '约束' + (idx + 1) + ': [' + compactNums(it.coeffs) + '] <= ' + Number(it.b).toFixed(4);
+            });
+        }
+
+        const pretty = {
+            文件说明: {
+                名称: '线性规划-单纯形法实验记录',
+                导出时间: new Date().toLocaleString('zh-CN', { hour12: false }),
+                页面: 'linear-programming.simplex',
+                备注: '按“概览-输入-结果-迭代摘要-逐步tableau(紧凑)”组织，便于阅读与复现实验。'
+            },
+            实验概览: {
+                算法: payload.algorithm_name,
+                求解类型: payload.initial_state.solve_type === 'max' ? '最大化' : '最小化',
+                问题规模: 'n=' + payload.initial_state.n + ', m=' + payload.initial_state.m,
+                终止状态: payload.result.status_label,
+                最优目标值: payload.result.objective_value,
+                解向量: payload.result.solution
+            },
+            输入数据: {
+                目标函数系数: '[' + compactNums(payload.initial_state.objective_coeffs) + ']',
+                约束条件: compactConstraints(payload.initial_state.constraints)
+            },
+            迭代摘要: payload.iteration_data.map(function (it) {
+                return {
+                    迭代: it.iteration,
+                    状态: getSimplexStatusLabel(it.status),
+                    入基变量: it.entering || '—',
+                    离基变量: it.leaving || '—',
+                    基变量: (it.basis || []).join(', '),
+                    当前基解b: '[' + compactNums(it.b) + ']'
+                };
+            }),
+            逐步Tableau: payload.iteration_data.map(function (it) {
+                return {
+                    迭代: it.iteration,
+                    行标签: ['cB', 'Basis', 'b', 'x列...', 'θ', 'σj'],
+                    cj: '[' + compactNums(it.tableau.cj) + ']',
+                    cB: '[' + compactNums(it.tableau.cB) + ']',
+                    basis: (it.tableau.basis || []).join(', '),
+                    b: '[' + compactNums(it.tableau.b) + ']',
+                    a_rows: (it.tableau.a || []).map(function (row) { return '[' + compactNums(row) + ']'; }),
+                    sigma: '[' + compactNums(it.tableau.sigma) + ']',
+                    theta: '[' + (Array.isArray(it.tableau.theta) ? it.tableau.theta.map(function (v) { return v == null ? '—' : Number(v).toFixed(4); }).join(', ') : '') + ']'
+                };
+            })
+        };
+
+        const jsonText = JSON.stringify(pretty, null, 2);
+        const blob = new Blob([jsonText], { type: 'application/json;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'linear-programming.simplex-实验迭代数据.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    async function saveSimplexLogToProfile() {
+        const payload = createSimplexRecordPayload();
+        if (!payload) {
+            alert('当前尚无实验数据，请先运行一次单纯形法求解。');
+            return;
+        }
+        if (typeof apiPost !== 'function' || typeof getStoredToken !== 'function' || !getStoredToken()) {
+            if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+                window.LoginModal.open({ mode: 'login', notice: '请先登录后再保存至个人中心。' });
+            } else {
+                alert('请先登录后再保存至个人中心。');
+            }
+            return;
+        }
+
+        const defaultAlias = (window.RecordSaveModal && typeof window.RecordSaveModal.makeDefaultAlias === 'function')
+            ? window.RecordSaveModal.makeDefaultAlias('SIMPLEX')
+            : ('SIMPLEX-' + new Date().toISOString().slice(0, 16).replace('T', ' '));
+
+        if (window.RecordSaveModal && typeof window.RecordSaveModal.open === 'function') {
+            window.RecordSaveModal.open({
+                title: '保存至个人中心',
+                subtitle: '单纯形法交互实验记录将保存到你的个人中心',
+                aliasPrefix: 'SIMPLEX',
+                defaultAlias,
+                onConfirm: function (alias) {
+                    return apiPost('/experiments/records', {
+                        alias: String(alias).trim(),
+                        source_page: 'linear-programming.simplex',
+                        payload: payload
+                    });
+                }
+            });
+        } else {
+            alert('保存弹窗未加载，请刷新页面后重试。');
+        }
     }
 
     function validateInputs() {
@@ -406,6 +741,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (iteration >= maxIterations) status = "max_iter";
 
+        const finalStep = steps.length ? steps[steps.length - 1] : null;
+        const solution = {};
+        for (let j = 1; j <= n; j++) {
+            const idx = finalStep ? finalStep.basis.indexOf('x' + j) : -1;
+            solution['x' + j] = idx !== -1 ? Number(finalStep.b[idx]) : 0;
+        }
+
+        let finalObjectiveValue = null;
+        if (finalStep) {
+            finalObjectiveValue = finalStep.cB.reduce(function (sum, cbv, i) {
+                return sum + cbv * finalStep.b[i];
+            }, 0);
+        }
+
+        lastRunRecord = {
+            n: n,
+            m: m,
+            solveType: solveType,
+            objective: c,
+            constraints: a.map(function (row, idx) { return { coeffs: row, b: b[idx] }; }),
+            steps: steps,
+            status: status,
+            solution: solution,
+            finalObjectiveValue: finalObjectiveValue
+        };
+
         // 3. 渲染结果
         renderResults(steps, status, solveType);
 
@@ -426,7 +787,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderResults(steps, status, solveType) {
-        iterationResults.innerHTML = '';
+        if (!simplexIterationCards) return;
+        simplexIterationCards.innerHTML = '';
+        simplexIterationCards.classList.add('has-results');
+        simplexIterationCards.classList.remove('is-empty');
 
         steps.forEach((step, idx) => {
             const card = document.createElement('div');
@@ -459,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 card.appendChild(alert);
             }
 
-            iterationResults.appendChild(card);
+            simplexIterationCards.appendChild(card);
         });
 
         const finalAlert = document.createElement('div');
@@ -476,11 +840,14 @@ document.addEventListener('DOMContentLoaded', function() {
             finalAlert.className = 'alert alert-warning';
             finalAlert.innerHTML = `<strong>求解终止：</strong> 达到最大迭代次数。可能存在循环或计算不收敛。`;
         }
-        iterationResults.appendChild(finalAlert);
+        simplexIterationCards.appendChild(finalAlert);
 
         if (window.MathJax && window.MathJax.typesetPromise) {
-            MathJax.typesetPromise([iterationResults]).catch((err) => console.log('MathJax typeset failed: ' + err.message));
+            MathJax.typesetPromise([simplexIterationCards]).catch((err) => console.log('MathJax typeset failed: ' + err.message));
         }
+
+        // 渲染卡片后同步高度，防止撑开 Grid Row
+        syncResultCanvasHeight();
     }
 
     function renderSimplexTable(svg, data) {

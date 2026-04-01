@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/static/css/components/ai-sidebar.css">
     <link rel="stylesheet" href="/static/css/components/experiment-notes.css">
+    <link rel="stylesheet" href="/static/css/components/login-modal.css">
     <link rel="stylesheet" href="/static/css/components/top-nav.css">
     <style>
         body.modal-open {
@@ -16,7 +17,9 @@
         }
 
         .modal,
-        .exp-notes-confirm-overlay {
+        .exp-notes-confirm-overlay,
+        .login-modal-overlay,
+        .simplex-log-modal {
             overscroll-behavior: contain;
         }
     </style>
@@ -33,6 +36,7 @@
     {% block experiment_notes %}{% endblock %}
 
     <script src="/static/js/api.js"></script>
+    <script src="/static/js/common/login-modal.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.MathJax = window.MathJax || {
@@ -47,6 +51,7 @@
             function isVisibleModal(el) {
                 if (!el) return false;
                 if (el.classList.contains('exp-notes-confirm-overlay')) return true;
+                if (el.classList.contains('login-modal-overlay')) return el.classList.contains('is-open');
                 if (!el.classList.contains('modal')) return false;
                 var st = window.getComputedStyle(el);
                 return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
@@ -54,7 +59,7 @@
 
             function refreshModalLock() {
                 var hasVisibleModal = false;
-                document.querySelectorAll('.modal, .exp-notes-confirm-overlay').forEach(function (el) {
+                document.querySelectorAll('.modal, .exp-notes-confirm-overlay, .login-modal-overlay').forEach(function (el) {
                     if (isVisibleModal(el)) hasVisibleModal = true;
                 });
                 document.body.classList.toggle('modal-open', hasVisibleModal);
@@ -69,6 +74,35 @@
                     attributes: true,
                     attributeFilter: ['style', 'class']
                 });
+
+                function lockBackgroundScroll(event) {
+                    if (!document.body.classList.contains('modal-open')) return;
+                    var inOverlay = event.target.closest('.modal, .login-modal-overlay, .exp-notes-confirm-overlay, .simplex-log-modal');
+                    if (!inOverlay) {
+                        event.preventDefault();
+                    }
+                }
+
+                function isTypingTarget(target) {
+                    if (!target) return false;
+                    var tag = target.tagName;
+                    return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
+                }
+
+                function lockBackgroundKeyboardScroll(event) {
+                    if (!document.body.classList.contains('modal-open')) return;
+                    if (event.altKey || event.ctrlKey || event.metaKey) return;
+                    if (isTypingTarget(event.target)) return;
+
+                    var blockedKeys = ['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+                    if (blockedKeys.indexOf(event.key) !== -1) {
+                        event.preventDefault();
+                    }
+                }
+
+                window.addEventListener('wheel', lockBackgroundScroll, { passive: false });
+                window.addEventListener('touchmove', lockBackgroundScroll, { passive: false });
+                window.addEventListener('keydown', lockBackgroundKeyboardScroll, { passive: false });
             });
         })();
     </script>

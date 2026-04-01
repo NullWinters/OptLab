@@ -265,3 +265,123 @@
 .tooltip b {
     color: var(--primary-dark);
 }
+
+/* SMO 实验数据面板 */
+.smo-data-actions {
+    display: grid;
+    gap: 10px;
+}
+
+.smo-data-actions .btn {
+    width: 100%;
+    padding: 10px 12px;
+}
+
+/* SMO 迭代数据弹窗 */
+#smo-iteration-log-modal.modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 2000;
+}
+
+#smo-iteration-log-modal .modal-panel {
+    max-width: 1050px;
+    width: 96%;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #fffdf9 0%, #fff7ef 100%);
+    border-radius: 18px;
+    border: 1px solid #efd8c4;
+    box-shadow: 0 20px 42px rgba(95, 58, 31, 0.22), 0 10px 24px rgba(217, 106, 43, 0.16);
+    overflow: hidden;
+}
+
+#smo-iteration-log-modal .modal-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0e0cc;
+    background: linear-gradient(180deg, #fff7e3, #fff3d5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#smo-iteration-log-modal .modal-header h3 {
+    margin: 0;
+    font-size: 17px;
+    color: #5d4037;
+}
+
+#smo-iteration-log-modal .modal-close {
+    cursor: pointer;
+    font-size: 21px;
+    color: var(--muted);
+}
+
+#smo-iteration-log-modal .modal-close:hover {
+    color: #c62828;
+}
+
+#smo-iteration-log-modal .modal-body {
+    padding: 12px 16px 16px;
+    overflow: auto;
+}
+
+#smo-iteration-log-modal .modal-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    font-size: 13px;
+    color: #5f3a1f;
+    margin-bottom: 10px;
+}
+
+#smo-iteration-log-modal .modal-final-box {
+    font-size: 13px;
+    color: #b71c1c;
+    background: #fff3e0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+}
+
+#smo-iteration-log-modal .modal-table th,
+#smo-iteration-log-modal .modal-table td {
+    padding: 6px 5px;
+    border-bottom: 1px solid #e9ddd1;
+    text-align: left;
+    vertical-align: middle;
+}
+
+#smo-iteration-log-modal .modal-table thead th {
+    background: linear-gradient(180deg, #ffe9d6 0%, #ffe0c4 100%);
+    color: #7a3f1b;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-bottom: 1px solid #f0cfaf;
+}
+
+#smo-iteration-log-modal .modal-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    overflow: hidden;
+    border: 1px solid #f0ddcb;
+    border-radius: 12px;
+    background: #fffdf9;
+}
+
+#smo-iteration-log-modal .modal-table thead th:first-child {
+    border-top-left-radius: 12px;
+}
+
+#smo-iteration-log-modal .modal-table thead th:last-child {
+    border-top-right-radius: 12px;
+}
+

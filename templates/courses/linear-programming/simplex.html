@@ -27,75 +27,82 @@
     </nav>
 
     <div class="main-layout">
-        <!-- 左侧输入与控制面板 -->
-        <aside class="input-panel">
-            <div class="input-panel-sticky-wrapper">
-                <div class="panel-header">
+        <div class="left-column">
+            <!-- 左侧输入与控制面板 -->
+            <aside class="input-panel">
+                <div class="panel-section">
                     <h3>示例数据加载</h3>
-                    <button id="toggle-panel-btn" class="toggle-btn" title="收起/展开">
-                        <i class="fas fa-chevron-up"></i>
-                    </button>
-                </div>
-                <div id="panel-content" class="panel-content">
-                    <div class="panel-section">
-                        <div class="input-inline">
-                            <div class="input-group" style="flex: 2;">
-                                <label for="example-select"></label><select id="example-select">
-                                    <option value="max">最大化示例</option>
-                                    <option value="min">最小化示例</option>
-                                    <option value="unbounded">无界解示例</option>
-                                    <option value="degenerate">退化解示例</option>
-                                    <option value="multiple">多重最优解示例</option>
-                                </select>
-                            </div>
-                            <button id="load-example-btn" class="action-btn primary" style="flex: 1;">加载</button>
+                    <div class="input-inline">
+                        <div class="input-group" style="flex: 2;">
+                            <label for="example-select"></label><select id="example-select">
+                                <option value="max">最大化示例</option>
+                                <option value="min">最小化示例</option>
+                                <option value="unbounded">无界解示例</option>
+                                <option value="degenerate">退化解示例</option>
+                                <option value="multiple">多重最优解示例</option>
+                            </select>
                         </div>
-                    </div>
-
-                    <div class="panel-section">
-                        <h3>问题规模设定</h3>
-                        <div class="input-inline">
-                            <div class="input-group">
-                                <label for="num-vars">变量数 (n):</label>
-                                <input type="number" id="num-vars" min="1" max="15" value="2" step="1">
-                            </div>
-                            <div class="input-group">
-                                <label for="num-constraints">约束数 (m):</label>
-                                <input type="number" id="num-constraints" min="1" max="15" value="3" step="1">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="panel-section">
-                        <h3>求解类型</h3>
-                        <div class="radio-group">
-                            <label><input type="radio" name="solve-type" value="max" checked> 最大化 (Maximize)</label>
-                            <label><input type="radio" name="solve-type" value="min"> 最小化 (Minimize)</label>
-                        </div>
-                    </div>
-
-                    <div class="panel-section">
-                        <h3>系数输入表格</h3>
-                        <p class="hint-text">已默认每个决策变量 x<sub>j</sub> ≥ 0 (j = 1, 2, ..., n)</p>
-                        <div id="coeff-table-container">
-                            <!-- 动态生成系数表格 -->
-                        </div>
-                    </div>
-
-                    <div class="panel-actions">
-                        <button id="reset-btn" class="action-btn secondary">重置</button>
-                        <button id="check-btn" class="action-btn secondary">检查输入</button>
-                        <button id="solve-btn" class="action-btn primary">求解</button>
+                        <button id="load-example-btn" class="action-btn primary" style="flex: 1;">加载</button>
                     </div>
                 </div>
-            </div>
-        </aside>
+
+                <div class="panel-section">
+                    <h3>问题规模设定</h3>
+                    <div class="input-inline">
+                        <div class="input-group">
+                            <label for="num-vars">变量数 (n):</label>
+                            <input type="number" id="num-vars" min="1" max="15" value="2" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label for="num-constraints">约束数 (m):</label>
+                            <input type="number" id="num-constraints" min="1" max="15" value="3" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>求解类型</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="solve-type" value="max" checked> 最大化 (Maximize)</label>
+                        <label><input type="radio" name="solve-type" value="min"> 最小化 (Minimize)</label>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>系数输入表格</h3>
+                    <p class="hint-text">已默认每个决策变量 x<sub>j</sub> ≥ 0 (j = 1, 2, ..., n)</p>
+                    <div id="coeff-table-container">
+                        <!-- 动态生成系数表格 -->
+                    </div>
+                </div>
+
+                <div class="panel-actions">
+                    <button id="reset-btn" class="action-btn secondary">重置</button>
+                    <button id="check-btn" class="action-btn secondary">检查输入</button>
+                    <button id="solve-btn" class="action-btn primary">求解</button>
+                </div>
+            </aside>
+
+            <section class="experiment-data-panel">
+                <div class="experiment-data-header">
+                    <h3>实验数据</h3>
+                    <p>查看、导出与保存本次单纯形法迭代记录</p>
+                </div>
+                <div class="experiment-data-actions">
+                    <button id="simplex-log-open-btn" class="action-btn secondary">查看实验数据</button>
+                    <button id="simplex-log-export-json-btn" class="action-btn secondary">导出实验数据(JSON)</button>
+                    <button id="simplex-log-save-to-profile-btn" class="action-btn primary">保存至个人中心</button>
+                </div>
+            </section>
+        </div>
 
         <!-- 右侧结果展示区 -->
         <main class="result-area">
             <div id="iteration-results" class="results-container">
-                <div class="placeholder-text">
-                    请在左侧输入参数并点击“求解”开始实验。
+                <div id="simplex-iteration-cards" class="is-empty">
+                    <div class="placeholder-text">
+                        请在左侧输入参数并点击“求解”开始实验。
+                    </div>
                 </div>
             </div>
         </main>
@@ -106,6 +113,32 @@
         <h3>二维可视化 (n=2)</h3>
         <div id="lp-viz"></div>
         <p class="viz-caption">展示可行域与当前基解位置</p>
+    </div>
+
+    <div id="simplex-log-modal" class="simplex-log-modal modal hidden" aria-hidden="true">
+        <div class="simplex-log-card" role="dialog" aria-modal="true" aria-labelledby="simplex-log-title">
+            <div class="simplex-log-head">
+                <h3 id="simplex-log-title">单纯形法实验迭代数据</h3>
+                <button id="simplex-log-close" class="simplex-log-close" type="button" aria-label="关闭">×</button>
+            </div>
+            <div class="simplex-log-summary" id="simplex-log-summary"></div>
+            <div class="simplex-log-table-wrap">
+                <table class="simplex-log-table">
+                    <thead>
+                    <tr>
+                        <th>迭代</th>
+                        <th>入基变量</th>
+                        <th>离基变量</th>
+                        <th>状态</th>
+                        <th>基变量</th>
+                        <th>当前基解 b</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="simplex-log-body"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     {% block experiment_notes %}

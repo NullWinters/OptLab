@@ -4,11 +4,15 @@
 }
 
 #app-content {
-    transition: margin-right 0.3s ease;
+    transition: width 0.3s ease, margin-right 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 body.ai-sidebar-open #app-content {
-    margin-right: var(--ai-sidebar-width);
+    width: calc(100vw - var(--ai-sidebar-width) - 24px) !important;
+    margin-right: calc(var(--ai-sidebar-width) + 24px) !important;
+    overflow-x: hidden;
 }
 
 body.ai-sidebar-open .ai-toggle-btn {
@@ -175,10 +179,43 @@ body.ai-sidebar-open .ai-toggle-btn {
     border-radius: 20px;
     font-size: 14px;
     outline: none;
+    box-shadow: none;
 }
 
 .ai-chat-input input:focus {
     border-color: #d84315;
+    box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.14);
+}
+
+#ai-send-btn {
+    min-width: 72px;
+    height: 40px;
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+    background: linear-gradient(135deg, #d84315, #f4511e);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(216, 67, 21, 0.22);
+    transition: all 0.2s ease;
+}
+
+#ai-send-btn:hover {
+    background: linear-gradient(135deg, #bf360c, #e64a19);
+    transform: translateY(-1px);
+}
+
+#ai-send-btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.22), 0 4px 12px rgba(216, 67, 21, 0.22);
+}
+
+#ai-send-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .ai-chat-input button {
@@ -322,20 +359,36 @@ body.ai-sidebar-open .ai-toggle-btn {
 
 /* ========== 登录按钮样式 ========== */
 .ai-login-btn {
-    display: inline-block;
-    padding: 8px 20px;
-    background: #d84315;
-    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 18px;
+    background: linear-gradient(135deg, #d84315, #f4511e);
+    color: #fff !important;
     text-decoration: none;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
     transition: all 0.2s ease;
     cursor: pointer;
+    border: none;
+    outline: none;
+    box-shadow: 0 4px 14px rgba(216, 67, 21, 0.28);
 }
 
 .ai-login-btn:hover {
-    background: #bf360c;
+    background: linear-gradient(135deg, #bf360c, #e64a19);
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(216, 67, 21, 0.3);
+    box-shadow: 0 8px 18px rgba(216, 67, 21, 0.34);
 }
+
+.ai-login-btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.26), 0 8px 18px rgba(216, 67, 21, 0.34);
+}
+
+.ai-error .ai-login-btn {
+    margin-top: 4px;
+}
+

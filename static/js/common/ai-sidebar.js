@@ -7,6 +7,7 @@
     // 会话状态
     let currentSessionId = null;
     let isLoadingHistory = false;
+    let pendingAuthRetry = null;
 
     // DOM 引用
     const sidebar = document.getElementById('ai-assistant-sidebar');
@@ -23,6 +24,10 @@
     const nextStepBtn = document.getElementById('ai-next-step-btn');
 
     if (!sidebar || !toggleBtn) return;
+
+    function isLoggedIn() {
+        return (typeof getStoredToken === 'function') && !!getStoredToken();
+    }
 
     function ensureElementId(el, prefix) {
         if (!el) return null;
@@ -102,6 +107,29 @@
         return '步骤' + stepNo + '：请先操作「' + desc + '」。';
     }
 
+    function setPendingAuthRetry(payload) {
+        if (!payload) {
+            pendingAuthRetry = null;
+            return;
+        }
+        pendingAuthRetry = {
+            message: payload.message || '',
+            pageId: payload.pageId || (window.AI_CONFIG?.PAGE_ID || 'default'),
+            guidebook: payload.guidebook || '',
+            buttons: Array.isArray(payload.buttons) ? payload.buttons : []
+        };
+    }
+
+    async function retryPendingAuthRequest() {
+        if (!pendingAuthRetry || !isLoggedIn()) return;
+        const retryPayload = pendingAuthRetry;
+        pendingAuthRetry = null;
+
+        inputField.value = retryPayload.message || '';
+        addMessage('已恢复登录，正在自动重试刚才的问题...', 'system');
+        await sendMessage();
+    }
+
     // 侧边栏开关
     toggleBtn.addEventListener('click', async function () {
         const isOpen = sidebar.classList.toggle('open');
@@ -150,16 +178,26 @@
         }
     }
 
+    function setSendBusy(isBusy) {
+        if (!sendBtn || !inputField) return;
+        sendBtn.disabled = !!isBusy;
+        inputField.disabled = !!isBusy;
+        sendBtn.textContent = isBusy ? '发送中...' : '发送';
+    }
+
     // 发送消息
     async function sendMessage() {
+        if (!inputField || !sendBtn || sendBtn.disabled) return;
         const message = inputField.value.trim();
         if (!message) return;
+        setSendBusy(true);
 
         // 获取当前页面的配置
         const aiConfig = window.AI_CONFIG || {};
         const registry = buildRuntimeRegistry();
         const guidebook = aiConfig.GUIDEBOOK || '';
         const pageId = aiConfig.PAGE_ID || 'default';
+        const retrySnapshot = { message: message, pageId: pageId, guidebook: guidebook, buttons: registry };
 
         // 如果没有会话，先创建
         if (!currentSessionId) {
@@ -172,16 +210,14 @@
                     /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(err.message);
                 
                 if (isAuthError) {
-                    // 生成登录链接，包含当前页面URL作为redirect参数
-                    const currentUrl = encodeURIComponent(window.location.href);
-                    const loginUrl = '/auth/login?redirect=' + currentUrl;
-                    
-                    const errorHtml = '<div style="margin-bottom: 10px;">您的登录已过期，请重新登录后继续使用。</div>' +
-                        '<a href="' + loginUrl + '" class="ai-login-btn">点击登录</a>';
+                    setPendingAuthRetry(retrySnapshot);
+                    var errorHtml = '<div style="margin-bottom: 10px;">您的登录已过期，请重新登录后继续使用。</div>' +
+                        '<button type="button" class="ai-login-btn js-open-login-modal">点击登录</button>';
                     addMessage(errorHtml, 'bot error');
                 } else {
                     addMessage('抱歉，创建会话失败：' + err.message, 'bot error');
                 }
+                setSendBusy(false);
                 return;
             }
         }
@@ -218,7 +254,17 @@
             addMessage(data.text, 'bot');
         } catch (err) {
             loadingEl && loadingEl.remove();
-            addMessage('抱歉，请求出错：' + err.message, 'bot error');
+            const isAuthError = err && (err.status === 401 || /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(err.message || ''));
+            if (isAuthError) {
+                setPendingAuthRetry(retrySnapshot);
+                const errorHtml = '<div style="margin-bottom: 10px;">当前未登录，登录后可继续向 AI 助手提问。</div>' +
+                    '<button type="button" class="ai-login-btn js-open-login-modal">点击登录</button>';
+                addMessage(errorHtml, 'bot error');
+            } else {
+                addMessage('抱歉，请求出错：' + err.message, 'bot error');
+            }
+        } finally {
+            setSendBusy(false);
         }
     }
 
@@ -287,6 +333,23 @@
         chatMessages.scrollTop = chatMessages.scrollHeight;
         return div;
     }
+
+    // 绑定聊天区内“点击登录”按钮，弹窗登录不跳页
+    chatMessages.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.js-open-login-modal');
+        if (!trigger) return;
+        e.preventDefault();
+        if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+            window.LoginModal.open();
+        } else {
+            window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.href);
+        }
+    });
+
+    // 登录成功后自动重试刚才失败的问题
+    document.addEventListener('optlab:auth-success', function () {
+        retryPendingAuthRequest();
+    });
 
     // ========== 高亮系统 ==========
     function advanceGuideStep() {
