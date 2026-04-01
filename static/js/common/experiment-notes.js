@@ -331,6 +331,7 @@ function _autoBindTracker() {
 }
 
 var _cfg={}, _notes=[], _saveTimers={}, _listEl=null, _gStEl=null;
+var _pendingAiRetry = null;
 
 function init(cfg) {
     _cfg = cfg||{};
@@ -355,7 +356,7 @@ function _shell(mount) {
         '  <div class="exp-notes-header-left">'+
         '    <h2>实验笔记</h2>'+
         '    ' + devBtnHtml +
-        '    <span class="exp-notes-login-hint" id="_enHint" style="display:none">（未登录：仅本地填写与导出，无法保存到云端，<a href="/auth/login" class="exp-notes-login-link">立即登录</a>）</span>'+
+        '    <span class="exp-notes-login-hint" id="_enHint" style="display:none">（未登录：仅本地填写与导出，无法保存到云端，<a href="/auth/login" class="exp-notes-login-link js-open-login-modal">立即登录</a>）</span>'+
         '  </div>'+
         '  <div class="exp-notes-actions">'+
         '    <button class="exp-notes-action-btn secondary" id="_enSave">保存</button>'+
@@ -560,23 +561,39 @@ async function _exportDevData() {
     _downloadTextFile(name, jsonStr, 'application/json');
 }
 
-async function _aiGen() {
-    if(!isLoggedIn()){alert('请先登录后再使用 AI 生成笔记。');return;}
+function _collectAiPayloadSnapshot() {
+    var pd={};
+    if(typeof _cfg.getPageData==='function'){
+        try{
+            pd=_cfg.getPageData()||{};
+            console.log('[Notes] Page data collected:', pd);
+        }catch(e){
+            console.error('[Notes] Error collecting page data:', e);
+        }
+    }
+    pd._behavior = _tracker.export();
+    pd.guidebook = (window.AI_CONFIG && window.AI_CONFIG.GUIDEBOOK) || '';
+    return pd;
+}
+
+async function _aiGen(payloadOverride) {
+    if(!isLoggedIn()){
+        _pendingAiRetry = {
+            payload: _collectAiPayloadSnapshot(),
+            at: Date.now()
+        };
+        if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+            window.LoginModal.open();
+        } else {
+            alert('请先登录后再使用 AI 生成笔记。');
+        }
+        return;
+    }
     var btn=document.querySelector('#_enAI');
     if(btn){btn.disabled=true;btn.innerHTML='<span class="exp-notes-ai-spinner"></span>生成中…';}   
     setGSt(_gStEl,'saving','AI 正在生成实验笔记，请稍候…');
     try{
-        var pd={};
-        if(typeof _cfg.getPageData==='function'){
-            try{
-                pd=_cfg.getPageData()||{};
-                console.log('[Notes] Page data collected:', pd);
-            }catch(e){
-                console.error('[Notes] Error collecting page data:', e);
-            }
-        }
-        pd._behavior = _tracker.export();
-        pd.guidebook = (window.AI_CONFIG && window.AI_CONFIG.GUIDEBOOK) || '';
+        var pd = payloadOverride || _collectAiPayloadSnapshot();
         console.log('[Notes] Sending AI request with data keys:', Object.keys(pd));
         
         var d=await apiRequest('/notes/'+encodeURIComponent(_cfg.experimentKey)+'/ai-generate',{
@@ -587,6 +604,7 @@ async function _aiGen() {
         console.log('[Notes] AI response:', d);
         
         if(d&&d.id){
+            _pendingAiRetry = null;
             _notes.push(d);_renderList();
             var cs=_listEl?_listEl.querySelectorAll('.exp-note-card'):[];
             if(cs.length) {
@@ -602,7 +620,19 @@ async function _aiGen() {
         }
     }catch(e){
         console.error('[Notes] AI generation error:', e);
-        setGSt(_gStEl,'error','AI 生成失败：'+(e.message||'未知错误')+' 请检查浏览器控制台。');
+        var isAuthError = e && (e.status === 401 || /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(e.message || ''));
+        if (isAuthError) {
+            _pendingAiRetry = {
+                payload: _collectAiPayloadSnapshot(),
+                at: Date.now()
+            };
+            setGSt(_gStEl,'error','登录状态已失效，请先登录，登录成功后将自动重试本次 AI 生成。');
+            if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+                window.LoginModal.open();
+            }
+        } else {
+            setGSt(_gStEl,'error','AI 生成失败：'+(e.message||'未知错误')+' 请检查浏览器控制台。');
+        }
     }finally{
         if(btn){btn.disabled=false;btn.textContent='AI 生成笔记';}
     }
@@ -624,6 +654,30 @@ document.addEventListener('DOMContentLoaded', function () {
     if (global.EXPERIMENT_NOTES_CONFIG) {
         init(global.EXPERIMENT_NOTES_CONFIG);
     }
+
+    document.addEventListener('click', function (e) {
+        var trigger = e.target.closest('.js-open-login-modal');
+        if (!trigger) return;
+        e.preventDefault();
+        if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+            window.LoginModal.open();
+        } else {
+            window.location.href = '/auth/login?redirect=' + encodeURIComponent(window.location.href);
+        }
+    });
+
+    document.addEventListener('optlab:auth-success', function () {
+        if (!_cfg || !_cfg.experimentKey) return;
+        _load();
+        setGSt(_gStEl, 'saved', '登录成功，已恢复云端保存能力。');
+
+        if (_pendingAiRetry && _pendingAiRetry.payload) {
+            var retryPayload = _pendingAiRetry.payload;
+            _pendingAiRetry = null;
+            setGSt(_gStEl, 'saving', '已恢复登录，正在自动重试刚才的 AI 生成...');
+            _aiGen(retryPayload);
+        }
+    });
 });
 
 }(window));

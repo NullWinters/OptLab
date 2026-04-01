@@ -494,6 +494,8 @@ const App = {
                 this.play();
             }
         };
+
+        this.initIterationDataActions();
     },
 
     togglePanel(el) {
@@ -948,6 +950,230 @@ const App = {
         document.getElementById('param-accuracy').innerText = (accuracy * 100).toFixed(2) + '%';
     },
 
+    getSMOIterationLog() {
+        return this.processLog
+            .filter((row) => row.step === 'smo_step')
+            .map((row, idx) => ({
+                iteration: idx + 1,
+                smo_iter: row.detail.iter,
+                sub_step: row.detail.sub_step,
+                i: row.detail.i,
+                j: row.detail.j,
+                alpha_i: row.detail.alpha_i,
+                alpha_j: row.detail.alpha_j,
+                w: Array.isArray(row.detail.w) ? row.detail.w : [0, 0],
+                b: row.detail.b,
+                accuracy: row.detail.accuracy,
+                is_finished: !!row.detail.is_finished,
+                timestamp: row.timestamp || ''
+            }));
+    },
+
+    getSMORecordPayload() {
+        const xIdx = parseInt(document.getElementById('x-col')?.value ?? '0');
+        const yIdx = parseInt(document.getElementById('y-col')?.value ?? '1');
+        const labelIdx = parseInt(document.getElementById('label-col')?.value ?? '2');
+        const sampleData = this.dataSnapshotForNote && this.dataSnapshotForNote.length
+            ? this.dataSnapshotForNote
+            : this.data;
+        const iterationData = this.getSMOIterationLog();
+        return {
+            algorithm_name: 'SMO（序列最小优化）',
+            test_function: '线性 SVM 对偶优化问题',
+            initial_state: {
+                C: this.C,
+                tol: this.tol,
+                max_iter: this.maxIter,
+                speed_interval_ms: this.speed
+            },
+            dataset_meta: {
+                source: this.datasetSource,
+                sample_count: sampleData.length,
+                headers: this.rawCSVHeader,
+                x_col_index: Number.isFinite(xIdx) ? xIdx : null,
+                y_col_index: Number.isFinite(yIdx) ? yIdx : null,
+                label_col_index: Number.isFinite(labelIdx) ? labelIdx : null,
+                x_col_name: this.rawCSVHeader[xIdx] || null,
+                y_col_name: this.rawCSVHeader[yIdx] || null,
+                label_col_name: this.rawCSVHeader[labelIdx] || null
+            },
+            final_result: this.smo ? {
+                iter: this.smo.iter,
+                w: this.smo.w,
+                b: this.smo.b,
+                accuracy: this.smo.getAccuracy(),
+                is_finished: this.smo.isFinished,
+                state_text: this.state
+            } : null,
+            iteration_data: iterationData,
+            data_preview: sampleData.slice(0, 200)
+        };
+    },
+
+    renderIterationLogModal() {
+        const tbody = document.getElementById('smo-iteration-log-body');
+        const initSpan = document.getElementById('smo-iteration-log-summary-init');
+        const datasetSpan = document.getElementById('smo-iteration-log-summary-dataset');
+        const countSpan = document.getElementById('smo-iteration-log-summary-count');
+        const finalBox = document.getElementById('smo-iteration-log-final-summary');
+        const payload = this.getSMORecordPayload();
+        const logs = payload.iteration_data || [];
+
+        if (initSpan) initSpan.textContent = JSON.stringify(payload.initial_state || {});
+        if (datasetSpan) datasetSpan.textContent = `${payload.dataset_meta.source || 'unknown'} · 样本数 ${payload.dataset_meta.sample_count || 0}`;
+        if (countSpan) countSpan.textContent = String(logs.length);
+
+        if (!logs.length) {
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="9" style="padding:8px 4px;color:#777;">当前尚无迭代数据，请先播放或单步运行一次 SMO 算法。</td></tr>';
+            }
+            if (finalBox) {
+                finalBox.style.display = 'none';
+                finalBox.textContent = '';
+            }
+            return;
+        }
+
+        const final = [...logs].reverse().find((row) => row.is_finished) || logs[logs.length - 1];
+        if (finalBox && final) {
+            finalBox.style.display = 'block';
+            finalBox.textContent = `当前记录显示，算法迭代至第 ${final.smo_iter} 步时，w ≈ [${Number(final.w[0]).toFixed(4)}, ${Number(final.w[1]).toFixed(4)}]，b ≈ ${Number(final.b).toFixed(4)}，准确率 ≈ ${(Number(final.accuracy) * 100).toFixed(2)}%。`;
+        }
+
+        if (tbody) {
+            tbody.innerHTML = logs.map((row) => {
+                const highlight = final && row.iteration === final.iteration;
+                const rowStyle = highlight ? 'background-color:#fff8e1;font-weight:600;' : '';
+                const status = row.is_finished ? '已结束' : '迭代中';
+                return `<tr style="${rowStyle}">
+<td>${row.iteration}</td>
+<td>${row.smo_iter ?? '-'}</td>
+<td>${row.sub_step ?? '-'}</td>
+<td>${row.i ?? '-'}, ${row.j ?? '-'}</td>
+<td>${row.alpha_i != null ? Number(row.alpha_i).toFixed(5) : '—'}, ${row.alpha_j != null ? Number(row.alpha_j).toFixed(5) : '—'}</td>
+<td>[${Number((row.w || [0, 0])[0]).toFixed(4)}, ${Number((row.w || [0, 0])[1]).toFixed(4)}]</td>
+<td>${row.b != null ? Number(row.b).toFixed(5) : '—'}</td>
+<td>${row.accuracy != null ? (Number(row.accuracy) * 100).toFixed(2) + '%' : '—'}</td>
+<td>${status}</td>
+</tr>`;
+            }).join('');
+        }
+    },
+
+    exportIterationDataCSV() {
+        const payload = this.getSMORecordPayload();
+        const logs = payload.iteration_data || [];
+        if (!logs.length) {
+            alert('当前尚无迭代数据，请先运行一次完整实验。');
+            return;
+        }
+        const esc = (v) => {
+            const s = String(v ?? '');
+            return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+        };
+
+        const summary = [
+            ['项目', '值'],
+            ['原函数/目标', payload.test_function],
+            ['算法', payload.algorithm_name],
+            ['初始参数', JSON.stringify(payload.initial_state || {})],
+            ['数据集', JSON.stringify(payload.dataset_meta || {})],
+            []
+        ];
+
+        const header = ['iteration', 'smo_iter', 'sub_step', 'i', 'j', 'alpha_i', 'alpha_j', 'w', 'b', 'accuracy', 'is_finished', 'timestamp'];
+        const rows = logs.map((row) => [
+            row.iteration,
+            row.smo_iter,
+            row.sub_step,
+            row.i,
+            row.j,
+            row.alpha_i,
+            row.alpha_j,
+            JSON.stringify(row.w || [0, 0]),
+            row.b,
+            row.accuracy,
+            row.is_finished ? 'true' : 'false',
+            row.timestamp || ''
+        ]);
+
+        const csv = [...summary, header, ...rows].map((cols) => cols.map(esc).join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'svm-smo.iterations.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    },
+
+    saveIterationDataToProfile() {
+        if (typeof getStoredToken !== 'function' || !getStoredToken()) {
+            if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+                window.LoginModal.open({ mode: 'login', notice: '请先登录后再保存至个人中心。' });
+            } else {
+                alert('请先登录后再保存至个人中心。');
+            }
+            return;
+        }
+        const payload = this.getSMORecordPayload();
+        if (!payload.iteration_data || !payload.iteration_data.length) {
+            alert('当前尚无迭代数据，请先运行一次完整实验后再保存。');
+            return;
+        }
+
+        const defaultAlias = (window.RecordSaveModal && typeof window.RecordSaveModal.makeDefaultAlias === 'function')
+            ? window.RecordSaveModal.makeDefaultAlias('SMO')
+            : ('SMO-' + new Date().toISOString().slice(0, 16).replace('T', ' '));
+
+        if (window.RecordSaveModal && typeof window.RecordSaveModal.open === 'function') {
+            window.RecordSaveModal.open({
+                title: '保存至个人中心',
+                subtitle: 'SMO 算法实验数据将保存到你的个人中心',
+                aliasPrefix: 'SMO',
+                defaultAlias,
+                onConfirm: function (alias) {
+                    return apiPost('/experiments/records', {
+                        alias: String(alias).trim(),
+                        source_page: 'svm-smo.smo_iteration',
+                        payload
+                    });
+                }
+            });
+        } else {
+            alert('保存弹窗未加载，请刷新页面后重试。');
+        }
+    },
+
+    initIterationDataActions() {
+        const openBtn = document.getElementById('smo-iteration-log-open-btn');
+        const exportBtn = document.getElementById('smo-iteration-log-export-csv-btn');
+        const saveBtn = document.getElementById('smo-iteration-log-save-to-profile-btn');
+        const modal = document.getElementById('smo-iteration-log-modal');
+        const closeBtn = document.getElementById('smo-iteration-log-close');
+
+        if (openBtn && modal) {
+            openBtn.addEventListener('click', () => {
+                this.renderIterationLogModal();
+                modal.style.display = 'flex';
+            });
+        }
+        if (closeBtn && modal) {
+            closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.style.display = 'none';
+            });
+        }
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => this.exportIterationDataCSV());
+        }
+        if (saveBtn && typeof apiPost === 'function') {
+            saveBtn.addEventListener('click', () => this.saveIterationDataToProfile());
+        }
+    },
+
     getExperimentNoteData() {
         const xIdx = parseInt(document.getElementById('x-col')?.value ?? '0');
         const yIdx = parseInt(document.getElementById('y-col')?.value ?? '1');
@@ -986,22 +1212,8 @@ const App = {
             process_log: this.processLog,
             uploaded_files: this.uploadedFiles,
             data_preview: sampleData.slice(0, 200),
-            iteration_log: this.processLog
-                .filter((row) => row.step === 'smo_step')
-                .map((row, idx) => ({
-                    iteration: idx + 1,
-                    smo_iter: row.detail.iter,
-                    sub_step: row.detail.sub_step,
-                    i: row.detail.i,
-                    j: row.detail.j,
-                    alpha_i: row.detail.alpha_i,
-                    alpha_j: row.detail.alpha_j,
-                    w: row.detail.w,
-                    b: row.detail.b,
-                    accuracy: row.detail.accuracy,
-                    is_finished: row.detail.is_finished,
-                    timestamp: row.timestamp
-                }))
+            iteration_log: this.getSMOIterationLog(),
+            record_payload_preview: this.getSMORecordPayload()
         };
     }
 };

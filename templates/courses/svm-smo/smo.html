@@ -148,11 +148,58 @@
                     </table>
                 </div>
             </div>
+
+            <!-- 实验数据 -->
+            <div class="panel-card" id="panel-data">
+                <h3 onclick="App.togglePanel(this)">实验数据 <i class="fas fa-chevron-up toggle-btn"></i></h3>
+                <div class="panel-body">
+                    <div class="smo-data-actions">
+                        <button id="smo-iteration-log-open-btn" class="btn btn-primary">查看实验数据</button>
+                        <button id="smo-iteration-log-export-csv-btn" class="btn btn-secondary">导出实验数据</button>
+                        <button id="smo-iteration-log-save-to-profile-btn" class="btn btn-primary">保存至个人中心</button>
+                    </div>
+                </div>
+            </div>
         </aside>
     </div>
 
     <div style="margin-top: 20px;">
         {% include 'components/_experiment_notes.html' %}
+    </div>
+</div>
+
+<div id="smo-iteration-log-modal" class="modal modal-overlay">
+    <div class="modal-content modal-panel">
+        <div class="modal-header">
+            <h3>SMO 算法实验 · 迭代数据</h3>
+            <span id="smo-iteration-log-close" class="modal-close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="modal-summary">
+                <div>原函数/目标：<span id="smo-iteration-log-summary-func">线性 SVM 对偶优化</span></div>
+                <div>算法：<span id="smo-iteration-log-summary-method">SMO（序列最小优化）</span></div>
+                <div>初始参数：<span id="smo-iteration-log-summary-init">--</span></div>
+                <div>数据集：<span id="smo-iteration-log-summary-dataset">--</span></div>
+                <div>总迭代记录条数：<span id="smo-iteration-log-summary-count">0</span></div>
+            </div>
+            <div id="smo-iteration-log-final-summary" class="modal-final-box" style="display:none;"></div>
+            <table class="modal-table">
+                <thead>
+                <tr>
+                    <th>记录编号</th>
+                    <th>SMO 迭代</th>
+                    <th>子步骤</th>
+                    <th>(i, j)</th>
+                    <th>(α_i, α_j)</th>
+                    <th>w</th>
+                    <th>b</th>
+                    <th>准确率</th>
+                    <th>状态</th>
+                </tr>
+                </thead>
+                <tbody id="smo-iteration-log-body"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 <footer class="footer">

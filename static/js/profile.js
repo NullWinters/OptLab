@@ -139,6 +139,88 @@
                 return "";
             }
 
+            function formatNum(value, digits) {
+                const n = Number(value);
+                if (!Number.isFinite(n)) return "—";
+                return n.toFixed(typeof digits === "number" ? digits : 4);
+            }
+
+            function buildSimplexTableauHtml(tableau) {
+                if (!tableau || !Array.isArray(tableau.a) || !Array.isArray(tableau.cj)) {
+                    return "<div class='record-detail-empty'>该步无 tableau 数据。</div>";
+                }
+
+                const bArr = Array.isArray(tableau.b) ? tableau.b : [];
+                const cBArr = Array.isArray(tableau.cB) ? tableau.cB : [];
+                const basisArr = Array.isArray(tableau.basis) ? tableau.basis : [];
+                const thetaArr = Array.isArray(tableau.theta) ? tableau.theta : [];
+                const sigmaArr = Array.isArray(tableau.sigma) ? tableau.sigma : [];
+
+                let html = "<div class='record-simplex-tableau-wrap'><table class='record-simplex-tableau'><thead><tr>" +
+                    "<th>cB</th><th>Basis</th><th>b</th>";
+                tableau.cj.forEach(function (_, idx) {
+                    html += "<th>x" + (idx + 1) + "</th>";
+                });
+                html += "<th>θ</th></tr></thead><tbody>";
+
+                tableau.a.forEach(function (row, rowIdx) {
+                    html += "<tr>" +
+                        "<td>" + formatNum(cBArr[rowIdx]) + "</td>" +
+                        "<td>" + escapeHtml(basisArr[rowIdx] || "--") + "</td>" +
+                        "<td>" + formatNum(bArr[rowIdx]) + "</td>";
+                    for (let j = 0; j < tableau.cj.length; j++) {
+                        html += "<td>" + formatNum(row[j]) + "</td>";
+                    }
+                    html += "<td>" + (thetaArr[rowIdx] == null ? "—" : formatNum(thetaArr[rowIdx])) + "</td></tr>";
+                });
+
+                html += "<tr class='record-simplex-sigma-row'><td>σj</td><td></td><td></td>";
+                for (let j = 0; j < tableau.cj.length; j++) {
+                    html += "<td>" + formatNum(sigmaArr[j]) + "</td>";
+                }
+                html += "<td></td></tr>";
+                html += "</tbody></table></div>";
+                return html;
+            }
+
+            function formatDisplayValue(key, value) {
+                if (value == null) return { isComplex: false, text: "—" };
+
+                if (key === 'constraints' && Array.isArray(value)) {
+                    const lines = value.map(function (item, idx) {
+                        if (!item || !Array.isArray(item.coeffs)) return '约束' + (idx + 1) + ': ' + JSON.stringify(item);
+                        const expr = item.coeffs.map(function (coef, j) {
+                            const n = Number(coef);
+                            const sign = j === 0 ? '' : (n >= 0 ? ' + ' : ' - ');
+                            return sign + Math.abs(n) + 'x' + (j + 1);
+                        }).join('');
+                        return '约束' + (idx + 1) + ': ' + expr + ' ≤ ' + Number(item.b);
+                    });
+                    return { isComplex: false, text: lines.join('\n'), multiline: true };
+                }
+
+                if (Array.isArray(value)) {
+                    const isPrimitiveArray = value.every(function (v) {
+                        return v == null || ["string", "number", "boolean"].indexOf(typeof v) !== -1;
+                    });
+                    if (isPrimitiveArray) {
+                        return {
+                            isComplex: false,
+                            text: value.map(function (v) {
+                                return typeof v === "number" && Number.isFinite(v) ? Number(v).toString() : String(v);
+                            }).join(", ")
+                        };
+                    }
+                    return { isComplex: true, text: JSON.stringify(value, null, 2) };
+                }
+
+                if (typeof value === "object") {
+                    return { isComplex: true, text: JSON.stringify(value, null, 2) };
+                }
+
+                return { isComplex: false, text: String(value) };
+            }
+
             const summaryItems = [];
             summaryItems.push("<div><span class='record-detail-label'>别名：</span><span class='record-detail-strong'>" + escapeHtml(data.alias || "") + "</span></div>");
             summaryItems.push("<div><span class='record-detail-label'>来源：</span><span class='record-detail-mono'>" + escapeHtml(data.source_page || "") + "</span></div>");
@@ -159,36 +241,78 @@
                 html += "<div class='record-detail-initial'>";
                 html += "<div class='record-detail-initial-title'>初始参数</div>";
                 html += "<div class='record-detail-initial-grid'>";
+                const paramLabelMap = {
+                    n: '变量个数 n',
+                    m: '约束个数 m',
+                    solve_type: '求解类型',
+                    objective_coeffs: '目标函数系数',
+                    constraints: '约束条件'
+                };
                 Object.keys(p.initial_state).forEach(function (k) {
-                    html += "<div class='record-detail-kv'><span class='record-detail-label'>" + escapeHtml(k) + "</span><span class='record-detail-mono'>" + escapeHtml(p.initial_state[k]) + "</span></div>";
+                    const fv = formatDisplayValue(k, p.initial_state[k]);
+                    const label = paramLabelMap[k] || k;
+                    html += "<div class='record-detail-kv'>" +
+                        "<span class='record-detail-label'>" + escapeHtml(label) + "</span>" +
+                        (fv.isComplex
+                            ? "<pre class='record-detail-json'>" + escapeHtml(fv.text) + "</pre>"
+                            : (fv.multiline
+                                ? "<span class='record-detail-mono record-detail-multi-line'>" + escapeHtml(fv.text) + "</span>"
+                                : "<span class='record-detail-mono'>" + escapeHtml(fv.text) + "</span>")) +
+                        "</div>";
                 });
                 html += "</div></div>";
             }
 
             if (Array.isArray(iter) && iter.length && typeof iter[0] === "object") {
-                const headers = Object.keys(iter[0]);
-                const maxRows = 200;
-                const rows = iter.slice(0, maxRows);
-                html += "<div class='record-detail-table-wrap'>";
-                html += "<div class='record-detail-table-scroll'>";
-                html += "<table class='record-detail-table'>";
-                html += "<thead><tr>";
-                headers.forEach(function (h) {
-                    html += "<th>" + escapeHtml(h) + "</th>";
-                });
-                html += "</tr></thead><tbody>";
-                rows.forEach(function (row) {
-                    html += "<tr class='" + algoRowClass(row) + "'>";
-                    headers.forEach(function (h) {
-                        html += "<td>" + escapeHtml(row[h]) + "</td>";
+                const isSimplexRecord = Array.isArray(iter[0].basis) || (iter[0].tableau && Array.isArray(iter[0].tableau.a));
+                if (isSimplexRecord) {
+                    html += "<div class='record-detail-table-wrap'>";
+                    html += "<div class='record-detail-table-scroll'>";
+                    html += "<table class='record-detail-table record-simplex-summary-table'>";
+                    html += "<thead><tr><th>迭代</th><th>入基变量</th><th>离基变量</th><th>状态</th><th>基变量</th><th>当前基解 b</th><th>操作</th></tr></thead><tbody>";
+
+                    iter.forEach(function (row) {
+                        const basisText = Array.isArray(row.basis) ? row.basis.join(', ') : '—';
+                        const bText = Array.isArray(row.b) ? row.b.map(function (v) { return formatNum(v); }).join(', ') : '—';
+                        const tableauHtml = buildSimplexTableauHtml(row.tableau || row);
+                        html += "<tr>" +
+                            "<td>" + escapeHtml(row.iteration) + "</td>" +
+                            "<td>" + escapeHtml(row.entering || '—') + "</td>" +
+                            "<td>" + escapeHtml(row.leaving || '—') + "</td>" +
+                            "<td>" + escapeHtml(row.status || '—') + "</td>" +
+                            "<td>" + escapeHtml(basisText) + "</td>" +
+                            "<td>" + escapeHtml(bText) + "</td>" +
+                            "<td><button type='button' class='record-simplex-expand-btn' data-step='" + escapeHtml(row.iteration) + "'>展开完整 tableau</button></td>" +
+                            "</tr>" +
+                            "<tr class='is-hidden' data-simplex-detail='" + escapeHtml(row.iteration) + "'><td colspan='7'>" + tableauHtml + "</td></tr>";
                     });
-                    html += "</tr>";
-                });
-                html += "</tbody></table></div>";
-                if (iter.length > maxRows) {
-                    html += "<div class='record-detail-table-tip'>仅展示前 " + maxRows + " 条记录（共 " + iter.length + " 条）。如需全部数据请使用“导出实验数据”。</div>";
+
+                    html += "</tbody></table></div></div>";
+                } else {
+                    const headers = Object.keys(iter[0]);
+                    const maxRows = 200;
+                    const rows = iter.slice(0, maxRows);
+                    html += "<div class='record-detail-table-wrap'>";
+                    html += "<div class='record-detail-table-scroll'>";
+                    html += "<table class='record-detail-table'>";
+                    html += "<thead><tr>";
+                    headers.forEach(function (h) {
+                        html += "<th>" + escapeHtml(h) + "</th>";
+                    });
+                    html += "</tr></thead><tbody>";
+                    rows.forEach(function (row) {
+                        html += "<tr class='" + algoRowClass(row) + "'>";
+                        headers.forEach(function (h) {
+                            html += "<td>" + escapeHtml(row[h]) + "</td>";
+                        });
+                        html += "</tr>";
+                    });
+                    html += "</tbody></table></div>";
+                    if (iter.length > maxRows) {
+                        html += "<div class='record-detail-table-tip'>仅展示前 " + maxRows + " 条记录（共 " + iter.length + " 条）。如需全部数据请使用“导出实验数据”。</div>";
+                    }
+                    html += "</div>";
                 }
-                html += "</div>";
             } else if (Array.isArray(iter) && iter.length) {
                 html += "<div class='record-detail-empty'>迭代数据格式非表格结构，建议使用“导出实验数据”查看完整内容。</div>";
             } else {
@@ -196,6 +320,17 @@
             }
 
             detailBody.innerHTML = html;
+            detailBody.querySelectorAll('.record-simplex-expand-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    const step = btn.getAttribute('data-step');
+                    const row = detailBody.querySelector('tr[data-simplex-detail="' + step + '"]');
+                    if (!row) return;
+                    const isOpening = row.classList.contains('is-hidden');
+                    row.classList.toggle('is-hidden');
+                    btn.classList.toggle('is-open', isOpening);
+                    btn.textContent = isOpening ? '收起 tableau' : '展开完整 tableau';
+                });
+            });
             modal.classList.remove("is-hidden");
         } catch (e) {
             alert("查看实验数据失败，请稍后重试。");
@@ -258,18 +393,37 @@
     async function renameRecord(id, oldAlias) {
         try {
             if (typeof apiRequest !== "function") {
-                alert("请先登录后再修改备注名。");
+                if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+                    window.LoginModal.open({ mode: 'login', notice: '请先登录后再修改备注名。' });
+                } else {
+                    alert("请先登录后再修改备注名。");
+                }
                 return;
             }
-            const next = window.prompt("请输入新的备注名：", oldAlias || "");
-            if (next == null) return;
-            const alias = String(next).trim();
-            if (!alias) return;
-            await apiRequest("/experiments/records/" + id, {
-                method: "PATCH",
-                body: JSON.stringify({ alias }),
-            });
-            await loadList();
+
+            const defaultAlias = String(oldAlias || '').trim() || (
+                (window.RecordSaveModal && typeof window.RecordSaveModal.makeDefaultAlias === 'function')
+                    ? window.RecordSaveModal.makeDefaultAlias('RECORD')
+                    : ('RECORD-' + new Date().toISOString().slice(0, 16).replace('T', ' '))
+            );
+
+            if (window.RecordSaveModal && typeof window.RecordSaveModal.open === 'function') {
+                window.RecordSaveModal.open({
+                    title: '修改备注名',
+                    subtitle: '更新后将立即应用到该实验记录',
+                    aliasPrefix: 'RECORD',
+                    defaultAlias,
+                    onConfirm: async function (alias) {
+                        await apiRequest('/experiments/records/' + id, {
+                            method: 'PATCH',
+                            body: JSON.stringify({ alias: String(alias).trim() }),
+                        });
+                        await loadList();
+                    }
+                });
+            } else {
+                alert('修改备注名弹窗未加载，请刷新页面后重试。');
+            }
         } catch (e) {
             alert("修改备注名失败，请稍后重试。");
         }
@@ -278,13 +432,29 @@
     async function deleteRecord(id) {
         try {
             if (typeof apiRequest !== "function") {
-                alert("请先登录后再删除记录。");
+                if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+                    window.LoginModal.open({ mode: 'login', notice: '请先登录后再删除记录。' });
+                } else {
+                    alert("请先登录后再删除记录。");
+                }
                 return;
             }
-            const ok = window.confirm("确定删除这条实验记录吗？删除后无法恢复。");
-            if (!ok) return;
-            await apiRequest("/experiments/records/" + id, { method: "DELETE" });
-            await loadList();
+            if (window.RecordDeleteConfirmModal && typeof window.RecordDeleteConfirmModal.open === 'function') {
+                window.RecordDeleteConfirmModal.open({
+                    title: '删除实验记录',
+                    subtitle: '请确认是否删除该记录',
+                    message: '确定删除这条实验记录吗？删除后无法恢复。',
+                    onConfirm: async function () {
+                        await apiRequest('/experiments/records/' + id, { method: 'DELETE' });
+                        await loadList();
+                    }
+                });
+            } else {
+                const ok = window.confirm("确定删除这条实验记录吗？删除后无法恢复。");
+                if (!ok) return;
+                await apiRequest("/experiments/records/" + id, { method: "DELETE" });
+                await loadList();
+            }
         } catch (e) {
             alert("删除失败，请稍后重试。");
         }

@@ -289,7 +289,40 @@ body {
 .record-detail-kv {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     gap: 1rem;
+    padding: 0.3rem 0;
+    border-bottom: 1px dashed #ffe1c4;
+}
+
+.record-detail-kv:last-child {
+    border-bottom: none;
+}
+
+.record-detail-json {
+    margin: 0;
+    flex: 1;
+    max-height: 180px;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid #fed7aa;
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: #7c2d12;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.record-detail-multi-line {
+    flex: 1;
+    white-space: pre-line;
+    line-height: 1.65;
+    color: #374151;
+    word-break: break-word;
+    background: transparent;
+    padding: 0.1rem 0;
 }
 
 .record-detail-table-wrap {
@@ -341,6 +374,82 @@ body {
 
 .record-detail-table .algo-row-bisection {
     background: #eff6ff;
+}
+
+.record-simplex-summary-table td,
+.record-simplex-summary-table th {
+    vertical-align: top;
+}
+
+.record-simplex-expand-btn {
+    border: 1px solid #d1d5db;
+    background: #f3f4f6;
+    color: #374151;
+    border-radius: 0.4rem;
+    padding: 0.28rem 0.55rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.record-simplex-expand-btn:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+.record-simplex-expand-btn.is-open {
+    background: #6b7280;
+    border-color: #6b7280;
+    color: #fff;
+}
+
+.record-detail-table tr[data-simplex-detail] td {
+    padding: 0.4rem 0.6rem;
+    background: #fffdfa;
+}
+
+.record-simplex-tableau-wrap {
+    margin: 0.35rem 0;
+    border: 1px solid #d1d5db;
+    border-radius: 0.65rem;
+    overflow: auto;
+    background: #f9fafb;
+}
+
+.record-simplex-tableau {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 0.74rem;
+    white-space: nowrap;
+}
+
+.record-simplex-tableau th,
+.record-simplex-tableau td {
+    padding: 0.4rem 0.55rem;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: right;
+}
+
+.record-simplex-tableau th:nth-child(1),
+.record-simplex-tableau td:nth-child(1),
+.record-simplex-tableau th:nth-child(2),
+.record-simplex-tableau td:nth-child(2) {
+    text-align: center;
+}
+
+.record-simplex-tableau thead th {
+    background: #e5e7eb;
+    color: #374151;
+    position: sticky;
+    top: 0;
+}
+
+.record-simplex-sigma-row td {
+    background: #f3f4f6;
+    color: #1f2937;
+    font-weight: 700;
 }
 
 .record-detail-table-tip {
