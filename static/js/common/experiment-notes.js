@@ -24,6 +24,78 @@ function _sanitizeFilename(name) {
 }
 
 /* Markdown + LaTeX：先占位公式再 marked，再还原 */
+function _renderMarkdownFallback(src) {
+    function escHtml(x) {
+        return String(x || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    function splitPipeRow(line) {
+        var t = String(line || '').trim();
+        if (t.startsWith('|')) t = t.slice(1);
+        if (t.endsWith('|')) t = t.slice(0, -1);
+        return t.split('|').map(function (c) { return escHtml(c.trim()); });
+    }
+    function isTableRow(line) {
+        return /^\s*\|.+\|\s*$/.test(String(line || ''));
+    }
+    function isSeparatorRow(line) {
+        return /^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-{3,}:?\s*\|?\s*$/.test(String(line || ''));
+    }
+
+    var lines = String(src || '').split('\n');
+    var out = [];
+    var i = 0;
+
+    while (i < lines.length) {
+        var line = lines[i] || '';
+        var trimmed = line.trim();
+
+        if (!trimmed) {
+            i++;
+            continue;
+        }
+
+        if (trimmed.indexOf('<div class="exp-note-section-header">') === 0) {
+            out.push(trimmed);
+            i++;
+            continue;
+        }
+
+        if (isTableRow(line) && i + 1 < lines.length && isSeparatorRow(lines[i + 1])) {
+            var headers = splitPipeRow(lines[i]);
+            i += 2;
+            var bodyRows = [];
+            while (i < lines.length && isTableRow(lines[i])) {
+                bodyRows.push(splitPipeRow(lines[i]));
+                i++;
+            }
+            var th = headers.map(function (h) { return '<th>' + h + '</th>'; }).join('');
+            var trs = bodyRows.map(function (r) {
+                return '<tr>' + r.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>';
+            }).join('');
+            out.push('<div class="exp-note-table-wrap"><table><thead><tr>' + th + '</tr></thead><tbody>' + trs + '</tbody></table></div>');
+            continue;
+        }
+
+        var para = [escHtml(line)];
+        i++;
+        while (i < lines.length) {
+            var next = lines[i] || '';
+            var nextTrim = next.trim();
+            if (!nextTrim || nextTrim.indexOf('<div class="exp-note-section-header">') === 0 || (isTableRow(next) && i + 1 < lines.length && isSeparatorRow(lines[i + 1]))) {
+                break;
+            }
+            para.push(escHtml(next));
+            i++;
+        }
+        out.push('<p>' + para.join('<br>') + '</p>');
+    }
+
+    return out.join('');
+}
+
 function renderMd(text) {
     if (!text) return '';
     var latexStore = [];
@@ -54,11 +126,7 @@ function renderMd(text) {
         }
         html = marked.parse(s);
     } else {
-        var escaped = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        html = escaped.split(/\n{2}/).map(function(p) {
-            if (p.startsWith('<div class=')) return p;
-            return '<p>' + p.replace(/\n/g,'<br>') + '</p>';
-        }).join('');
+        html = _renderMarkdownFallback(s);
     }
     // 还原 LaTeX
     html = html.replace(/\x00TEX(\d+)\x00/g, function(_, i) {
@@ -332,6 +400,17 @@ function _autoBindTracker() {
 
 var _cfg={}, _notes=[], _saveTimers={}, _listEl=null, _gStEl=null;
 var _pendingAiRetry = null;
+var _mountEl = null;
+
+function _refreshAuthUiState() {
+    if (!_mountEl) return;
+    var logged = isLoggedIn();
+    var hint = _mountEl.querySelector('#_enHint');
+    if (hint) hint.style.display = logged ? 'none' : 'inline';
+
+    var saveBtn = _mountEl.querySelector('#_enSave');
+    if (saveBtn) saveBtn.textContent = logged ? '保存' : '本地暂存';
+}
 
 function init(cfg) {
     _cfg = cfg||{};
@@ -346,6 +425,7 @@ function init(cfg) {
 }
 
 function _shell(mount) {
+    _mountEl = mount;
     const params = (window.location.search || '') + (window.location.hash || '');
     const isDev = /[?&]dev(=|&|$)/.test(params);
     const devBtnHtml = isDev ? '<button class="exp-notes-action-btn secondary" id="_enDevExport" style="background:#455a64;color:white;">导出开发数据</button>' : '';
@@ -370,15 +450,8 @@ function _shell(mount) {
     _listEl = mount.querySelector('#_enList');
     _gStEl  = mount.querySelector('#_enGSt');
 
-    var logged = isLoggedIn();
-    if (!logged) {
-        var hint = mount.querySelector('#_enHint');
-        if (hint) hint.style.display = 'inline';
-    }
-    
     var saveBtn = mount.querySelector('#_enSave');
     if (saveBtn) {
-        if (!logged) saveBtn.textContent = '本地暂存';
         saveBtn.addEventListener('click', _saveAll);
     }
 
@@ -386,12 +459,14 @@ function _shell(mount) {
     if (expBtn) expBtn.addEventListener('click', _export);
 
     var aiBtn = mount.querySelector('#_enAI');
-    if (aiBtn) aiBtn.addEventListener('click', _aiGen);
+    if (aiBtn) aiBtn.addEventListener('click', function () { _aiGen(); });
 
     if (isDev) {
         var devBtn = mount.querySelector('#_enDevExport');
         if (devBtn) devBtn.addEventListener('click', _exportDevData);
     }
+
+    _refreshAuthUiState();
 }
 
 function _renderList() {
@@ -576,6 +651,28 @@ function _collectAiPayloadSnapshot() {
     return pd;
 }
 
+function _isLikelyDomEventObject(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    return (
+        typeof obj.isTrusted === 'boolean' ||
+        typeof obj.preventDefault === 'function' ||
+        typeof obj.stopPropagation === 'function' ||
+        'target' in obj ||
+        'currentTarget' in obj ||
+        'srcElement' in obj
+    );
+}
+
+function _normalizeAiPayloadOverride(payloadOverride) {
+    if (!payloadOverride || typeof payloadOverride !== 'object') return null;
+    if (_isLikelyDomEventObject(payloadOverride)) return null;
+
+    var hasUsefulKeys = Object.keys(payloadOverride).some(function (k) {
+        return k !== 'isTrusted' && k !== 'timeStamp' && k !== 'type';
+    });
+    return hasUsefulKeys ? payloadOverride : null;
+}
+
 async function _aiGen(payloadOverride) {
     if(!isLoggedIn()){
         _pendingAiRetry = {
@@ -593,7 +690,7 @@ async function _aiGen(payloadOverride) {
     if(btn){btn.disabled=true;btn.innerHTML='<span class="exp-notes-ai-spinner"></span>生成中…';}   
     setGSt(_gStEl,'saving','AI 正在生成实验笔记，请稍候…');
     try{
-        var pd = payloadOverride || _collectAiPayloadSnapshot();
+        var pd = _normalizeAiPayloadOverride(payloadOverride) || _collectAiPayloadSnapshot();
         console.log('[Notes] Sending AI request with data keys:', Object.keys(pd));
         
         var d=await apiRequest('/notes/'+encodeURIComponent(_cfg.experimentKey)+'/ai-generate',{
@@ -647,7 +744,11 @@ function trackEvent(type, data) {
     _tracker.push(type, data);
 }
 
-global.ExperimentNotes = { init:init, getNotes:getNotes, appendNote:appendNote, trackEvent:trackEvent };
+function getBehavior() {
+    return _tracker.export();
+}
+
+global.ExperimentNotes = { init:init, getNotes:getNotes, appendNote:appendNote, trackEvent:trackEvent, getBehavior:getBehavior };
 
 // 自动初始化逻辑：若页面定义了 EXPERIMENT_NOTES_CONFIG 则自动执行
 document.addEventListener('DOMContentLoaded', function () {
@@ -668,6 +769,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('optlab:auth-success', function () {
         if (!_cfg || !_cfg.experimentKey) return;
+        _refreshAuthUiState();
         _load();
         setGSt(_gStEl, 'saved', '登录成功，已恢复云端保存能力。');
 

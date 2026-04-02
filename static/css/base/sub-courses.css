@@ -113,6 +113,13 @@ body {
     }
 }
 
+/* 三卡片水平排列优化 */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .card-grid.cols-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 .card {
     background-color: white;
     padding: 2rem;
@@ -142,6 +149,7 @@ body {
 
 .bg-amber-100 { background-color: var(--amber-100); color: var(--amber-600); }
 .bg-orange-100 { background-color: var(--orange-100); color: var(--orange-600); }
+.bg-red-100 { background-color: #fee2e2; color: #dc2626; }
 
 .card h2 {
     font-size: 1.5rem;
