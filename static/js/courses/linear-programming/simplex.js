@@ -27,6 +27,32 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastRunRecord = null;
     let leftResizeObserver = null;
 
+    const simplexEventBuffer = [];
+    const MAX_SIMPLEX_EVENTS = 300;
+
+    function pushSimplexEvent(type, data) {
+        simplexEventBuffer.push({
+            t: new Date().toISOString(),
+            type: type,
+            data: data || null
+        });
+        if (simplexEventBuffer.length > MAX_SIMPLEX_EVENTS) {
+            simplexEventBuffer.shift();
+        }
+    }
+
+    function updateSimplexExperimentData(extra) {
+        const payload = createSimplexRecordPayload();
+        window.SimplexExperimentData = Object.assign({}, window.SimplexExperimentData || {}, {
+            page: 'linear-programming.simplex',
+            lastUpdatedAt: new Date().toISOString(),
+            lastRunRecord: lastRunRecord,
+            latestPayload: payload,
+            tableauSteps: payload && Array.isArray(payload.iteration_data) ? payload.iteration_data : [],
+            operationEvents: simplexEventBuffer.slice()
+        }, extra || {});
+    }
+
     const examples = {
         'max': {
             n: 3,
@@ -81,6 +107,12 @@ document.addEventListener('DOMContentLoaded', function() {
         leftResizeObserver = new ResizeObserver(function () { syncResultCanvasHeight(); });
         leftResizeObserver.observe(leftColumn);
     }
+
+    pushSimplexEvent('session_start', {
+        n: parseInt(numVarsInput && numVarsInput.value, 10),
+        m: parseInt(numConstraintsInput && numConstraintsInput.value, 10)
+    });
+    updateSimplexExperimentData({ reason: 'init' });
 
     // 事件监听
     numVarsInput.addEventListener('change', generateCoeffTable);
@@ -186,6 +218,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = examples[selected];
         if (!data) return;
 
+        pushSimplexEvent('example_load', { example: selected });
+
         numVarsInput.value = data.n;
         numConstraintsInput.value = Math.min(data.m, 10);
         document.querySelector(`input[name="solve-type"][value="${data.type}"]`).checked = true;
@@ -210,6 +244,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setEmptyState('已加载示例数据，点击"求解"开始实验。');
         viz2dContainer.classList.add('hidden');
         lastRunRecord = null;
+        updateSimplexExperimentData({ reason: 'load_example' });
     }
 
     /**
@@ -249,6 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function resetForm() {
+        pushSimplexEvent('reset', null);
         numVarsInput.value = 2;
         numConstraintsInput.value = 3;
         document.querySelector('input[name="solve-type"][value="max"]').checked = true;
@@ -256,6 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setEmptyState('请在左侧输入参数并点击"求解"开始实验。');
         viz2dContainer.classList.add('hidden');
         lastRunRecord = null;
+        updateSimplexExperimentData({ reason: 'reset' });
     }
 
     function getSimplexStatusLabel(status) {
@@ -381,6 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('当前尚无实验数据，请先运行一次单纯形法求解。');
             return;
         }
+        pushSimplexEvent('open_log_modal', { steps: payload.iteration_data.length });
         if (simplexLogSummary) {
             simplexLogSummary.innerHTML =
                 '<div>求解类型：' + (lastRunRecord.solveType === 'max' ? '最大化' : '最小化') + '</div>' +
@@ -423,6 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('当前尚无实验数据，请先运行一次单纯形法求解。');
             return;
         }
+        pushSimplexEvent('export_json', { steps: payload.iteration_data.length });
 
         function compactNums(arr) {
             return (Array.isArray(arr) ? arr : []).map(function (v) { return Number(v).toFixed(4); }).join(', ');
@@ -496,6 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('当前尚无实验数据，请先运行一次单纯形法求解。');
             return;
         }
+        pushSimplexEvent('save_to_profile_click', { steps: payload.iteration_data.length });
         if (typeof apiPost !== 'function' || typeof getStoredToken !== 'function' || !getStoredToken()) {
             if (window.LoginModal && typeof window.LoginModal.open === 'function') {
                 window.LoginModal.open({ mode: 'login', notice: '请先登录后再保存至个人中心。' });
@@ -516,6 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 aliasPrefix: 'SIMPLEX',
                 defaultAlias,
                 onConfirm: function (alias) {
+                    pushSimplexEvent('save_to_profile_confirm', { alias: String(alias || '').trim() });
                     return apiPost('/experiments/records', {
                         alias: String(alias).trim(),
                         source_page: 'linear-programming.simplex',
@@ -536,6 +577,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const inputs = coeffTableContainer.querySelectorAll('input[type="number"]');
         for (let input of inputs) {
             if (input.value === "" || isNaN(parseFloat(input.value))) {
+                pushSimplexEvent('validate_failed', { reason: 'invalid_number', input_id: input.id || null });
                 alert("请确保所有单元格都填写了有效的数字。");
                 input.focus();
                 return false;
@@ -546,24 +588,31 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= m; i++) {
             const bVal = parseFloat(document.getElementById(`b-${i}`).value);
             if (bVal < 0) {
+                pushSimplexEvent('validate_failed', { reason: 'negative_rhs', constraint: i, b: bVal });
                 alert(`约束 ${i} 的右端项 (b) 必须是非负数。`);
                 document.getElementById(`b-${i}`).focus();
                 return false;
             }
         }
 
+        pushSimplexEvent('validate_success', { n: n, m: m });
         alert("输入验证通过！");
         return true;
     }
 
     /**
      * 单纯形法求解核心逻辑
+     * 使用 LPCore 共享库
      */
     function solveSimplex() {
+        if (!validateInputs()) return;
+
         // 1. 获取输入数据
         const n = parseInt(numVarsInput.value);
         const m = parseInt(numConstraintsInput.value);
         const solveType = document.querySelector('input[name="solve-type"]:checked').value;
+
+        pushSimplexEvent('solve_start', { n: n, m: m, solve_type: solveType });
 
         const c = [];
         for (let j = 1; j <= n; j++) {
@@ -598,162 +647,25 @@ document.addEventListener('DOMContentLoaded', function() {
             return [...row, ...slackPart];
         });
 
-        const currentB = [...b];
+        // 3. 使用 LPCore 进行迭代计算
+        const result = LPCore.iterateSimplex({
+            cj: cj,
+            basis: basis,
+            cB: cB,
+            A: fullA,
+            b: b,
+            solveType: solveType,
+            phase: 1,
+            maxIterations: 1000,
+            n: n
+        });
 
-        let steps = [];
-        let iteration = 0;
-        const maxIterations = 1000;
-
-        let finished = false;
-        let status = "iterating";
-
-        while (!finished && iteration < maxIterations) {
-            iteration++;
-
-            // 计算检验数 sigma_j = c_j - z_j = c_j - sum(cB_i * a_ij)
-            const sigma = [];
-            for (let j = 0; j < totalVars; j++) {
-                let zj = 0;
-                for (let i = 0; i < m; i++) {
-                    zj += cB[i] * fullA[i][j];
-                }
-                sigma.push(cj[j] - zj);
-            }
-
-            // 判断最优性
-            let enteringIdx = -1;
-            if (solveType === 'max') {
-                let maxSigma = -Infinity;
-                for (let j = 0; j < totalVars; j++) {
-                    if (sigma[j] > 1e-10) {
-                        if (sigma[j] > maxSigma) {
-                            maxSigma = sigma[j];
-                            enteringIdx = j;
-                        }
-                    }
-                }
-            } else {
-                let minSigma = Infinity;
-                for (let j = 0; j < totalVars; j++) {
-                    if (sigma[j] < -1e-10) {
-                        if (sigma[j] < minSigma) {
-                            minSigma = sigma[j];
-                            enteringIdx = j;
-                        }
-                    }
-                }
-            }
-
-            if (enteringIdx === -1) {
-                status = "optimal";
-                finished = true;
-                steps.push({
-                    iteration,
-                    cj: [...cj],
-                    basis: [...basis],
-                    cB: [...cB],
-                    b: [...currentB],
-                    a: fullA.map(r => [...r]),
-                    sigma: [...sigma],
-                    entering: null,
-                    leaving: null,
-                    theta: null,
-                    status: "optimal"
-                });
-                break;
-            }
-
-            // 比值测试选择离基变量
-            const theta = [];
-            let leavingIdx = -1;
-            let minTheta = Infinity;
-            let isUnbounded = true;
-
-            for (let i = 0; i < m; i++) {
-                if (fullA[i][enteringIdx] > 1e-10) {
-                    isUnbounded = false;
-                    const t = currentB[i] / fullA[i][enteringIdx];
-                    theta.push(t);
-                    if (t < minTheta - 1e-10) {
-                        minTheta = t;
-                        leavingIdx = i;
-                    }
-                } else {
-                    theta.push(null);
-                }
-            }
-
-            if (isUnbounded) {
-                status = "unbounded";
-                finished = true;
-                steps.push({
-                    iteration,
-                    cj: [...cj],
-                    basis: [...basis],
-                    cB: [...cB],
-                    b: [...currentB],
-                    a: fullA.map(r => [...r]),
-                    sigma: [...sigma],
-                    entering: `x${enteringIdx + 1}`,
-                    leaving: null,
-                    theta: theta,
-                    status: "unbounded"
-                });
-                break;
-            }
-
-            // 记录当前步骤
-            steps.push({
-                iteration,
-                cj: [...cj],
-                basis: [...basis],
-                cB: [...cB],
-                b: [...currentB],
-                a: fullA.map(r => [...r]),
-                sigma: [...sigma],
-                entering: `x${enteringIdx + 1}`,
-                leaving: basis[leavingIdx],
-                theta: theta,
-                status: "iterating"
-            });
-
-            // 迭代更新（主元消去）
-            const pivot = fullA[leavingIdx][enteringIdx];
-
-            currentB[leavingIdx] /= pivot;
-            for (let j = 0; j < totalVars; j++) {
-                fullA[leavingIdx][j] /= pivot;
-            }
-
-            for (let i = 0; i < m; i++) {
-                if (i !== leavingIdx) {
-                    const factor = fullA[i][enteringIdx];
-                    currentB[i] -= factor * currentB[leavingIdx];
-                    for (let j = 0; j < totalVars; j++) {
-                        fullA[i][j] -= factor * fullA[leavingIdx][j];
-                    }
-                }
-            }
-
-            basis[leavingIdx] = `x${enteringIdx + 1}`;
-            cB[leavingIdx] = cj[enteringIdx];
-        }
-
-        if (iteration >= maxIterations) status = "max_iter";
+        const steps = result.steps;
+        const status = result.status;
+        const finalObjectiveValue = result.finalObjectiveValue;
 
         const finalStep = steps.length ? steps[steps.length - 1] : null;
-        const solution = {};
-        for (let j = 1; j <= n; j++) {
-            const idx = finalStep ? finalStep.basis.indexOf('x' + j) : -1;
-            solution['x' + j] = idx !== -1 ? Number(finalStep.b[idx]) : 0;
-        }
-
-        let finalObjectiveValue = null;
-        if (finalStep) {
-            finalObjectiveValue = finalStep.cB.reduce(function (sum, cbv, i) {
-                return sum + cbv * finalStep.b[i];
-            }, 0);
-        }
+        const solution = LPCore.extractSolution(finalStep, n);
 
         lastRunRecord = {
             n: n,
@@ -767,16 +679,16 @@ document.addEventListener('DOMContentLoaded', function() {
             finalObjectiveValue: finalObjectiveValue
         };
 
-        // 3. 渲染结果
+        // 4. 渲染结果
         renderResults(steps, status, solveType);
 
-        // 4. 二维可视化 (如果 n=2)
+        // 5. 二维可视化 (如果 n=2)
         if (n === 2) {
             lastSolvedData = {
                 c: [...c],
                 a: a.map(r => [...r]),
                 b: [...b],
-                steps: JSON.parse(JSON.stringify(steps)), // 深度克隆以防止修改
+                steps: JSON.parse(JSON.stringify(steps)),
                 solveType: solveType
             };
             render2DViz(c, a, b, steps, solveType);
@@ -784,6 +696,14 @@ document.addEventListener('DOMContentLoaded', function() {
             lastSolvedData = null;
             viz2dContainer.classList.add('hidden');
         }
+
+        pushSimplexEvent('solve_complete', {
+            status: status,
+            steps: steps.length,
+            objective_value: finalObjectiveValue,
+            solution: solution
+        });
+        updateSimplexExperimentData({ reason: 'solve_complete' });
     }
 
     function renderResults(steps, status, solveType) {
@@ -846,121 +766,20 @@ document.addEventListener('DOMContentLoaded', function() {
             MathJax.typesetPromise([simplexIterationCards]).catch((err) => console.log('MathJax typeset failed: ' + err.message));
         }
 
+        updateSimplexExperimentData({ reason: 'render_results' });
+
         // 渲染卡片后同步高度，防止撑开 Grid Row
         syncResultCanvasHeight();
     }
 
     function renderSimplexTable(svg, data) {
-        const colWidth = 70;
-        const rowHeight = 30;
-        const n = data.cj.length;
-        const m = data.basis.length;
-
-        const totalCols = 3 + n + 1;
-        const totalRows = 1 + m + 1;
-
-        const width = totalCols * colWidth;
-        const height = totalRows * rowHeight;
-
-        svg.attr('width', width).attr('height', height);
-
-        svg.selectAll('rect.cell-bg')
-            .data(d3.range(totalCols * totalRows))
-            .enter()
-            .append('rect')
-            .attr('class', 'cell-bg')
-            .attr('x', d => (d % totalCols) * colWidth)
-            .attr('y', d => Math.floor(d / totalCols) * rowHeight)
-            .attr('width', colWidth)
-            .attr('height', rowHeight)
-            .attr('fill', '#fff')
-            .attr('stroke', '#eee');
-
-        if (data.entering && data.leaving) {
-            const enteringColIdx = parseInt(data.entering.substring(1)) - 1 + 3;
-            const leavingRowIdx = data.basis.indexOf(data.leaving) + 1;
-
-            svg.append('rect')
-                .attr('x', enteringColIdx * colWidth)
-                .attr('y', 0)
-                .attr('width', colWidth)
-                .attr('height', height)
-                .attr('fill', 'rgba(255, 235, 59, 0.1)');
-
-            svg.append('rect')
-                .attr('x', 0)
-                .attr('y', leavingRowIdx * rowHeight)
-                .attr('width', width)
-                .attr('height', rowHeight)
-                .attr('fill', 'rgba(255, 235, 59, 0.1)');
-
-            svg.append('rect')
-                .attr('x', enteringColIdx * colWidth)
-                .attr('y', leavingRowIdx * rowHeight)
-                .attr('width', colWidth)
-                .attr('height', rowHeight)
-                .attr('fill', '#fff9c4');
-        }
-
-        const cells = [];
-
-        cells.push({r: 0, c: 0, val: 'cj'});
-        cells.push({r: 0, c: 1, val: ''});
-        cells.push({r: 0, c: 2, val: ''});
-        for (let j = 0; j < n; j++) cells.push({r: 0, c: j+3, val: data.cj[j].toFixed(2)});
-        cells.push({r: 0, c: totalCols-1, val: 'θ'});
-
-        for (let i = 0; i < m; i++) {
-            const rowIdx = i + 1;
-            cells.push({r: rowIdx, c: 0, val: data.cB[i].toFixed(2)});
-            cells.push({r: rowIdx, c: 1, val: data.basis[i]});
-            cells.push({r: rowIdx, c: 2, val: data.b[i].toFixed(2)});
-            for (let j = 0; j < n; j++) {
-                cells.push({r: rowIdx, c: j+3, val: data.a[i][j].toFixed(2)});
-            }
-            const thetaVal = data.theta && data.theta[i] !== null ? data.theta[i].toFixed(2) : '-';
-            cells.push({r: rowIdx, c: totalCols-1, val: thetaVal});
-        }
-
-        const lastRowIdx = totalRows - 1;
-        cells.push({r: lastRowIdx, c: 0, val: 'σj'});
-        cells.push({r: lastRowIdx, c: 1, val: ''});
-        cells.push({r: lastRowIdx, c: 2, val: ''});
-        for (let j = 0; j < n; j++) {
-            cells.push({r: lastRowIdx, c: j+3, val: data.sigma[j].toFixed(2)});
-        }
-        cells.push({r: lastRowIdx, c: totalCols-1, val: ''});
-
-        svg.selectAll('text')
-            .data(cells)
-            .enter()
-            .append('text')
-            .attr('x', d => d.c * colWidth + colWidth/2)
-            .attr('y', d => d.r * rowHeight + rowHeight/2)
-            .attr('text-anchor', 'middle')
-            .attr('dominant-baseline', 'middle')
-            .text(d => d.val);
+        // 使用 LPCore 共享库的渲染函数
+        LPCore.renderSimplexTable(svg, data);
     }
 
     function generateExplanation(step, solveType) {
-        if (step.status === 'optimal') {
-            return `<strong>结论：</strong> 所有检验数 \\(\\sigma_j\\) 均满足最优性条件（${solveType === 'max' ? '\\(\\sigma_j \\le 0\\)' : '\\(\\sigma_j \\ge 0\\)'}），当前基本可行解即为最优解。`;
-        }
-        if (step.status === 'unbounded') {
-            return `<strong>结论：</strong> 选择入基变量 ${step.entering}，但其对应列系数均非正，目标函数值可无限改进，问题无界。`;
-        }
-
-        let text = `<strong>步骤：</strong> `;
-        if (solveType === 'max') {
-            text += `当前为最大化问题，选择最大正检验数对应的变量 <strong>${step.entering}</strong> 入基。`;
-        } else {
-            text += `当前为最小化问题，选择最小负检验数对应的变量 <strong>${step.entering}</strong> 入基。`;
-        }
-
-        text += `<br><strong>比值测试：</strong> 经过计算，最小正比值为对应 <strong>${step.leaving}</strong> 所在的行，故 <strong>${step.leaving}</strong> 离基。`;
-        text += `<br><strong>更新：</strong> 以 <strong>${step.entering}</strong> 和 <strong>${step.leaving}</strong> 交叉处的元素为主元进行行变换。`;
-
-        return text;
+        // 使用 LPCore 共享库的解释生成函数
+        return LPCore.generateExplanation(step, solveType);
     }
 
     // ==================== 二维可视化模块 ====================

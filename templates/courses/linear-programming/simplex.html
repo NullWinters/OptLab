@@ -5,7 +5,7 @@
 {% block head %}
 <link rel="stylesheet" href="/static/css/courses/linear-programming/simplex.css">
 <!-- D3.js -->
-<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="/static/js/vendors/d3/d3.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -23,6 +23,9 @@
         </button>
         <button class="nav-btn active">
             单纯形法
+        </button>
+        <button class="nav-btn" onclick="window.location.href='two_phase.html'">
+            两阶段法
         </button>
     </nav>
 
@@ -70,7 +73,8 @@
 
                 <div class="panel-section">
                     <h3>系数输入表格</h3>
-                    <p class="hint-text">已默认每个决策变量 x<sub>j</sub> ≥ 0 (j = 1, 2, ..., n)</p>
+                    <p class="hint-text">所有约束均为等式 Ax <= b，且右端项 b &ge; 0</p>
+                    <p class="hint-text">系统会自动添加松弛变量构造初始基</p>
                     <div id="coeff-table-container">
                         <!-- 动态生成系数表格 -->
                     </div>
@@ -162,7 +166,10 @@
             { id: "num-constraints", description: "设置约束数量输入框", type: "normal" },
             { id: "reset-btn", description: "重置输入数据按钮", type: "normal" },
             { id: "check-btn", description: "校验输入数据准确性按钮", type: "normal" },
-            { id: "solve-btn", description: "执行单纯形法求解按钮", type: "normal" }
+            { id: "solve-btn", description: "执行单纯形法求解按钮", type: "normal" },
+            { id: "simplex-log-open-btn", description: "查看实验数据按钮", type: "normal" },
+            { id: "simplex-log-export-json-btn", description: "导出实验数据按钮", type: "normal" },
+            { id: "simplex-log-save-to-profile-btn", description: "保存实验数据至个人中心按钮", type: "normal" }
         ],
         GUIDEBOOK: `这是线性规划——单纯形法教学实验页面。
         
@@ -220,6 +227,10 @@
 
             var cards = document.querySelectorAll('#iteration-results .iteration-card');
             var finalAlert = document.querySelector('#iteration-results .alert:last-child');
+            var simplexData = window.SimplexExperimentData || null;
+            var behavior = (window.ExperimentNotes && typeof window.ExperimentNotes.getBehavior === 'function')
+                ? window.ExperimentNotes.getBehavior()
+                : null;
 
             return {
                 num_vars: n,
@@ -233,7 +244,13 @@
                     has_2d_viz: document.getElementById('visualization-2d')
                         ? !document.getElementById('visualization-2d').classList.contains('hidden')
                         : false
-                }
+                },
+                simplex_run_record: simplexData && simplexData.lastRunRecord ? simplexData.lastRunRecord : null,
+                simplex_log_payload: simplexData && simplexData.latestPayload ? simplexData.latestPayload : null,
+                simplex_tableau_steps: simplexData && Array.isArray(simplexData.tableauSteps)
+                    ? simplexData.tableauSteps
+                    : [],
+                operation_history: behavior && Array.isArray(behavior.events) ? behavior.events : []
             };
         }
     };
@@ -243,7 +260,10 @@
             "solve-btn": "求解",
             "check-btn": "检查输入",
             "reset-btn": "重置",
-            "load-example-btn": "加载示例"
+            "load-example-btn": "加载示例",
+            "simplex-log-open-btn": "查看实验数据",
+            "simplex-log-export-json-btn": "导出实验数据",
+            "simplex-log-save-to-profile-btn": "保存至个人中心"
         };
         Object.keys(btnMap).forEach(function(id) {
             var el = document.getElementById(id);
@@ -277,5 +297,6 @@
         });
     });
 </script>
+<script src="/static/js/courses/linear-programming/lp-core.js"></script>
 <script src="/static/js/courses/linear-programming/simplex.js"></script>
 {% endblock %}

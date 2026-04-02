@@ -10,11 +10,19 @@
         window.MathJax = {
             tex: {
                 inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: { '[+]': ['boldsymbol'] }
+            },
+            loader: {
+                paths: { mathjax: '/static/js/vendors/mathjax' },
+                load: ['[tex]/boldsymbol']
+            },
+            chtml: {
+                fontURL: '/static/js/vendors/mathjax/output/chtml/fonts/tex'
             }
         };
     </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script id="MathJax-script" async src="/static/js/vendors/mathjax/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 

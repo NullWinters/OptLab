@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}两阶段法 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/courses/linear-programming/two_phase.css">
+<script src="/static/js/vendors/d3/d3.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="index.html" class="back-btn">返回</a>
+
+    <header class="header">
+        <h1>两阶段法教学实验</h1>
+        <p class="subtitle">处理等式约束的线性规划求解方法</p>
+    </header>
+
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">
+            算法介绍
+        </button>
+        <button class="nav-btn" onclick="window.location.href='simplex.html'">
+            单纯形法
+        </button>
+        <button class="nav-btn active">
+            两阶段法
+        </button>
+    </nav>
+
+    <div class="main-layout">
+        <div class="left-column">
+            <!-- 左侧输入与控制面板 -->
+            <aside class="input-panel">
+                <div class="panel-section">
+                    <h3>示例数据加载</h3>
+                    <div class="input-inline">
+                        <div class="input-group" style="flex: 2;">
+                            <select id="example-select">
+                                <option value="max">最大化示例</option>
+                                <option value="min">最小化示例</option>
+                                <option value="infeasible">无可行解示例</option>
+                                <option value="degenerate">退化解示例</option>
+                                <option value="unbounded">无界解示例</option>
+                            </select>
+                        </div>
+                        <button id="load-example-btn" class="action-btn primary" style="flex: 1;">加载</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>问题规模设定</h3>
+                    <div class="input-inline">
+                        <div class="input-group">
+                            <label for="num-vars">变量数 (n):</label>
+                            <input type="number" id="num-vars" min="1" max="15" value="3" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label for="num-constraints">约束数 (m):</label>
+                            <input type="number" id="num-constraints" min="1" max="15" value="3" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>求解类型</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="solve-type" value="max" checked> 最大化 (Maximize)</label>
+                        <label><input type="radio" name="solve-type" value="min"> 最小化 (Minimize)</label>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>系数输入表格</h3>
+                    <p class="hint-text">所有约束均为等式 Ax = b，且右端项 b &ge; 0</p>
+                    <p class="hint-text">系统会自动添加人工变量构造初始基</p>
+                    <div id="coeff-table-container">
+                        <!-- 动态生成系数表格 -->
+                    </div>
+                </div>
+
+                <div class="panel-actions">
+                    <button id="reset-btn" class="action-btn secondary">重置</button>
+                    <button id="check-btn" class="action-btn secondary">检查输入</button>
+                    <button id="solve-btn" class="action-btn primary">求解</button>
+                </div>
+            </aside>
+
+            <section class="experiment-data-panel">
+                <div class="experiment-data-header">
+                    <h3>实验数据</h3>
+                    <p>查看、导出与保存本次两阶段法迭代记录</p>
+                </div>
+                <div class="experiment-data-actions">
+                    <button id="two-phase-log-open-btn" class="action-btn secondary">查看实验数据</button>
+                    <button id="two-phase-log-export-json-btn" class="action-btn secondary">导出实验数据(JSON)</button>
+                    <button id="two-phase-log-save-to-profile-btn" class="action-btn primary">保存至个人中心</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- 右侧结果展示区 -->
+        <main class="result-area">
+            <div id="iteration-results" class="results-container">
+                
+                <!-- 初始占位状态 -->
+                <div id="two-phase-placeholder" class="placeholder-text">
+                    请在左侧输入参数并点击"求解"开始实验。
+                </div>
+                
+                <!-- 第一阶段面板 -->
+                <details id="phase1-panel" class="phase-panel hidden" open>
+                    <summary class="phase-header">
+                        <div class="phase-title-group">
+                            <h3>第一阶段：可行性判断</h3>
+                            <span class="phase-subtitle">辅助问题 min w = &Sigma;人工变量</span>
+                        </div>
+                        <span class="phase-status-badge" id="phase1-status">等待求解</span>
+                    </summary>
+                    <div class="phase-content">
+                        <div class="phase-info-card">
+                            <p>引入人工变量构造单位基，求解辅助问题。</p>
+                            <ul>
+                                <li>若 w<sub>min</sub> = 0 &rarr; 存在可行解，进入第二阶段</li>
+                                <li>若 w<sub>min</sub> &gt; 0 &rarr; 无可行解，停止计算</li>
+                            </ul>
+                        </div>
+                        <div id="phase1-iteration-cards" class="phase-cards-container"></div>
+                        <div id="phase1-conclusion" class="phase-conclusion hidden"></div>
+                    </div>
+                </details>
+                
+                <!-- 第二阶段面板 -->
+                <details id="phase2-panel" class="phase-panel hidden" disabled>
+                    <summary class="phase-header">
+                        <div class="phase-title-group">
+                            <h3>第二阶段：求解原问题</h3>
+                            <span class="phase-subtitle">恢复原目标函数继续迭代</span>
+                        </div>
+                        <span class="phase-status-badge" id="phase2-status">未开始</span>
+                    </summary>
+                    <div class="phase-content">
+                        <div class="phase-info-card">
+                            <p>去除人工变量，恢复原问题目标函数，以第一阶段最终基为初始基继续求解。</p>
+                        </div>
+                        <div id="phase2-iteration-cards" class="phase-cards-container"></div>
+                        <div id="phase2-conclusion" class="phase-conclusion hidden"></div>
+                    </div>
+                </details>
+                
+            </div>
+        </main>
+    </div>
+
+    <footer class="footer">
+        线性规划 · OptLab 教学资源
+    </footer>
+</div>
+
+<script src="/static/js/courses/linear-programming/lp-core.js"></script>
+<script src="/static/js/courses/linear-programming/two_phase.js"></script>
+{% endblock %}

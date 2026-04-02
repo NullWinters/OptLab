@@ -71,16 +71,21 @@ _EXPERIMENT_TEMPLATES: dict[str, str] = {
     ),
     "linear-programming.simplex": (
         "实验类型：线性规划 · 单纯形法。\n\n"
+        "【实验参数与符号对照表】\n"
+        "必须输出标准 Markdown 表格（多行），禁止把整张表写成一行文本。\n"
+        "表头固定为：| 符号 | 定义 | 当前值 | 单位 | 推荐范围 | 参数类型 | 敏感性提示 | 数据源 |\n"
+        "第二行固定为：| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
+        "每个参数单独占一行，不要在单元格中再拼接“| ... |”片段。\n\n"
         "【问题设置】\n"
         "$n$、$m$、max/min；无系数则写未记录；简述松弛变量与标准形。\n\n"
         "【迭代过程】\n"
-        "有数据则写入离基、主元等；无则依行为记录说明检查/求解/重置；可提规模（$n={n},m={m}$）。\n\n"
+        "有数据则写入基/入基/离基/主元/检验数变化；无则依行为记录说明检查/求解/重置。\n\n"
         "【最终结果】\n"
         "最优解与目标值或无界/无可行（与数据一致）。\n\n"
         "【算法要点】\n"
-        "结合本题写检验数与比值测试各一两句，勿空抄定义。\n\n"
+        "结合本题写检验数与比值测试，避免空泛定义。\n\n"
         "【操作记录】\n"
-        "含「操作与现象对照」。"
+        "含『操作与现象对照』。"
     ),
     "svm-smo.kernel_trick.visualization": (
         "实验类型：支持向量机核技巧 · 三维可视化。\n\n"
@@ -136,7 +141,11 @@ _TEMPLATE_ENRICHERS: dict[str, str] = {
         "\n\n【补充】\n两子实验有数据时各写一小段；【结果分析】可一句联系拟合与定价。"
     ),
     "linear-programming.simplex": (
-        "\n\n【补充】\n【算法要点】至少 3 句；无矩阵时说明能依据行为记录推断什么。"
+        "\n\n【补充】\n"
+        "1. 【实验参数与符号对照表】必须是标准 Markdown 多行表格，不得压成单行文本。\n"
+        "2. 每个参数对应一行，至少包含：$n,m,solve\_type,c_j,a_{ij},b_i,Z$（缺失写未记录）。\n"
+        "3. 表格前后必须各空一行，避免被渲染成普通段落。\n"
+        "4. 【算法要点】至少 3 句；无矩阵时说明能依据行为记录推断什么。"
     ),
     "svm-smo.kernel_trick.visualization": (
         "\n\n【补充】\n"
@@ -338,6 +347,86 @@ def _summarize_iterations(iteration_log: list, max_rows: int = 27) -> str:
     return "\n".join(lines)
 
 
+def _normalize_experiment_data(experiment_data: Any) -> dict[str, Any]:
+    """统一前端上送结构：兼容 {experiment_data:{...}} 包装与异常类型。"""
+    if isinstance(experiment_data, dict) and isinstance(experiment_data.get("experiment_data"), dict):
+        return experiment_data.get("experiment_data") or {}
+    if isinstance(experiment_data, dict):
+        return experiment_data
+    return {}
+
+
+def _extract_behavior_payload(experiment_data: dict[str, Any]) -> dict[str, Any]:
+    """兼容 _behavior / operation_history / operation_events 等行为字段。"""
+    if not isinstance(experiment_data, dict):
+        return {}
+
+    behavior = experiment_data.get("_behavior")
+    if isinstance(behavior, dict):
+        return behavior
+
+    if isinstance(behavior, list):
+        return {
+            "session_duration_s": 0,
+            "event_count": len(behavior),
+            "events": behavior,
+        }
+
+    for key in ("operation_history", "operation_events", "behavior", "user_operations"):
+        v = experiment_data.get(key)
+        if isinstance(v, dict):
+            if isinstance(v.get("events"), list):
+                return v
+        elif isinstance(v, list):
+            return {
+                "session_duration_s": 0,
+                "event_count": len(v),
+                "events": v,
+            }
+
+    return {}
+
+
+def _extract_iteration_log_payload(experiment_data: dict[str, Any]) -> list[dict[str, Any]]:
+    """兼容 iteration_log / iteration_data / simplex_tableau_steps 等迭代字段。"""
+    if not isinstance(experiment_data, dict):
+        return []
+
+    direct_keys = (
+        "iteration_log",
+        "iteration_data",
+        "simplex_tableau_steps",
+        "tableau_steps",
+        "tableauSteps",
+    )
+    for key in direct_keys:
+        v = experiment_data.get(key)
+        if isinstance(v, list):
+            return v
+
+    simplex_payload = experiment_data.get("simplex_log_payload")
+    if isinstance(simplex_payload, dict):
+        for key in ("iteration_data", "iteration_log", "tableau_steps", "tableauSteps"):
+            v = simplex_payload.get(key)
+            if isinstance(v, list):
+                return v
+
+    latest_payload = experiment_data.get("latestPayload")
+    if isinstance(latest_payload, dict):
+        for key in ("iteration_data", "iteration_log", "tableau_steps", "tableauSteps"):
+            v = latest_payload.get(key)
+            if isinstance(v, list):
+                return v
+
+    run_record = experiment_data.get("simplex_run_record")
+    if isinstance(run_record, dict):
+        steps = run_record.get("steps")
+        if isinstance(steps, list):
+            return steps
+
+    return []
+
+
 async def generate_experiment_note(
         experiment_key: str,
         experiment_data: dict[str, Any],
@@ -349,6 +438,9 @@ async def generate_experiment_note(
     """
     from langchain_deepseek import ChatDeepSeek
     from pydantic import BaseModel, Field
+
+    # 兼容外层包装及多版本字段
+    experiment_data = _normalize_experiment_data(experiment_data)
 
     logger.info(f"[NoteGen] Starting note generation for experiment: {experiment_key}")
     logger.debug(f"[NoteGen] Input data keys: {list(experiment_data.keys())}")
@@ -403,8 +495,8 @@ async def generate_experiment_note(
         raise TypeError(f"experiment_data must be dict, got {type(experiment_data)}")
 
     # 安全提取各字段（不修改原始数据）
-    behavior_raw = experiment_data.get("_behavior", {})
-    iteration_log = experiment_data.get("iteration_log", [])
+    behavior_raw = _extract_behavior_payload(experiment_data)
+    iteration_log = _extract_iteration_log_payload(experiment_data)
 
     logger.debug(
         f"[NoteGen] behavior_raw type: {type(behavior_raw)}, iteration_log type: {type(iteration_log)}"
@@ -428,10 +520,25 @@ async def generate_experiment_note(
     iteration_summary = _summarize_iterations(iteration_log)
 
     # 排除特殊字段，只保留参数数据
+    excluded_param_keys = {
+        "iteration_log",
+        "iteration_data",
+        "simplex_tableau_steps",
+        "tableau_steps",
+        "tableauSteps",
+        "simplex_log_payload",
+        "latestPayload",
+        "simplex_run_record",
+        "_behavior",
+        "operation_history",
+        "operation_events",
+        "behavior",
+        "user_operations",
+    }
     params_data = {
         k: v
         for k, v in experiment_data.items()
-        if k not in ("iteration_log", "_behavior")
+        if k not in excluded_param_keys
     }
 
     # 安全序列化参数
@@ -456,12 +563,22 @@ async def generate_experiment_note(
     )
 
     template_for_prompt = template + _TEMPLATE_ENRICHERS.get(experiment_key, "")
+    table_render_guard = ""
     if experiment_key == "linear-programming.simplex":
         _nv = params_data.get("num_vars")
         _mv = params_data.get("num_constraints")
         template_for_prompt = template_for_prompt.replace(
             "{n}", str(_nv) if _nv is not None else "（未记录）"
         ).replace("{m}", str(_mv) if _mv is not None else "（未记录）")
+        table_render_guard = (
+            "\n【表格格式强约束】\n"
+            "请将【实验参数与符号对照表】写成标准 Markdown 多行表格：\n"
+            "1. 表头单独一行；\n"
+            "2. 对齐行单独一行；\n"
+            "3. 每个参数数据单独一行；\n"
+            "4. 表格前后各空一行；\n"
+            "5. 不要把多行表格压成一行文本。\n"
+        )
 
     if not custom_prompt:
         # "你是一名优化方法课程助教，负责为学生生成客观、准确、可评阅的完整实验记录报告。\n"
@@ -498,10 +615,11 @@ async def generate_experiment_note(
    - 所有数值保留4位小数，与实验数据完全一致，缺失数据写「__待补充__」。
    - 公式中的变量格式需与参数表一致（如 $\hat{\beta} = -3.5000$）。
 3. 参数与符号表增强规则：
-   | 符号 | 定义 | 当前值 | 单位 | 推荐范围 | 参数类型 | 敏感性提示 | 数据源 |
-   | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-   - 敏感性提示用图标替代文本：⚠️（高）、🟡（中）、✅（低），理论对齐用🟢标注。
-   - 参数后添加[edit]标记（如 $N = 10$ [edit]），表格标注数据来源（如[数据源: 迭代数据摘要第2步]）。
+   - 参数表必须使用标准 Markdown 表格，且按“表头行 + 对齐行 + 数据行”逐行换行输出。
+   - 严禁将整张表压缩成一行文本；严禁在单元格中嵌套新的“|...|”伪表格。
+   - 表头固定为：| 符号 | 定义 | 当前值 | 单位 | 推荐范围 | 参数类型 | 敏感性提示 | 数据源 |
+   - 对齐行固定为：| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+   - 每个参数单独一行，敏感性提示用图标：⚠️（高）、🟡（中）、✅（低），理论对齐用🟢标注。
 4. 迭代过程透明化：
    - 省略数据时插入汇总行（如「中间步骤（6-7）收缩比与理论值保持一致，误差±0.001」）。
    - 数据展示说明改为「| 数据展示说明 | 因篇幅限制，本表仅展示初始5步及末3步，中间步骤误差在±0.001范围内」。
@@ -532,7 +650,8 @@ async def generate_experiment_note(
     user_prompt = (
         f"实验页面：{label}\n"
         f"实验标识：{experiment_key}\n"
-        f"【结构模板】：\n{template_for_prompt}\n\n"
+        f"【结构模板】：\n{template_for_prompt}\n"
+        f"{table_render_guard}\n"
         f"【实验参数数据】：\n{params_str}\n\n"
         f"【迭代数据摘要】：\n{iteration_summary}\n\n"
         f"【用户操作行为记录】：\n{behavior_summary}\n\n"

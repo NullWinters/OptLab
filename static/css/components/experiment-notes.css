@@ -324,21 +324,41 @@
     padding-left: 20px;
     margin: 4px 0 8px;
 }
+.exp-note-render-view .exp-note-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    margin: 10px 0;
+    border: 1px solid #FFE0B2;
+    border-radius: 8px;
+    background: #fff;
+}
+
 .exp-note-render-view table {
     border-collapse: collapse;
-    width: 100%;
-    margin: 8px 0;
+    width: max-content;
+    min-width: 100%;
+    margin: 0;
     font-size: 0.9em;
 }
 .exp-note-render-view th,
 .exp-note-render-view td {
     border: 1px solid #FFE0B2;
-    padding: 6px 10px;
+    padding: 8px 10px;
     text-align: left;
+    white-space: nowrap;
 }
 .exp-note-render-view th {
     background: #FFF3E0;
     font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.exp-note-render-view tbody tr:nth-child(even) td {
+    background: #FFFAF5;
+}
+.exp-note-render-view tbody tr:hover td {
+    background: #FFF1E3;
 }
 
 /* 笔记底部状态栏 */
