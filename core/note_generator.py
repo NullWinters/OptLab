@@ -11,426 +11,63 @@ logger = logging.getLogger(__name__)
 
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-_EXPERIMENT_TEMPLATES: dict[str, str] = {
-    "line-search.range_search.observation": (
-        "实验类型：区间收缩法 · 流程观察（单算法）。任务：观察区间缩小与试探点规则。\n"
-        "章节（用【】标注）：\n\n"
-        "【实验参数】\n"
-        "算法名、$f(x)$、$[a_0,b_0]$、终止参数（$\\varepsilon$ 或斐波那契的 $N$ 与修正系数等）。\n\n"
-        "【迭代过程】\n"
-        "依据【迭代数据摘要】写前几步与末几步的 $a_k,b_k$、区间长（4 位小数）、收缩比与理论值（0.618/0.5/斐波那契步长比）对照；"
-        "总步数与 $[a_K,b_K]$。无数据写未运行。\n\n"
-        "【结果分析】\n"
-        "$x^*=(a_K+b_K)/2$、$f(x^*)$；收缩与理论是否一致；操作记录中换函数/改参数的影响（若有）。\n\n"
-        "【操作记录】\n"
-        "时间序列表 + 简短「操作与现象对照」。"
-    ),
-    "line-search.range_search.comparison": (
-        "实验类型：区间收缩法 · 性质对比（三算法、同区间）。任务：对比效率与数值表现。\n\n"
-        "【实验参数】\n"
-        "$f(x)$、共享 $[a_0,b_0]$、三算法终止参数。\n\n"
-        "【三算法对比】\n"
-        "Markdown 表：算法、迭代步数、最终区间长、$x^*$（4 位）；未运行标未运行。表下简析快慢与差异原因。\n\n"
-        "【收敛规律分析】\n"
-        "三种算法收缩比与理论（0.618/斐波那契趋近/0.5）；偏离时联系函数形态或误差；有视图切换则提一句曲线。\n\n"
-        "【操作记录】\n"
-        "含视图切换；末「操作与现象对照」。"
-    ),
-    "line-search.point_search.observation": (
-        "实验类型：点搜索法 · 流程观察（梯度/牛顿/割线三选一）。\n\n"
-        "【实验参数】\n"
-        "算法、$f(x)$、$x_0$、割线 $x_{-1}$、$\\alpha$（梯度）、$N$。\n\n"
-        "【迭代过程】\n"
-        "前几步与末几步的 $x_k,f,f'$（6 位），牛顿加 $f''$，割线提分母；终止原因。无数据写未运行。\n\n"
-        "【结果分析】\n"
-        "$x^*,f(x^*)$；与算法收敛特点对照；$\\alpha$、$f''$、分母等小问题（若存在）。\n\n"
-        "【操作记录】\n"
-        "时间序 +「操作与现象对照」。"
-    ),
-    "line-search.point_search.comparison": (
-        "实验类型：点搜索法 · 性质对比（三算法并行）。任务：比较迭代次数、稳定性与终点。\n\n"
-        "【实验参数】\n"
-        "$f(x),x_0,x_{-1},\\alpha,N$ 与数据一致。\n\n"
-        "【三算法对比】\n"
-        "表：算法、步数/原因、$x,f,|f'|$（6 位）；表下简析效率与终点差异。\n\n"
-        "【收敛行为分析】\n"
-        "三算法各一两句，引用表中数字；谈 $\\alpha$、$f''$、分母等。\n\n"
-        "【操作记录】\n"
-        "含「操作与现象对照」。"
-    ),
-    "line-search.application.main": (
-        "实验类型：一维搜索应用（最小二乘拟合 $\\hat{\\beta}$ + 利润定价 $p^*$）。\n\n"
-        "【子实验一：最小二乘拟合】\n"
-        "样本量、方法、初值/区间、终止；2～3 步损失与 $\\beta$；最终 $\\hat{\\beta}$ 与损失。未执行写未执行。\n\n"
-        "【子实验二：最大利润定价】\n"
-        "$\\hat{\\alpha},\\hat{\\beta},c$、搜索设置；几步迭代与最终 $p^*,\\pi(p^*)$；可提一阶条件数值核对。未执行写未执行。\n\n"
-        "【结果分析】\n"
-        "拟合质量、定价含义、换方法时差异（若有）。\n\n"
-        "【操作记录】\n"
-        "加载/方法/参数/求解 +「操作与现象对照」。"
-    ),
-    "linear-programming.simplex": (
-        "实验类型：线性规划 · 单纯形法。\n\n"
-        "【实验参数与符号对照表】\n"
-        "必须输出标准 Markdown 表格（多行），禁止把整张表写成一行文本。\n"
-        "表头固定为：| 符号 | 定义 | 当前值 | 单位 | 推荐范围 | 参数类型 | 敏感性提示 | 数据源 |\n"
-        "第二行固定为：| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
-        "每个参数单独占一行，不要在单元格中再拼接“| ... |”片段。\n\n"
-        "【问题设置】\n"
-        "$n$、$m$、max/min；无系数则写未记录；简述松弛变量与标准形。\n\n"
-        "【迭代过程】\n"
-        "有数据则写入基/入基/离基/主元/检验数变化；无则依行为记录说明检查/求解/重置。\n\n"
-        "【最终结果】\n"
-        "最优解与目标值或无界/无可行（与数据一致）。\n\n"
-        "【算法要点】\n"
-        "结合本题写检验数与比值测试，避免空泛定义。\n\n"
-        "【操作记录】\n"
-        "含『操作与现象对照』。"
-    ),
-    "svm-smo.kernel_trick.visualization": (
-        "实验类型：支持向量机核技巧 · 三维可视化。\n\n"
-        "【实验参数】\n"
-        "数据来源（预设/上传）、样本量、列映射（$x,y,label$）、核映射表达式 $\phi(x,y)$、超平面参数（$z$ 平移与 yaw/pitch）。\n\n"
-        "【实验过程】\n"
-        "按时间顺序描述：数据加载、列映射确认、自定义映射应用、升维动画、超平面调节；结合过程日志与行为记录引用关键步骤。\n\n"
-        "【三维可分性与结果】\n"
-        "记录最终划分准确率、类别分布、映射前后可分性变化；若准确率变化明显，说明与映射表达式及平面参数的关系。\n\n"
-        "【综合分析】\n"
-        "结合核技巧理论解释为何升维后更易线性分割，指出本次数据与映射在几何层面的表现。\n\n"
-        "【操作记录】\n"
-        "给出关键交互时间序，并附「操作与现象对照」。"
-    ),
-    "svm-smo.smo_iteration.observation": (
-        "实验类型：SMO 算法 · 迭代过程观察。\n\n"
-        "【实验参数】\n"
-        "数据来源、样本量、列映射、超参数（$C$、$tol$、$max\_iter$）与播放速度设置。\n\n"
-        "【迭代过程】\n"
-        "基于迭代日志写出代表性步骤：$(i,j)$ 选择、$\alpha_i,\alpha_j$ 更新、$w,b$ 变化与准确率变化；标注达到终止条件的阶段。\n\n"
-        "【实验结果】\n"
-        "给出最终迭代次数、$w$、$b$、分类准确率、是否完成收敛；若未收敛，说明受限因素。\n\n"
-        "【机制分析】\n"
-        "结合 SMO 原理解释两变量子问题更新对分离超平面的影响，讨论超参数对收敛速度与稳定性的作用。\n\n"
-        "【操作记录】\n"
-        "按时间序列整理用户控制行为，并附「操作与现象对照」。"
-    ),
-}
+# System Prompt
+SYSTEM_PROMPT = """你是一个实验笔记生成助手。根据提供的实验数据生成完整实验笔记。
 
-_DEFAULT_TEMPLATE = (
-    "章节结构（用【】标注，禁止用#）：\n\n"
-    "【实验参数】列出核心参数及含义。\n\n"
-    "【实验过程】关键步骤与数据引用；终止原因。\n\n"
-    "【结果与分析】理论或公式对照、数值解读、与操作的关系。\n\n"
-    "【操作记录】时间序；末可附简短「操作与现象对照」。"
-)
+笔记必须包含以下四个部分（使用 Markdown 标题 ## 分隔）：
 
-_TEMPLATE_ENRICHERS: dict[str, str] = {
-    "line-search.range_search.observation": (
-        "\n\n【补充】\n"
-        "【结果分析】至少引用 3 处数据；理论收缩比与观测收缩比各提一次（有数据时）。"
-    ),
-    "line-search.range_search.comparison": (
-        "\n\n【补充】\n表后须用文字解读；三种算法名称在分析中各出现至少一次。"
-    ),
-    "line-search.point_search.observation": (
-        "\n\n【补充】\n【结果分析】点明所用算法及 1～2 个典型数值现象。"
-    ),
-    "line-search.point_search.comparison": (
-        "\n\n【补充】\n三种算法各写几句，尽量带表中数字。"
-    ),
-    "line-search.application.main": (
-        "\n\n【补充】\n两子实验有数据时各写一小段；【结果分析】可一句联系拟合与定价。"
-    ),
-    "linear-programming.simplex": (
-        "\n\n【补充】\n"
-        "1. 【实验参数与符号对照表】必须是标准 Markdown 多行表格，不得压成单行文本。\n"
-        "2. 每个参数对应一行，至少包含：$n,m,solve\_type,c_j,a_{ij},b_i,Z$（缺失写未记录）。\n"
-        "3. 表格前后必须各空一行，避免被渲染成普通段落。\n"
-        "4. 【算法要点】至少 3 句；无矩阵时说明能依据行为记录推断什么。"
-    ),
-    "svm-smo.kernel_trick.visualization": (
-        "\n\n【补充】\n"
-        "必须引用数据集规模、至少 1 组映射表达式和最终准确率；分析中体现升维前后可分性变化。"
-    ),
-    "svm-smo.smo_iteration.observation": (
-        "\n\n【补充】\n"
-        "必须引用迭代日志中的具体数值（如 $\alpha$、$w$、$b$、准确率）；若未收敛需给出数据驱动原因。"
-    ),
-}
+1. ## 数学原理
+   简要介绍本次实验涉及的算法的核心数学原理，用 LaTeX 公式表示关键步骤。若无法推断，写"待补充"。
+
+2. ## 实验过程（可选）
+   仅当用户操作记录中包含值得注意的操作（参数调整、算法切换等）时编写，简洁描述关键操作。
+
+3. ## 实验数据
+   使用 Markdown 表格或 LaTeX 展示实验数据。若迭代次数≤10步，全部列出；若较多，列出开头3步、结尾3步及中间2步关键点。
+   所有数值必须与提供的数据完全一致，缺失写"待补充"。
+
+4. ## 实验总结
+   此部分预留为空白，只写"（由用户填写）"。
+
+约束：禁止编造数据；禁止套话；使用标准 Markdown 表格语法。"""
 
 
-def _load_guide(experiment_key: str, experiment_data: dict) -> str:
-    """从 experiment_data 获取实验指导内容。所有指导内容已嵌入前端页面，通过 POST 请求传入。"""
-    if not isinstance(experiment_data, dict):
-        return ""
+def _truncate_iteration_log(experiment_data: dict, max_items: int = 40) -> dict:
+    """仅对 iteration_log 做简单截断，不做任何计算。"""
+    data = experiment_data.copy()
+    iteration_log = data.get("iteration_log", [])
 
-    guidebook = experiment_data.get("guidebook", "").strip()
+    if len(iteration_log) > max_items:
+        # 保留开头、中间、结尾
+        head = iteration_log[:10]
+        tail = iteration_log[-5:]
+        mid_start = len(iteration_log) // 2 - 2
+        mid = iteration_log[mid_start : mid_start + 4] if mid_start > 10 else []
 
-    if not guidebook:
-        return (
-            f"实验标识：{experiment_key}\n"
-            "用户未提供详细实验指导书，请基于实验数据生成客观记录。"
+        truncated = (
+            head + [{"note": f"... 省略 {len(iteration_log) - 19} 步 ..."}] + mid + tail
         )
+        data["iteration_log"] = truncated
+        data["_truncation_notice"] = f"原始 {len(iteration_log)} 步，已截断展示"
 
-    return guidebook
-
-
-def _summarize_behavior(behavior: dict) -> str:
-    """将行为追踪数据转为紧凑文字，避免将原始 JSON 喂给 LLM。"""
-    if not behavior or not isinstance(behavior, dict):
-        logger.debug(
-            f"[NoteGen] behavior invalid: type={type(behavior)}, empty={not behavior}"
-        )
-        return "无行为记录。"
-
-    events = behavior.get("events", [])
-    duration = behavior.get("session_duration_s", 0)
-
-    if not isinstance(events, list):
-        logger.warning(f"[NoteGen] events is not list: {type(events)}")
-        return f"会话时长约 {duration} 秒，无具体操作记录。"
-
-    if not events:
-        return f"会话时长约 {duration} 秒，无具体操作记录。"
-
-    lines = [f"会话时长约 {duration} 秒，共 {len(events)} 个操作事件："]
-    action_map = {
-        "play": "点击播放",
-        "pause": "点击暂停",
-        "step": "点击单步",
-        "reset": "点击重置",
-    }
-
-    for idx, ev in enumerate(events):
-        if not isinstance(ev, dict):
-            logger.warning(f"[NoteGen] Event {idx} is not dict: {type(ev)}")
-            continue
-
-        try:
-            t = ev.get("t", 0)
-            etype = ev.get("type", "")
-            data = ev.get("data") or {}
-
-            if etype == "session_start":
-                continue
-            elif etype == "algorithm_switch":
-                lines.append(f"  [{t}s] 切换算法 → {data.get('algorithm', '')}")
-            elif etype == "function_change":
-                lines.append(f"  [{t}s] 切换目标函数 → {data.get('value', '')}")
-            elif etype == "custom_function":
-                lines.append(f"  [{t}s] 输入自定义函数：{data.get('expr', '')}")
-            elif etype == "param_change":
-                lines.append(
-                    f"  [{t}s] 调整参数 {data.get('param', '')} = {data.get('value', '')}"
-                )
-            elif etype == "control":
-                lines.append(
-                    f"  [{t}s] {action_map.get(data.get('action', ''), data.get('action', ''))}"
-                )
-            elif etype == "view_switch":
-                lines.append(f"  [{t}s] 切换视图 → {data.get('view', '')}")
-            elif etype == "upload_csv":
-                lines.append(f"  [{t}s] 上传数据文件 → {data.get('file_name', '')}")
-            elif etype == "dataset_preset_change":
-                lines.append(f"  [{t}s] 切换预设数据集 → {data.get('preset', '')}")
-            elif etype == "dataset_reset_default":
-                lines.append(
-                    f"  [{t}s] 重置为默认数据集（样本数 {data.get('sample_count', '')}）"
-                )
-            elif etype == "apply_columns":
-                lines.append(
-                    f"  [{t}s] 应用列映射（x={data.get('x_col', '')}, y={data.get('y_col', '')}, label={data.get('label_col', '')}）"
-                )
-            elif etype == "custom_map_apply":
-                lines.append("  [" + str(t) + "s] 应用自定义核映射表达式")
-            elif etype == "run_lift_animation":
-                lines.append("  [" + str(t) + "s] 执行升维动画")
-            elif etype == "plane_adjust":
-                lines.append(
-                    f"  [{t}s] 调整超平面参数 {data.get('control', '')} = {data.get('value', '')}"
-                )
-            else:
-                lines.append(f"  [{t}s] {etype}")
-        except Exception as e:
-            logger.error(f"[NoteGen] Error processing event {idx}: {e}")
-            continue
-
-    return "\n".join(lines)
-
-
-def _index_in_iteration_log(iteration_log: list, row: dict) -> int | None:
-    """按 iteration 字段在完整日志中定位行下标。"""
-    if "iteration" not in row:
-        return None
-    target = row["iteration"]
-    for i, r in enumerate(iteration_log):
-        if isinstance(r, dict) and r.get("iteration") == target:
-            return i
-    return None
-
-
-def _summarize_iterations(iteration_log: list, max_rows: int = 27) -> str:
-    """提炼迭代日志为紧凑文本，保留关键节点；区间收缩类附带相邻步收缩比。"""
-    if not iteration_log or not isinstance(iteration_log, list):
-        logger.debug(
-            f"[NoteGen] iteration_log invalid: type={type(iteration_log)}, empty={not iteration_log}"
-        )
-        return "无迭代数据（用户未运行算法）。"
-
-    total = len(iteration_log)
-    if total <= max_rows:
-        rows = iteration_log
-    else:
-        mid_count = max_rows - 6
-        step = max(1, (total - 6) // max(1, mid_count))
-        mid = iteration_log[3: total - 3: step][:mid_count]
-        rows = iteration_log[:3] + mid + iteration_log[-3:]
-
-    lines = [f"共 {total} 次迭代，以下为关键节点（含可计算的相邻步信息）："]
-    for idx, row in enumerate(rows):
-        if not isinstance(row, dict):
-            logger.warning(f"[NoteGen] Row {idx} is not dict: {type(row)}")
-            continue
-
-        parts: list[str] = []
-        try:
-            if "iteration" in row:
-                parts.append(f"第{row['iteration']}步")
-            if "algorithm" in row:
-                parts.append(str(row["algorithm"]))
-            if "a" in row and "b" in row:
-                try:
-                    a, b = float(row["a"]), float(row["b"])
-                    length = float(row.get("length", abs(b - a)))
-                    parts.append(f"区间[{a:.4f}, {b:.4f}] 长度={length:.4f}")
-                    pos = _index_in_iteration_log(iteration_log, row)
-                    if pos is not None and pos > 0:
-                        pr = iteration_log[pos - 1]
-                        if isinstance(pr, dict) and "a" in pr and "b" in pr:
-                            try:
-                                pa, pb = float(pr["a"]), float(pr["b"])
-                                plen = float(pr.get("length", abs(pb - pa)))
-                                if plen > 0:
-                                    parts.append(
-                                        f"收缩比(相对完整日志中前一步)={length / plen:.6f}"
-                                    )
-                            except (ValueError, TypeError):
-                                pass
-                except (ValueError, TypeError) as e:
-                    logger.warning(f"[NoteGen] Failed to parse a/b: {e}")
-            if "x" in row:
-                try:
-                    parts.append(f"x={float(row['x']):.6f}")
-                except (ValueError, TypeError):
-                    pass
-            if "f_x" in row:
-                try:
-                    parts.append(f"f(x)={float(row['f_x']):.6f}")
-                except (ValueError, TypeError):
-                    pass
-            if "df_x" in row and row["df_x"] is not None:
-                try:
-                    parts.append(f"f'(x)={float(row['df_x']):.6f}")
-                except (ValueError, TypeError):
-                    pass
-            if row.get("is_complete"):
-                reason = row.get("termination_reason") or (
-                    "已收敛" if row.get("has_converged") else "已终止"
-                )
-                parts.append(f"[{reason}]")
-
-            if parts:
-                lines.append("  " + "  ".join(parts))
-        except Exception as e:
-            logger.error(f"[NoteGen] Error processing row {idx}: {e}")
-            continue
-
-    return "\n".join(lines)
+    return data
 
 
 def _normalize_experiment_data(experiment_data: Any) -> dict[str, Any]:
     """统一前端上送结构：兼容 {experiment_data:{...}} 包装与异常类型。"""
-    if isinstance(experiment_data, dict) and isinstance(experiment_data.get("experiment_data"), dict):
+    if isinstance(experiment_data, dict) and isinstance(
+        experiment_data.get("experiment_data"), dict
+    ):
         return experiment_data.get("experiment_data") or {}
     if isinstance(experiment_data, dict):
         return experiment_data
     return {}
 
 
-def _extract_behavior_payload(experiment_data: dict[str, Any]) -> dict[str, Any]:
-    """兼容 _behavior / operation_history / operation_events 等行为字段。"""
-    if not isinstance(experiment_data, dict):
-        return {}
-
-    behavior = experiment_data.get("_behavior")
-    if isinstance(behavior, dict):
-        return behavior
-
-    if isinstance(behavior, list):
-        return {
-            "session_duration_s": 0,
-            "event_count": len(behavior),
-            "events": behavior,
-        }
-
-    for key in ("operation_history", "operation_events", "behavior", "user_operations"):
-        v = experiment_data.get(key)
-        if isinstance(v, dict):
-            if isinstance(v.get("events"), list):
-                return v
-        elif isinstance(v, list):
-            return {
-                "session_duration_s": 0,
-                "event_count": len(v),
-                "events": v,
-            }
-
-    return {}
-
-
-def _extract_iteration_log_payload(experiment_data: dict[str, Any]) -> list[dict[str, Any]]:
-    """兼容 iteration_log / iteration_data / simplex_tableau_steps 等迭代字段。"""
-    if not isinstance(experiment_data, dict):
-        return []
-
-    direct_keys = (
-        "iteration_log",
-        "iteration_data",
-        "simplex_tableau_steps",
-        "tableau_steps",
-        "tableauSteps",
-    )
-    for key in direct_keys:
-        v = experiment_data.get(key)
-        if isinstance(v, list):
-            return v
-
-    simplex_payload = experiment_data.get("simplex_log_payload")
-    if isinstance(simplex_payload, dict):
-        for key in ("iteration_data", "iteration_log", "tableau_steps", "tableauSteps"):
-            v = simplex_payload.get(key)
-            if isinstance(v, list):
-                return v
-
-    latest_payload = experiment_data.get("latestPayload")
-    if isinstance(latest_payload, dict):
-        for key in ("iteration_data", "iteration_log", "tableau_steps", "tableauSteps"):
-            v = latest_payload.get(key)
-            if isinstance(v, list):
-                return v
-
-    run_record = experiment_data.get("simplex_run_record")
-    if isinstance(run_record, dict):
-        steps = run_record.get("steps")
-        if isinstance(steps, list):
-            return steps
-
-    return []
-
-
 async def generate_experiment_note(
-        experiment_key: str,
-        experiment_data: dict[str, Any],
-        custom_prompt: str = None,
+    experiment_key: str,
+    experiment_data: dict[str, Any],
+    custom_prompt: str = None,
 ) -> tuple[str, str]:
     """
     调用 LLM 生成实验笔记，返回 (title, content)。
@@ -439,261 +76,84 @@ async def generate_experiment_note(
     from langchain_deepseek import ChatDeepSeek
     from pydantic import BaseModel, Field
 
-    # 兼容外层包装及多版本字段
+    # 兼容外层包装
     experiment_data = _normalize_experiment_data(experiment_data)
 
     logger.info(f"[NoteGen] Starting note generation for experiment: {experiment_key}")
-    logger.debug(f"[NoteGen] Input data keys: {list(experiment_data.keys())}")
 
     class NoteSchema(BaseModel):
-        title: str = Field(
-            ...,
-            description=(
-                "笔记标题。格式：算法名或实验名 — 目标函数或问题描述 + 实验记录。"
-                "含数学对象时须用 LaTeX 行内公式 $...$，如：斐波那契数列法 — $f(x)=\\sin(x)+0.1x^2$ 实验记录。"
-                "总长度建议 15～90 个字符（含公式）。"
-            ),
-        )
         content: str = Field(
             ...,
-            description=(
-                "完整实验报告正文；覆盖结构模板各章节且顺序一致；"
-                "禁止使用 # 和 * 号；章节标题用【】；数学公式用 LaTeX；表格用 Markdown | 语法。"
-            ),
+            description="实验笔记正文，必须包含 ## 数学原理、## 实验数据、## 实验总结 三个固定章节，可选 ## 实验过程",
         )
 
+    # 初始化 LLM
     try:
-        try:
-            llm = ChatDeepSeek(
-                model=settings.DEEPSEEK_MODEL,
-                temperature=0.28,
-                api_key=settings.DEEPSEEK_API_KEY,
-                model_kwargs={"max_tokens": 6144},
-            )
-        except TypeError:
-            llm = ChatDeepSeek(
-                model=settings.DEEPSEEK_MODEL,
-                temperature=0.28,
-                api_key=settings.DEEPSEEK_API_KEY,
-            )
+        llm = ChatDeepSeek(
+            model=settings.DEEPSEEK_MODEL,
+            temperature=0.28,
+            api_key=settings.DEEPSEEK_API_KEY,
+            max_tokens=4096,
+        )
         logger.info(f"[NoteGen] LLM initialized: {settings.DEEPSEEK_MODEL}")
     except Exception as e:
         logger.error(f"[NoteGen] Failed to initialize LLM: {e}")
         raise
 
-    label = experiment_key
-    guide = _load_guide(experiment_key, experiment_data)
-    template = _EXPERIMENT_TEMPLATES.get(experiment_key, _DEFAULT_TEMPLATE)
+    # 截断迭代日志（如果过长）
+    truncated_data = _truncate_iteration_log(experiment_data)
 
-    logger.info(f"[NoteGen] Experiment label: {label}, guide loaded: {len(guide) > 0}")
-
-    # 数据类型检查和安全处理
-    if not isinstance(experiment_data, dict):
-        logger.error(
-            f"[NoteGen] experiment_data is not dict, type: {type(experiment_data)}, value: {experiment_data}"
-        )
-        raise TypeError(f"experiment_data must be dict, got {type(experiment_data)}")
-
-    # 安全提取各字段（不修改原始数据）
-    behavior_raw = _extract_behavior_payload(experiment_data)
-    iteration_log = _extract_iteration_log_payload(experiment_data)
-
-    logger.debug(
-        f"[NoteGen] behavior_raw type: {type(behavior_raw)}, iteration_log type: {type(iteration_log)}"
-    )
-
-    # 确保类型正确
-    if not isinstance(behavior_raw, dict):
-        logger.warning(
-            f"[NoteGen] behavior_raw is not dict: {type(behavior_raw)}, resetting to {{}}"
-        )
-        behavior_raw = {}
-
-    if not isinstance(iteration_log, list):
-        logger.warning(
-            f"[NoteGen] iteration_log is not list: {type(iteration_log)}, resetting to []"
-        )
-        iteration_log = []
-
-    # 生成摘要
-    behavior_summary = _summarize_behavior(behavior_raw)
-    iteration_summary = _summarize_iterations(iteration_log)
-
-    # 排除特殊字段，只保留参数数据
-    excluded_param_keys = {
-        "iteration_log",
-        "iteration_data",
-        "simplex_tableau_steps",
-        "tableau_steps",
-        "tableauSteps",
-        "simplex_log_payload",
-        "latestPayload",
-        "simplex_run_record",
-        "_behavior",
-        "operation_history",
-        "operation_events",
-        "behavior",
-        "user_operations",
-    }
-    params_data = {
-        k: v
-        for k, v in experiment_data.items()
-        if k not in excluded_param_keys
-    }
-
-    # 安全序列化参数
+    # JSON 序列化
     try:
-        params_str = json.dumps(params_data, ensure_ascii=False, indent=2)
-        logger.debug(f"[NoteGen] params_str length: {len(params_str)}")
+        json_str = json.dumps(truncated_data, ensure_ascii=False, indent=2)
     except Exception as e:
-        logger.error(
-            f"[NoteGen] Failed to serialize params_data: {type(e).__name__}: {e}"
-        )
-        params_str = json.dumps(
-            {
-                "error": f"参数序列化失败: {type(e).__name__}",
-                "params_count": len(params_data),
-            },
+        logger.error(f"[NoteGen] JSON serialization failed: {e}")
+        json_str = json.dumps(
+            {"error": "数据序列化失败", "keys": list(experiment_data.keys())},
             ensure_ascii=False,
-            indent=2,
         )
 
-    logger.debug(
-        f"[NoteGen] Processed data - iteration_log entries: {len(iteration_log)}, params keys: {list(params_data.keys())}"
-    )
+    # 构建 User Prompt
+    user_prompt = f"""【实验标识】：{experiment_key}
 
-    template_for_prompt = template + _TEMPLATE_ENRICHERS.get(experiment_key, "")
-    table_render_guard = ""
-    if experiment_key == "linear-programming.simplex":
-        _nv = params_data.get("num_vars")
-        _mv = params_data.get("num_constraints")
-        template_for_prompt = template_for_prompt.replace(
-            "{n}", str(_nv) if _nv is not None else "（未记录）"
-        ).replace("{m}", str(_mv) if _mv is not None else "（未记录）")
-        table_render_guard = (
-            "\n【表格格式强约束】\n"
-            "请将【实验参数与符号对照表】写成标准 Markdown 多行表格：\n"
-            "1. 表头单独一行；\n"
-            "2. 对齐行单独一行；\n"
-            "3. 每个参数数据单独一行；\n"
-            "4. 表格前后各空一行；\n"
-            "5. 不要把多行表格压成一行文本。\n"
-        )
+【实验数据（JSON）】：
+```json
+{json_str}
+```
 
-    if not custom_prompt:
-        # "你是一名优化方法课程助教，负责为学生生成客观、准确、可评阅的完整实验记录报告。\n"
-        # "写作规范（每条必须严格遵守）：\n"
-        # "1. 禁止使用 Markdown 标题符号（#）和加粗符号（*或**），禁止使用无序列表符号（-或*）。\n"
-        # "   章节标题用【】括起来单独成行 \n"
-        # "   列表项直接用数字序号（1. 2. 3.）或中文顿号分隔，不用符号开头。\n"
-        # "2. 数学公式必须用 LaTeX 格式：行内公式用 $...$，独立公式用 $$...$$。\n"
-        # "   普通文本中的数字不要加 $，只有数学符号、变量、公式才用 LaTeX。\n"
-        # "3. 只写实验数据支持的内容。数值必须与提供的数据完全一致，不得捏造或估算。\n"
-        # "   若某项数据缺失，直接写'未记录'，不做推断。\n"
-        # "4. 禁止使用套话和 AI 腔调，包括但不限于：\n"
-        # "   '本次实验''通过本实验''可以看出''值得注意的是''综上所述''总的来说'\n"
-        # "   '验证了''体现了''充分说明''清晰展示''令人满意'等修辞性短语。\n"
-        # "5. 语言风格：陈述句为主，直接给出数据和结论，不加修饰。\n"
-        # "6. 严格按照结构模板的章节顺序撰写，不增删章节，不改变章节名称。\n"
-        # "7. 笔记标题须含算法/实验名与目标函数或问题简述；含函数或约束时须用 LaTeX \n"
-        # "8. 表格使用 Markdown 表格语法（| 符号），这是唯一允许使用的 Markdown 格式。\n"
-        # "9. 主结论章节须含理论对照与数据核对；有行为记录时在分析或「操作与现象对照」中体现联系。\n"
-        # "10. 数字须来自所给数据；缺失写未记录。\n"
-        # "11. 按本实验【结构模板】撰写，勿套用其他实验章节。\n"
-        system_prompt = (
+请生成实验笔记。"""
 
-            """你是一名优化方法课程助手，负责为学生生成客观、准确、可评阅的完整实验记录报告。
-写作规范（每条必须严格遵守）：
-1. 禁止使用 Markdown 标题符号（#）和加粗符号（*或**），禁止使用无序列表符号（-或*）。
-   章节标题用【】括起来单独成行，列表项用数字序号（1. 2. 3.）或中文顿号分隔。
-   允许使用折叠标记（如【+/- 参数与符号对照表】）实现模块化显示，默认折叠非核心表格。
-1.5. 理论公式精简原则：
-   - 删除完整理论推导公式，仅保留核心算法公式（需与数据交叉引用）。
-   - 公式必须用 LaTeX 格式展示，行内公式用 $...$，独立公式环境用 $$。
-   - 公式后添加说明脚注（如[公式1: 目标函数为$x^2-4x+4$]），使用数字编号。
-2. 数值格式统一规则：
-   - 所有数值保留4位小数，与实验数据完全一致，缺失数据写「__待补充__」。
-   - 公式中的变量格式需与参数表一致（如 $\hat{\beta} = -3.5000$）。
-3. 参数与符号表增强规则：
-   - 参数表必须使用标准 Markdown 表格，且按“表头行 + 对齐行 + 数据行”逐行换行输出。
-   - 严禁将整张表压缩成一行文本；严禁在单元格中嵌套新的“|...|”伪表格。
-   - 表头固定为：| 符号 | 定义 | 当前值 | 单位 | 推荐范围 | 参数类型 | 敏感性提示 | 数据源 |
-   - 对齐行固定为：| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-   - 每个参数单独一行，敏感性提示用图标：⚠️（高）、🟡（中）、✅（低），理论对齐用🟢标注。
-4. 迭代过程透明化：
-   - 省略数据时插入汇总行（如「中间步骤（6-7）收缩比与理论值保持一致，误差±0.001」）。
-   - 数据展示说明改为「| 数据展示说明 | 因篇幅限制，本表仅展示初始5步及末3步，中间步骤误差在±0.001范围内」。
-5. 结果分析强化：
-   - 必须包含算法效率指标（如「平均步长缩减率 0.618」）和收敛性验证（如「理论收敛速度 $O(\phi^{-n})$ 与实际误差 0.0047 的对比」）。
-   - 引用外部理论标注来源（如[理论依据: 《最优化方法》第3章]）。
-6. 操作记录诊断：
-   - 「问题定位与修复建议」列改为「[建议]」行，用 🟢/🟡 标记数据与理论吻合度。
-   - 成功实验删除「问题定位」字段，仅保留「操作 → 结果 [状态]」行。
-7. 可视化增强：
-   - 未运行状态用 `[!]` 标记（如「[!] 黄金分割法」），参数表中缺失字段用红色标注。
-   - 每个表格添加注释标记（如「[导出CSV]」说明数据提取方法）。
-8. 模块化结构要求：
-   - 【实验参数】合并为参数与符号对照表，支持折叠。
-   - 【补充】部分改为「【理论依据】」章节，引用公式与文献。
-9. 文本精简原则：
-   - 语言风格为陈述句，禁用套话和AI腔调，每段不超过3行。
-   - 偏离分析整合到主文本（如「第10步收缩比0.5100与理论0.5000的轻微偏离，因最终步长修正」）。
-10. 数据校验机制：
-    - 所有内容必须基于实验数据，数字必须与提供的数据完全一致。
-    - 参数表中示例值标注用途（如「示例值：$f(x) = x^2 - 4x + 4$，此值为演示用途，需用户确认」）。"""
-        )
-    else:
-        system_prompt = custom_prompt
-    if guide:
-        system_prompt += f"\n参考实验指导书：\n{guide}\n"
-
-    user_prompt = (
-        f"实验页面：{label}\n"
-        f"实验标识：{experiment_key}\n"
-        f"【结构模板】：\n{template_for_prompt}\n"
-        f"{table_render_guard}\n"
-        f"【实验参数数据】：\n{params_str}\n\n"
-        f"【迭代数据摘要】：\n{iteration_summary}\n\n"
-        f"【用户操作行为记录】：\n{behavior_summary}\n\n"
-    )
+    # 使用自定义 prompt 或默认 system prompt
+    system_prompt = custom_prompt if custom_prompt else SYSTEM_PROMPT
 
     logger.info(
         f"[NoteGen] System prompt length: {len(system_prompt)}, User prompt length: {len(user_prompt)}"
     )
 
     try:
-        logger.info("[NoteGen] Creating structured LLM...")
         structured_llm = llm.with_structured_output(NoteSchema)
-        logger.info(
-            "[NoteGen] Structured LLM created successfully, preparing to call ainvoke..."
-        )
 
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        logger.debug(
-            f"[NoteGen] Messages prepared: {len(messages)} messages, total length: {sum(len(m.get('content', '')) for m in messages)}"
-        )
 
         result: NoteSchema = await structured_llm.ainvoke(messages)
 
         logger.info(f"[NoteGen] LLM response received successfully")
-        logger.debug(
-            f"[NoteGen] Result type: {type(result)}, title: {result.title[:50] if result.title else 'EMPTY'}..."
-        )
-        logger.debug(f"[NoteGen] Content length: {len(result.content)}")
 
-        if not result.title or not result.content:
-            logger.error(
-                f"[NoteGen] LLM returned empty title or content: title_empty={not result.title}, content_empty={not result.content}"
-            )
-            raise ValueError("LLM returned empty title or content")
+        if not result.content:
+            logger.error(f"[NoteGen] LLM returned empty content")
+            raise ValueError("LLM returned empty content")
+
+        # 生成标题：从 experiment_key 和 algorithm 推断
+        algorithm = experiment_data.get("algorithm", "实验")
+        title = f"{algorithm} 实验记录"
 
         logger.info(
-            f"[NoteGen] Note generation completed: title_len={len(result.title)}, content_len={len(result.content)}"
+            f"[NoteGen] Note generation completed: content_len={len(result.content)}"
         )
-        return result.title, result.content
+        return title, result.content
 
     except Exception as e:
         logger.error(
