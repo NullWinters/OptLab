@@ -180,12 +180,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function syncResultCanvasHeightSafely() {
+        // 系数表 DOM 更新后会发生一次渲染布局排队，
+        // 用两次 rAF 再测一次，减少像素级高度差导致的底部不对齐。
+        (window.requestAnimationFrame || function (cb) { return setTimeout(cb, 0); })(function () {
+            syncResultCanvasHeight();
+            (window.requestAnimationFrame || function (cb) { return setTimeout(cb, 0); })(function () {
+                syncResultCanvasHeight();
+            });
+        });
+    }
+
     function setEmptyState(message) {
         if (!simplexIterationCards) return;
         simplexIterationCards.classList.add('is-empty');
         simplexIterationCards.classList.remove('has-results');
         simplexIterationCards.innerHTML = '<div class="placeholder-text">' + message + '</div>';
-        syncResultCanvasHeight();
+        syncResultCanvasHeightSafely();
     }
 
     // 约束数量限制处理
@@ -281,6 +292,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         html += '</tbody></table>';
         coeffTableContainer.innerHTML = html;
+        syncResultCanvasHeightSafely();
     }
 
     function resetForm() {
@@ -769,7 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSimplexExperimentData({ reason: 'render_results' });
 
         // 渲染卡片后同步高度，防止撑开 Grid Row
-        syncResultCanvasHeight();
+        syncResultCanvasHeightSafely();
     }
 
     function renderSimplexTable(svg, data) {

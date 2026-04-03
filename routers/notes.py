@@ -1,5 +1,6 @@
 """实验笔记条目路由 - 支持多条笔记的 CRUD 和 AI 生成。"""
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -139,7 +140,101 @@ async def ai_generate_note(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="请求数据格式错误：payload必须是JSON对象。",
         )
-    
+
+    def _has_non_empty_iteration_log(v: Any) -> bool:
+        if isinstance(v, list):
+            return len(v) > 0
+        if isinstance(v, dict):
+            # comparison 页面可能是 {golden: [...], fibonacci: [...]}
+            for item in v.values():
+                if isinstance(item, list) and len(item) > 0:
+                    return True
+            return False
+        return False
+
+    def _generic_has_iteration_and_log_data(obj: Any, depth: int = 4) -> bool:
+        if depth < 0 or obj is None:
+            return False
+        if isinstance(obj, list):
+            return False
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                k_lower = str(k).lower()
+                if "iteration" in k_lower and "log" in k_lower:
+                    if _has_non_empty_iteration_log(v):
+                        return True
+                # 限深递归，避免大 payload
+                if isinstance(v, (dict, list)):
+                    if _generic_has_iteration_and_log_data(v, depth - 1):
+                        return True
+        return False
+
+    # 兜底校验：避免仅包含元信息/初始输入导致空数据生成
+    # 前端会做更细粒度的“按课程校验”，这里做后端防御，保证即使前端漏判也不会误触发。
+    if experiment_key == "linear-programming.simplex":
+        iteration_card_count = payload.get("iteration_card_count", 0)
+        simplex_run_record = payload.get("simplex_run_record")
+        simplex_tableau_steps = payload.get("simplex_tableau_steps", [])
+        has_simplex_data = (
+            isinstance(iteration_card_count, int) and iteration_card_count > 0
+        ) or (simplex_run_record is not None) or (
+            isinstance(simplex_tableau_steps, list) and len(simplex_tableau_steps) > 0
+        )
+        if not has_simplex_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前尚无实验数据，请先运行一次单纯形法求解。",
+            )
+    elif experiment_key == "linear-programming.two_phase":
+        iteration_card_count = payload.get("iteration_card_count", 0)
+        phase1_iteration_log = payload.get("phase1_iteration_log", [])
+        phase2_iteration_log = payload.get("phase2_iteration_log", [])
+        has_two_phase_data = (
+            isinstance(iteration_card_count, int) and iteration_card_count > 0
+        ) or (isinstance(phase1_iteration_log, list) and len(phase1_iteration_log) > 0) or (
+            isinstance(phase2_iteration_log, list) and len(phase2_iteration_log) > 0
+        )
+        if not has_two_phase_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前尚无实验数据，请先运行一次两阶段法求解。",
+            )
+
+    else:
+        if experiment_key == "svm-smo.kernel_trick.visualization":
+            # Kernel-trick 页面中可能会先 parse_csv，但尚未完成可视化。
+            # 只有当 sample_count>0（即已生成样本点）时才允许生成笔记。
+            sample_count = payload.get("sample_count", 0)
+            has_points = (
+                isinstance(sample_count, (int, float)) and sample_count > 0
+            )
+            if not has_points:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="未检测到可用数据，请先上传或加载预设数据集。",
+                )
+
+        # 通用：优先用 iteration_log / iterationLog 这类字段判断“是否有实验数据”
+        if (
+            not _generic_has_iteration_and_log_data(payload, depth=4)
+            and not payload.get("convergence_result")
+        ):
+            # 仍然可能是 kernel-trick / 或部分页面没有 iteration_log 字段
+            # 此时至少需要排除“只有元信息”的情况
+            meta_keys = {"_behavior", "guidebook"}
+            relevant_keys = [k for k in payload.keys() if k not in meta_keys]
+            if not relevant_keys:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="缺少实验数据，无法生成笔记。",
+                )
+            # 有字段但未检测到迭代数据：也阻断，避免空数据 LLM 生成
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="缺少实验数据，无法生成笔记。",
+            )
+
+    # 通过上述校验后，进入 LLM 生成
     try:
         from core.note_generator import generate_experiment_note
         logger.info("[Router] Calling generate_experiment_note...")
