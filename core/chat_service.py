@@ -60,6 +60,7 @@ class ChatService:
                     "id": str(msg.id),
                     "role": msg.role,
                     "content": msg.content,
+                    "text_blocks": msg.text_blocks,
                     "highlight_ids": msg.highlight_ids,
                     "sequence_number": msg.sequence_number,
                     "created_at": msg.created_at,
@@ -96,6 +97,7 @@ class ChatService:
         role: str,
         content: str,
         highlight_ids: Optional[list] = None,
+        text_blocks: Optional[list] = None,
     ) -> ChatMessage:
         """
         保存消息并递增会话计数器
@@ -112,6 +114,7 @@ class ChatService:
             session_id=session_id,
             role=role,
             content=content,
+            text_blocks=text_blocks,
             highlight_ids=highlight_ids,
             sequence_number=session.message_count,
             is_active=True,

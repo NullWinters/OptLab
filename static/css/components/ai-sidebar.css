@@ -180,11 +180,28 @@ body.ai-sidebar-open .ai-toggle-btn {
     font-size: 14px;
     outline: none;
     box-shadow: none;
+    text-decoration: none;
+    background-image: none;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .ai-chat-input input:focus {
     border-color: #d84315;
     box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.14);
+    text-decoration: none;
+}
+
+.ai-message-content p {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.ai-message-content code {
+    background: #fff3e8;
+    color: #9a3b10;
+    padding: 1px 4px;
+    border-radius: 4px;
 }
 
 #ai-send-btn {

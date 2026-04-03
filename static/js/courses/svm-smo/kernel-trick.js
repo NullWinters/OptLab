@@ -60,7 +60,6 @@ const state = {
     processLog: [],
     latestAccuracy: null,
     lastPlaneParams: { z: 0, yaw: 0, pitch: 0 },
-    autoFitTimer: null,
 };
 
 function trackNoteEvent(type, data) {
@@ -82,28 +81,28 @@ function pushProcessStep(step, detail) {
 
 
 const MAPPING_PRESETS = {
-    textbook: { x: 'x^2', y: 'y^2', z: 'sqrt(2)*x*y' },
-    identity_lift: { x: 'x', y: 'y', z: 'x^2 + y^2' },
-    trig: { x: 'sin(x)', y: 'cos(y)', z: 'x*y' },
-    saddle: { x: 'x', y: 'y', z: 'x^2 - y^2' }
+    quadratic_monomial: { x: 'x^2', y: 'x*y', z: 'y^2' },
+    linear_combo: { x: 'x', y: 'y', z: 'x + y' },
+    mixed_order: { x: 'x', y: 'y', z: 'x*y' },
+    polar_like: { x: 'x', y: 'y', z: 'sqrt(x^2 + y^2)' }
 };
 
 const KERNEL_PRESETS = {
-    textbook: {
-        simplified: 'K(u,v) = (u_x v_x + u_y v_y)^2',
-        expansion: 'u_x^2 v_x^2 + u_y^2 v_y^2 + 2u_x u_y v_x v_y'
+    quadratic_monomial: {
+        simplified: 'K(u,v) = u_x^2 v_x^2 + u_x u_y v_x v_y + u_y^2 v_y^2',
+        expansion: 'u_x^2 v_x^2 + u_x u_y v_x v_y + u_y^2 v_y^2'
     },
-    identity_lift: {
-        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)',
-        expansion: 'u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)'
+    linear_combo: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x+u_y)(v_x+v_y)',
+        expansion: 'u_x v_x + u_y v_y + (u_x+u_y)(v_x+v_y)'
     },
-    trig: {
-        simplified: 'K(u,v) = \\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y',
-        expansion: '\\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y'
+    mixed_order: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + u_x u_y v_x v_y',
+        expansion: 'u_x v_x + u_y v_y + u_x u_y v_x v_y'
     },
-    saddle: {
-        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)',
-        expansion: 'u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)'
+    polar_like: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + \\|u\\|\\|v\\|',
+        expansion: 'u_x v_x + u_y v_y + \\sqrt{u_x^2+u_y^2}\\sqrt{v_x^2+v_y^2}'
     }
 };
 
@@ -187,6 +186,8 @@ try {
     throw err;
 }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.domElement.id = 'kernel-trick-webgl-canvas';
+renderer.domElement.setAttribute('data-ai-label', '三维可视化画布(WebGL)');
 container.appendChild(renderer.domElement);
 
 const cameraArm = {
@@ -392,6 +393,19 @@ function parseCsv(text) {
     setStatus(`已读取 ${rows.length} 条数据，请确认列映射并加载可视化。`);
 }
 
+function guessColumnIndexes(headers) {
+    const normalized = headers.map(h => String(h || '').toLowerCase().trim());
+    const pickByWords = (words) => normalized.findIndex(h => words.some(w => h.includes(w)));
+    const xIdx = pickByWords(['x', '横坐标', 'feature1', 'f1']);
+    const yIdx = pickByWords(['y', '纵坐标', 'feature2', 'f2']);
+    const labelIdx = pickByWords(['label', 'class', 'target', '类别', '标签']);
+    return {
+        xIdx: xIdx >= 0 ? xIdx : 0,
+        yIdx: yIdx >= 0 && yIdx !== xIdx ? yIdx : Math.min(1, headers.length - 1),
+        labelIdx: labelIdx >= 0 && labelIdx !== xIdx && labelIdx !== yIdx ? labelIdx : Math.min(2, headers.length - 1)
+    };
+}
+
 function fillSelectors(headers) {
     ['x-col', 'y-col', 'label-col'].forEach(id => {
         const sel = $(id);
@@ -405,12 +419,44 @@ function fillSelectors(headers) {
     });
 
     if (headers.length >= 3) {
-        $('x-col').value = '0';
-        $('y-col').value = '1';
-        $('label-col').value = '2';
+        const guessed = guessColumnIndexes(headers);
+        $('x-col').value = String(guessed.xIdx);
+        $('y-col').value = String(guessed.yIdx);
+        $('label-col').value = String(guessed.labelIdx);
     }
 
     updateSeparationAccuracy();
+}
+
+function showValidationError(message) {
+    setStatus(message, true);
+    window.alert(message);
+}
+
+function validateSelectedColumns(parsedRows, xIdx, yIdx, lIdx) {
+    if (xIdx === yIdx || xIdx === lIdx || yIdx === lIdx) {
+        showValidationError('横坐标、纵坐标和标签列不能重复，请重新选择。');
+        return { ok: false };
+    }
+    const labels = new Set();
+    let validNumericRows = 0;
+    for (const row of parsedRows) {
+        if (Math.max(xIdx, yIdx, lIdx) >= row.length) continue;
+        const x = Number(row[xIdx]);
+        const y = Number(row[yIdx]);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        validNumericRows++;
+        labels.add(String(row[lIdx]));
+        if (labels.size > 2) {
+            showValidationError('标签列最多只能有两种取值，请更换标签列。');
+            return { ok: false };
+        }
+    }
+    if (!validNumericRows) {
+        showValidationError('所选横纵坐标列未解析到有效实数，请检查 CSV 并重新选择列。');
+        return { ok: false };
+    }
+    return { ok: true };
 }
 
 function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
@@ -480,69 +526,6 @@ function updateSeparationAccuracy() {
     setAccuracyText(`划分准确率：${acc.toFixed(1)}%（实时）`);
 }
 
-function autoFitPlaneFromCurrentPoints() {
-    if (!state.points.length || state.points.length !== state.currentMapped.length) return;
-
-    const labels = [...new Set(state.points.map(p => p.label))];
-    if (labels.length !== 2) {
-        setStatus('自动划分仅支持二分类数据。', true);
-        return;
-    }
-
-    let best = {
-        yaw: 0,
-        pitch: 0,
-        z: 0,
-        acc: -1
-    };
-
-    const coarseStep = { yaw: 15, pitch: 15, z: 0.4 };
-    for (let yaw = -90; yaw <= 90; yaw += coarseStep.yaw) {
-        for (let pitch = -90; pitch <= 90; pitch += coarseStep.pitch) {
-            for (let z = -2; z <= 2.0001; z += coarseStep.z) {
-                const acc = computeSplitAccuracy(yaw, pitch, z);
-                if (acc !== null && acc > best.acc) {
-                    best = { yaw, pitch, z, acc };
-                }
-            }
-        }
-    }
-
-    const refineStep = { yaw: 4, pitch: 4, z: 0.1 };
-    const yawMin = Math.max(-90, best.yaw - 12);
-    const yawMax = Math.min(90, best.yaw + 12);
-    const pitchMin = Math.max(-90, best.pitch - 12);
-    const pitchMax = Math.min(90, best.pitch + 12);
-    const zMin = Math.max(-2, best.z - 0.5);
-    const zMax = Math.min(2, best.z + 0.5);
-
-    for (let yaw = yawMin; yaw <= yawMax + 1e-8; yaw += refineStep.yaw) {
-        for (let pitch = pitchMin; pitch <= pitchMax + 1e-8; pitch += refineStep.pitch) {
-            for (let z = zMin; z <= zMax + 1e-8; z += refineStep.z) {
-                const acc = computeSplitAccuracy(yaw, pitch, z);
-                if (acc !== null && acc > best.acc) {
-                    best = { yaw, pitch, z, acc };
-                }
-            }
-        }
-    }
-
-    $('plane-z').value = String(best.z.toFixed(2));
-    $('plane-yaw').value = String(Math.round(best.yaw));
-    $('plane-pitch').value = String(Math.round(best.pitch));
-    updatePlane();
-    setStatus(`已自动拟合超平面，当前最佳划分准确率约 ${best.acc.toFixed(1)}%。`);
-}
-
-function scheduleAutoFit() {
-    if (state.autoFitTimer) {
-        clearTimeout(state.autoFitTimer);
-    }
-    state.autoFitTimer = setTimeout(() => {
-        autoFitPlaneFromCurrentPoints();
-    }, 0);
-}
-
 function visualizeFromSelection(showSuccessHint = true) {
     if (!state.rows.length) {
         setStatus('未检测到可用数据，请先上传或加载预设数据集。', true);
@@ -555,6 +538,8 @@ function visualizeFromSelection(showSuccessHint = true) {
 
     const parsed = [];
     const labels = new Set();
+    const validation = validateSelectedColumns(state.rows, xIdx, yIdx, lIdx);
+    if (!validation.ok) return false;
 
     for (const row of state.rows) {
         if (Math.max(xIdx, yIdx, lIdx) >= row.length) continue;
@@ -567,12 +552,12 @@ function visualizeFromSelection(showSuccessHint = true) {
     }
 
     if (!parsed.length) {
-        setStatus('当前列映射无法解析出有效数值，请重新选择列。', true);
+        showValidationError('当前列映射无法解析出有效数值，请重新选择列。');
         return false;
     }
 
     if (labels.size > 2) {
-        setStatus('标签类别超过 2 种，请更换标签列。', true);
+        showValidationError('标签类别超过 2 种，请更换标签列。');
         return false;
     }
 
@@ -881,10 +866,10 @@ window.addEventListener('click', (e) => {
 
 // ---------- Default preset ----------
 function applyDefaultMode() {
-    $('map-preset-select').value = 'textbook';
-    $('map-x-input').value = MAPPING_PRESETS.textbook.x;
-    $('map-y-input').value = MAPPING_PRESETS.textbook.y;
-    $('map-z-input').value = MAPPING_PRESETS.textbook.z;
+    $('map-preset-select').value = 'quadratic_monomial';
+    $('map-x-input').value = MAPPING_PRESETS.quadratic_monomial.x;
+    $('map-y-input').value = MAPPING_PRESETS.quadratic_monomial.y;
+    $('map-z-input').value = MAPPING_PRESETS.quadratic_monomial.z;
     state.mapExpr = {
         x: $('map-x-input').value,
         y: $('map-y-input').value,

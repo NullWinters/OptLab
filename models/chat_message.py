@@ -20,6 +20,7 @@ class ChatMessage(Base):
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    text_blocks: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     highlight_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     sequence_number: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(

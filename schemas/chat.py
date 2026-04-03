@@ -7,6 +7,7 @@ from typing import Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+from schemas.agent import ButtonInfo
 
 
 class ChatMessageOut(BaseModel):
@@ -15,6 +16,7 @@ class ChatMessageOut(BaseModel):
     id: str
     role: str
     content: str
+    text_blocks: Optional[List[str]] = None
     highlight_ids: Optional[List[str]] = None
     sequence_number: int
     created_at: datetime
@@ -69,13 +71,15 @@ class ChatMessageCreate(BaseModel):
     message: str = Field(..., description="用户消息")
     page_id: str = Field(..., description="页面标识符")
     guidebook: str = Field(..., description="页面指导书")
-    buttons: List[dict] = Field(..., description="可用按钮列表")
+    buttons: List[ButtonInfo] = Field(..., description="可用按钮列表")
+    graph_context: Optional[dict] = Field(default=None, description="页面图状态摘要")
 
 
 class ChatMessageResponse(BaseModel):
     """聊天消息响应"""
 
     text: str = Field(..., description="AI回复内容")
+    text_blocks: List[str] = Field(default_factory=list, description="可分段回复内容")
     highlight_ids: List[str] = Field(
         default_factory=list, description="需要高亮的按钮ID"
     )

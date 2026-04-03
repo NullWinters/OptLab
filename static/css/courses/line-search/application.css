@@ -14,9 +14,9 @@
     --danger-color: #c62828;
 
     /* 来自 range-controls.css */
-    --range-fill: #2563eb;
-    --range-fill-soft: #3b82f6;
-    --range-track: #e8edf3;
+    --range-fill: #d84315;
+    --range-fill-soft: #f57c00;
+    --range-track: #ead9c7;
 }
 
 .back-row {
@@ -350,12 +350,12 @@ input[type="range"] {
 }
 
 .btn-secondary {
-    background-color: var(--text-light);
+    background-color: #f6c998;
     color: white;
 }
 
 .btn-secondary:hover {
-    background-color: #5d4037;
+    background-color: #e9aa67;
 }
 
 .btn-secondary:disabled {
@@ -382,7 +382,7 @@ input[type="range"] {
 }
 
 .btn-small:hover {
-    background-color: var(--secondary-color);
+    background-color: #e9aa67;
     color: white;
 }
 

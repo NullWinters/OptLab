@@ -3,6 +3,9 @@
     let highlightIds = [];
     let currentHighlightIndex = -1;
     let uiRegistryMap = new Map();
+    let optionalAdvanceTimer = null;
+    const OPTIONAL_ADVANCE_MS = 2600;
+    const TYPEWRITER_SPEED_MS = 18;
 
     // 会话状态
     let currentSessionId = null;
@@ -74,7 +77,7 @@
             }
         });
 
-        const interactiveSelector = 'button[id], input[id], select[id], textarea[id], [role="button"][id], [id].modal';
+        const interactiveSelector = 'button[id], input[id], select[id], textarea[id], [role="button"][id], [id].modal, canvas[id], #scene, div[id*="canvas"], div[id*="plot"], div[id*="chart"]';
         document.querySelectorAll(interactiveSelector).forEach(function (el) {
             const id = el.id;
             if (!id || map.has(id)) return;
@@ -99,6 +102,95 @@
 
         uiRegistryMap = map;
         return Array.from(map.values());
+    }
+
+    function escapeHtml(text) {
+        return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function createMessageShell(type) {
+        const div = document.createElement('div');
+        const baseClass = type.split(' ')[0];
+        div.className = 'ai-message ai-' + baseClass;
+        if (type.indexOf('loading') !== -1) div.classList.add('ai-loading');
+        if (type.indexOf('error') !== -1) div.classList.add('ai-error');
+        const content = document.createElement('div');
+        content.className = 'ai-message-content';
+        div.appendChild(content);
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return { div: div, content: content };
+    }
+
+    function renderMathAndMarkdown(container) {
+        if (!container) return;
+        if (window.marked && typeof window.marked.parse === 'function') {
+            const raw = container.textContent || '';
+            container.innerHTML = window.marked.parse(raw);
+        }
+        if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+            window.MathJax.typesetPromise([container]).catch(function () {});
+        }
+    }
+
+    async function typewriterToElement(contentEl, text, speedMs) {
+        const source = String(text || '');
+        contentEl.textContent = '';
+        for (let i = 0; i < source.length; i++) {
+            contentEl.textContent += source[i];
+            if (i % 2 === 0) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            await new Promise(function (resolve) { setTimeout(resolve, speedMs); });
+        }
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function splitReplyText(text) {
+        return String(text || '')
+            .split(/\n\s*\n/g)
+            .map(function (item) { return item.trim(); })
+            .filter(Boolean);
+    }
+
+    function appendAssistantHistoryMessages(msg) {
+        const customBlocks = Array.isArray(msg.text_blocks) ? msg.text_blocks : [];
+        const blocks = customBlocks.length ? customBlocks : splitReplyText(msg.content);
+        if (!blocks.length) {
+            addMessage(String(msg.content || ''), 'bot');
+            return;
+        }
+        blocks.forEach(function (block) {
+            const shell = createMessageShell('bot');
+            shell.content.textContent = String(block || '');
+            renderMathAndMarkdown(shell.content);
+        });
+    }
+
+    function collectGraphContext() {
+        const context = {
+            hasCanvas: !!document.querySelector('canvas'),
+            canvasCount: document.querySelectorAll('canvas').length,
+            svgCount: document.querySelectorAll('svg').length,
+            hasThreeScene: !!document.getElementById('scene') || !!window.THREE,
+            chartLikeNodes: document.querySelectorAll('[id*="chart"], [class*="chart"], [id*="plot"], [class*="plot"]').length,
+            axisLabelCount: document.querySelectorAll('.axis, [class*="axis"], [id*="axis"]').length
+        };
+        const numericSnapshot = [];
+        document.querySelectorAll('input[type="range"], input[type="number"], select').forEach(function (el) {
+            if (!el.id) return;
+            numericSnapshot.push({
+                id: el.id,
+                value: el.value
+            });
+        });
+        context.controlSnapshot = numericSnapshot.slice(0, 40);
+        return context;
     }
 
     function stepMessageById(id, stepNo) {
@@ -165,7 +257,11 @@
 
                 if (response.messages && response.messages.length > 0) {
                     response.messages.forEach(function (msg) {
-                        addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
+                        if (msg.role === 'user') {
+                            addMessage(msg.content, 'user');
+                        } else {
+                            appendAssistantHistoryMessages(msg);
+                        }
                     });
                 }
             }
@@ -197,6 +293,7 @@
         const registry = buildRuntimeRegistry();
         const guidebook = aiConfig.GUIDEBOOK || '';
         const pageId = aiConfig.PAGE_ID || 'default';
+        const graphContext = collectGraphContext();
         const retrySnapshot = { message: message, pageId: pageId, guidebook: guidebook, buttons: registry };
 
         // 如果没有会话，先创建
@@ -234,7 +331,8 @@
                 message: message,
                 page_id: pageId,
                 guidebook: guidebook,
-                buttons: registry
+                buttons: registry,
+                graph_context: graphContext
             });
 
             loadingEl.remove();
@@ -245,13 +343,14 @@
                 });
                 currentHighlightIndex = 0;
                 if (highlightIds.length > 0) {
-                    addMessage(stepMessageById(highlightIds[0], 1), 'bot');
+                    await renderReplyBlocks(data);
+                    addMessage(stepMessageById(highlightIds[0], 1), 'system');
                     highlightCurrentButton();
                     return;
                 }
             }
 
-            addMessage(data.text, 'bot');
+            await renderReplyBlocks(data);
         } catch (err) {
             loadingEl && loadingEl.remove();
             const isAuthError = err && (err.status === 401 || /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(err.message || ''));
@@ -265,6 +364,18 @@
             }
         } finally {
             setSendBusy(false);
+        }
+    }
+
+    async function renderReplyBlocks(data) {
+        const customBlocks = Array.isArray(data.text_blocks) ? data.text_blocks : [];
+        const blocks = customBlocks.length ? customBlocks : splitReplyText(data.text);
+        if (!blocks.length) {
+            await addMessageWithTypewriter(String(data.text || ''), 'bot', true);
+            return;
+        }
+        for (let i = 0; i < blocks.length; i++) {
+            await addMessageWithTypewriter(blocks[i], 'bot', true);
         }
     }
 
@@ -323,15 +434,27 @@
 
     // 添加聊天消息
     function addMessage(text, type) {
-        const div = document.createElement('div');
-        const baseClass = type.split(' ')[0];
-        div.className = 'ai-message ai-' + baseClass;
-        if (type.indexOf('loading') !== -1) div.classList.add('ai-loading');
-        if (type.indexOf('error') !== -1) div.classList.add('ai-error');
-        div.innerHTML = '<p>' + text + '</p>';
-        chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return div;
+        const shell = createMessageShell(type);
+        if (type.indexOf('bot') !== -1 && type.indexOf('loading') === -1 && type.indexOf('error') === -1) {
+            shell.content.textContent = String(text || '');
+            renderMathAndMarkdown(shell.content);
+        } else if (type.indexOf('error') !== -1 && String(text || '').indexOf('js-open-login-modal') !== -1) {
+            shell.content.innerHTML = String(text || '');
+        } else {
+            shell.content.innerHTML = '<p>' + escapeHtml(text) + '</p>';
+        }
+        return shell.div;
+    }
+
+    async function addMessageWithTypewriter(text, type, enableMath) {
+        const shell = createMessageShell(type);
+        const paragraph = document.createElement('p');
+        shell.content.appendChild(paragraph);
+        await typewriterToElement(paragraph, String(text || ''), TYPEWRITER_SPEED_MS);
+        if (enableMath) {
+            renderMathAndMarkdown(shell.content);
+        }
+        return shell.div;
     }
 
     // 绑定聊天区内“点击登录”按钮，弹窗登录不跳页
@@ -353,6 +476,10 @@
 
     // ========== 高亮系统 ==========
     function advanceGuideStep() {
+        if (optionalAdvanceTimer) {
+            clearTimeout(optionalAdvanceTimer);
+            optionalAdvanceTimer = null;
+        }
         const currentId = highlightIds[currentHighlightIndex];
         const currentEl = currentId ? document.getElementById(currentId) : null;
         if (currentEl && currentEl._aiClickHandler) {
@@ -378,6 +505,7 @@
 
         const targetId = highlightIds[currentHighlightIndex];
         const targetEl = document.getElementById(targetId);
+        const targetMeta = uiRegistryMap.get(targetId) || { type: 'normal' };
         if (!targetEl) {
             currentHighlightIndex++;
             highlightCurrentButton();
@@ -394,10 +522,17 @@
         if (nextStepBtn) nextStepBtn.style.display = 'inline-flex';
 
         // 为当前目标绑定点击事件，点击后跳转到下一个
-        targetEl._aiClickHandler = function () {
-            advanceGuideStep();
-        };
-        targetEl.addEventListener('click', targetEl._aiClickHandler);
+        const metaType = targetMeta.type;
+        if (metaType === 'optional' || metaType === 'svg') {
+            optionalAdvanceTimer = setTimeout(function () {
+                advanceGuideStep();
+            }, OPTIONAL_ADVANCE_MS);
+        } else {
+            targetEl._aiClickHandler = function () {
+                advanceGuideStep();
+            };
+            targetEl.addEventListener('click', targetEl._aiClickHandler);
+        }
     }
 
     function positionOverlay(el) {
@@ -410,6 +545,10 @@
     }
 
     function clearHighlights() {
+        if (optionalAdvanceTimer) {
+            clearTimeout(optionalAdvanceTimer);
+            optionalAdvanceTimer = null;
+        }
         if (highlightOverlay) highlightOverlay.style.display = 'none';
         if (nextStepBtn) nextStepBtn.style.display = 'none';
         highlightIds.forEach(function (id) {
@@ -428,13 +567,40 @@
         if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {
             const el = document.getElementById(highlightIds[currentHighlightIndex]);
             if (el && highlightOverlay && highlightOverlay.style.display !== 'none') {
-                positionOverlay(el);
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.right >= 0) {
+                    positionOverlay(el);
+                } else {
+                    setTimeout(function () {
+                        const nextRect = el.getBoundingClientRect();
+                        if (nextRect.width > 0 && nextRect.height > 0) {
+                            positionOverlay(el);
+                        }
+                    }, 120);
+                }
             }
         }
     }
 
     window.addEventListener('scroll', repositionOverlay, true);
     window.addEventListener('resize', repositionOverlay);
+    window.addEventListener('focus', function () {
+        setTimeout(repositionOverlay, 80);
+        setTimeout(repositionOverlay, 280);
+    });
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            setTimeout(repositionOverlay, 80);
+            setTimeout(repositionOverlay, 280);
+        }
+    });
+    document.addEventListener('change', function (e) {
+        const t = e.target;
+        if (t && t.matches && t.matches('input[type="file"]')) {
+            setTimeout(repositionOverlay, 80);
+            setTimeout(repositionOverlay, 260);
+        }
+    }, true);
     if (nextStepBtn) {
         nextStepBtn.addEventListener('click', function () {
             if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {

@@ -138,6 +138,28 @@ body {
     opacity: 0.6;
 }
 
+input[type="range"] {
+    accent-color: var(--primary-color);
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: #ead9c7;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff7ee;
+    background: var(--primary-color);
+    box-shadow: 0 2px 7px rgba(216, 67, 21, 0.3);
+}
+
 /* 引导/思考记录区域 */
 .questions, .guidance-questions {
     background: var(--card-bg);
