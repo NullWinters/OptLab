@@ -2,7 +2,7 @@
  * 两阶段法交互实验 JavaScript
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // DOM 元素
     const numVarsInput = document.getElementById('num-vars');
     const numConstraintsInput = document.getElementById('num-constraints');
@@ -22,19 +22,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const phase1Conclusion = document.getElementById('phase1-conclusion');
     const phase2Conclusion = document.getElementById('phase2-conclusion');
 
+    // 实验数据面板（查看/导出/保存）
+    const twoPhaseLogOpenBtn = document.getElementById('two-phase-log-open-btn');
+    const twoPhaseLogExportJsonBtn = document.getElementById('two-phase-log-export-json-btn');
+    const twoPhaseLogSaveToProfileBtn = document.getElementById('two-phase-log-save-to-profile-btn');
+    const twoPhaseLogModal = document.getElementById('two-phase-log-modal');
+    const twoPhaseLogCloseBtn = document.getElementById('two-phase-log-close');
+    const twoPhaseLogSummary = document.getElementById('two-phase-log-summary');
+    const twoPhaseLogBody = document.getElementById('two-phase-log-body');
+
     // 示例数据（等式约束）
     const examples = {
         'max': {
-            n: 2, m: 2, type: 'max',
-            c: [3, 2],
-            a: [[1, 1], [2, 1]],
-            b: [4, 5]
+            n: 3, m: 2, type: 'max',
+            c: [1, 1, 3],
+            a: [[1, 0, 1], [0, 1, 1]],
+            b: [1, 2]
         },
         'min': {
-            n: 2, m: 2, type: 'min',
-            c: [4, 3],
-            a: [[1, 2], [3, 1]],
-            b: [4, 6]
+            n: 4, m: 2, type: 'min',
+            c: [2, -1, -1, 0],
+            a: [[3, 1, 0, 1], [6, 2, 1, 1]],
+            b: [4, 5]
         },
         'infeasible': {
             n: 2, m: 2, type: 'max',
@@ -58,9 +67,399 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let lastRunRecord = null;
 
+    const twoPhaseEventBuffer = [];
+    const MAX_TWO_PHASE_EVENTS = 300;
+
+    function pushTwoPhaseEvent(type, data) {
+        twoPhaseEventBuffer.push({
+            t: new Date().toISOString(),
+            type: type,
+            data: data || null
+        });
+        if (twoPhaseEventBuffer.length > MAX_TWO_PHASE_EVENTS) {
+            twoPhaseEventBuffer.shift();
+        }
+    }
+
+    function getTwoPhaseStatusLabel(phase, status, finalW, finalZ) {
+        if (phase === 1) {
+            if (status === 'optimal') {
+                if (typeof finalW === 'number' && Math.abs(finalW) <= 1e-10) return '可行解 (w=0)';
+                if (typeof finalW === 'number') return `无可行解 (w=${finalW.toFixed(4)})`;
+                return '达到最优';
+            }
+            if (status === 'unbounded') return '检测到无界';
+            if (status === 'cycle') return '检测到循环';
+            if (status === 'max_iter') return '达到最大迭代次数';
+            return '迭代中';
+        }
+
+        // phase === 2
+        if (status === 'optimal') return `达到最优 (Z=${typeof finalZ === 'number' ? finalZ.toFixed(4) : '--'})`;
+        if (status === 'unbounded') return '检测到无界';
+        if (status === 'cycle') return '检测到循环';
+        if (status === 'max_iter') return '达到最大迭代次数';
+        return '迭代中';
+    }
+
+    function createTwoPhaseRecordPayload() {
+        if (!lastRunRecord) return null;
+
+        const phase1Steps = lastRunRecord.phase1 && Array.isArray(lastRunRecord.phase1.steps)
+            ? lastRunRecord.phase1.steps
+            : [];
+        const phase2Steps = lastRunRecord.phase2 && Array.isArray(lastRunRecord.phase2.steps)
+            ? lastRunRecord.phase2.steps
+            : [];
+
+        if (!phase1Steps.length && !phase2Steps.length) return null;
+
+        const phase1FinalW = lastRunRecord.phase1 ? lastRunRecord.phase1.finalW : null;
+        const phase2FinalZ = lastRunRecord.phase2 ? lastRunRecord.phase2.finalObjectiveValue : null;
+
+        function mapStep(step) {
+            const obj = {
+                iteration: step.iteration,
+                phase: step.phase,
+                status: step.status,
+                entering: step.entering,
+                leaving: step.leaving,
+                basis: step.basis,
+                cB: step.cB,
+                b: step.b,
+                sigma: step.sigma,
+                theta: step.theta,
+                wValue: step.wValue
+            };
+            obj.tableau = {
+                cj: step.cj,
+                a: step.a,
+                b: step.b,
+                cB: step.cB,
+                basis: step.basis,
+                sigma: step.sigma,
+                theta: step.theta
+            };
+            return obj;
+        }
+
+        const phase1_iteration_data = phase1Steps.map(mapStep);
+        const phase2_iteration_data = phase2Steps.map(mapStep);
+
+        return {
+            algorithm_name: '两阶段法',
+            test_function: lastRunRecord.solveType === 'max' ? 'Max Z' : 'Min Z',
+            initial_state: {
+                n: lastRunRecord.n,
+                m: lastRunRecord.m,
+                solve_type: lastRunRecord.solveType,
+                objective_coeffs: lastRunRecord.objective || [],
+                constraints: lastRunRecord.constraints || []
+            },
+            phase1_result: {
+                status: lastRunRecord.phase1 ? lastRunRecord.phase1.status : null,
+                status_label: getTwoPhaseStatusLabel(
+                    1,
+                    lastRunRecord.phase1 ? lastRunRecord.phase1.status : null,
+                    phase1FinalW,
+                    null
+                ),
+                final_w: phase1FinalW
+            },
+            phase2_result: {
+                status: lastRunRecord.phase2 ? lastRunRecord.phase2.status : null,
+                status_label: getTwoPhaseStatusLabel(
+                    2,
+                    lastRunRecord.phase2 ? lastRunRecord.phase2.status : null,
+                    null,
+                    phase2FinalZ
+                ),
+                final_objective_value: phase2FinalZ
+            },
+            phase1_iteration_data: phase1_iteration_data,
+            phase2_iteration_data: phase2_iteration_data,
+            iteration_data: phase1_iteration_data.concat(phase2_iteration_data)
+        };
+    }
+
+    function updateTwoPhaseExperimentData(extra) {
+        const payload = createTwoPhaseRecordPayload();
+        window.TwoPhaseExperimentData = Object.assign({}, window.TwoPhaseExperimentData || {}, {
+            page: 'linear-programming.two_phase',
+            lastUpdatedAt: new Date().toISOString(),
+            lastRunRecord: lastRunRecord,
+            latestPayload: payload,
+            tableauSteps: payload && Array.isArray(payload.iteration_data) ? payload.iteration_data : [],
+            operationEvents: twoPhaseEventBuffer.slice()
+        }, extra || {});
+    }
+
+    function formatCellNumber(value, digits) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '—';
+        return n.toFixed(typeof digits === 'number' ? digits : 4);
+    }
+
+    function buildTableauDetailHtml(tableau) {
+        if (!tableau || !Array.isArray(tableau.a) || !Array.isArray(tableau.cj)) {
+            return '<div class="simplex-tableau-empty">无可用矩阵数据</div>';
+        }
+
+        const header = ['cB', 'Basis', 'b']
+            .concat(tableau.cj.map(function (_, idx) {
+                return 'x' + (idx + 1);
+            }))
+            .concat(['θ']);
+
+        const bArr = Array.isArray(tableau.b) ? tableau.b : [];
+        const cBArr = Array.isArray(tableau.cB) ? tableau.cB : [];
+        const basisArr = Array.isArray(tableau.basis) ? tableau.basis : [];
+        const thetaArr = Array.isArray(tableau.theta) ? tableau.theta : [];
+        const sigmaArr = Array.isArray(tableau.sigma) ? tableau.sigma : [];
+
+        let html = '<div class="simplex-tableau-wrap"><table class="simplex-tableau-table"><thead><tr>';
+        header.forEach(function (h) {
+            html += '<th>' + h + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+
+        tableau.a.forEach(function (row, rowIdx) {
+            html += '<tr>' +
+                '<td>' + formatCellNumber(cBArr[rowIdx], 4) + '</td>' +
+                '<td>' + (basisArr[rowIdx] || '--') + '</td>' +
+                '<td>' + formatCellNumber(bArr[rowIdx], 4) + '</td>';
+
+            for (let j = 0; j < tableau.cj.length; j++) {
+                html += '<td>' + formatCellNumber(row[j], 4) + '</td>';
+            }
+
+            const thetaVal = thetaArr[rowIdx] == null ? '—' : formatCellNumber(thetaArr[rowIdx], 4);
+            html += '<td>' + thetaVal + '</td></tr>';
+        });
+
+        html += '<tr class="sigma-row">' +
+            '<td>σj</td><td></td><td></td>';
+
+        for (let j = 0; j < tableau.cj.length; j++) {
+            html += '<td>' + formatCellNumber(sigmaArr[j], 4) + '</td>';
+        }
+        html += '<td></td></tr>';
+
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function bindTwoPhaseTableauExpandEvents() {
+        if (!twoPhaseLogBody) return;
+        twoPhaseLogBody.querySelectorAll('.simplex-expand-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const step = btn.getAttribute('data-step');
+                const detailRow = twoPhaseLogBody.querySelector('tr[data-detail-row="' + step + '"]');
+                if (!detailRow) return;
+                const expanded = detailRow.classList.toggle('hidden');
+                btn.textContent = expanded ? '展开完整 tableau' : '收起 tableau';
+            });
+        });
+    }
+
+    function openTwoPhaseLogModal() {
+        const payload = createTwoPhaseRecordPayload();
+        if (!payload) {
+            alert('当前尚无实验数据，请先运行一次两阶段法求解。');
+            return;
+        }
+
+        pushTwoPhaseEvent('open_log_modal', {
+            phase1_steps: payload.phase1_iteration_data.length,
+            phase2_steps: payload.phase2_iteration_data.length
+        });
+
+        if (twoPhaseLogSummary) {
+            twoPhaseLogSummary.innerHTML =
+                '<div>求解类型：' + (lastRunRecord.solveType === 'max' ? '最大化' : '最小化') + '</div>' +
+                '<div>规模：n = ' + lastRunRecord.n + '，m = ' + lastRunRecord.m + '</div>' +
+                '<div>第一阶段：' + payload.phase1_result.status_label + '</div>' +
+                '<div>第二阶段：' + payload.phase2_result.status_label + '</div>' +
+                '<div>迭代步数：' + payload.iteration_data.length + '</div>';
+        }
+
+        if (twoPhaseLogBody) {
+            twoPhaseLogBody.innerHTML = payload.iteration_data.map(function (row) {
+                const phase = row.phase;
+                const statusLabel = getTwoPhaseStatusLabel(
+                    phase,
+                    row.status,
+                    phase === 1 ? row.wValue : null,
+                    phase === 2 ? null : null
+                );
+                const basisText = Array.isArray(row.basis) ? row.basis.join(', ') : '--';
+                const bText = Array.isArray(row.b) ? row.b.map(function (v) {
+                    return Number(v).toFixed(4);
+                }).join(', ') : '--';
+                const targetText = phase === 1
+                    ? (typeof row.wValue === 'number' ? row.wValue.toFixed(4) : '--')
+                    : (Array.isArray(row.cB) && Array.isArray(row.b)
+                        ? row.cB.reduce(function (sum, cb, i) {
+                            return sum + cb * row.b[i];
+                        }, 0).toFixed(4)
+                        : '--');
+
+                const stepKey = 'p' + phase + '-' + row.iteration;
+                const detailHtml = buildTableauDetailHtml(row.tableau);
+
+                return '<tr>' +
+                    '<td>' + phase + '</td>' +
+                    '<td>' + row.iteration + '</td>' +
+                    '<td>' + (row.entering || '—') + '</td>' +
+                    '<td>' + (row.leaving || '—') + '</td>' +
+                    '<td>' + statusLabel + '</td>' +
+                    '<td>' + basisText + '</td>' +
+                    '<td>' + bText + '</td>' +
+                    '<td>' + targetText + '</td>' +
+                    '<td><button type="button" class="simplex-expand-btn" data-step="' + stepKey + '">展开完整 tableau</button></td>' +
+                    '</tr>' +
+                    '<tr class="hidden" data-detail-row="' + stepKey + '">' +
+                    '<td colspan="9">' + detailHtml + '</td>' +
+                    '</tr>';
+            }).join('');
+            bindTwoPhaseTableauExpandEvents();
+        }
+
+        if (twoPhaseLogModal) twoPhaseLogModal.classList.remove('hidden');
+    }
+
+    function closeTwoPhaseLogModal() {
+        if (!twoPhaseLogModal) return;
+        twoPhaseLogModal.classList.add('hidden');
+    }
+
+    function exportTwoPhaseLogAsJson() {
+        const payload = createTwoPhaseRecordPayload();
+        if (!payload) {
+            alert('当前尚无实验数据，请先运行一次两阶段法求解。');
+            return;
+        }
+        pushTwoPhaseEvent('export_json', {
+            phase1_steps: payload.phase1_iteration_data.length,
+            phase2_steps: payload.phase2_iteration_data.length
+        });
+
+        function compactNums(arr) {
+            return (Array.isArray(arr) ? arr : []).map(function (v) {
+                return Number(v).toFixed(4);
+            }).join(', ');
+        }
+
+        function compactConstraints(items) {
+            return (Array.isArray(items) ? items : []).map(function (it, idx) {
+                return '约束' + (idx + 1) + ': [' + compactNums(it.coeffs) + '] = ' + Number(it.b).toFixed(4);
+            });
+        }
+
+        const pretty = {
+            文件说明: {
+                名称: '线性规划-两阶段法实验记录',
+                导出时间: new Date().toLocaleString('zh-CN', {hour12: false}),
+                页面: 'linear-programming.two_phase',
+                备注: '按“第一阶段-迭代摘要-逐步tableau(紧凑)-第二阶段-迭代摘要-逐步tableau(紧凑)”组织，便于阅读与复现实验。'
+            },
+            实验概览: {
+                算法: payload.algorithm_name,
+                求解类型: payload.initial_state.solve_type === 'max' ? '最大化' : '最小化',
+                规模: 'n=' + payload.initial_state.n + ', m=' + payload.initial_state.m,
+                第一阶段状态: payload.phase1_result.status_label,
+                第二阶段状态: payload.phase2_result.status_label
+            },
+            输入数据: {
+                目标函数系数: '[' + compactNums(payload.initial_state.objective_coeffs) + ']',
+                约束条件: compactConstraints(payload.initial_state.constraints)
+            },
+            第一阶段迭代摘要: payload.phase1_iteration_data.map(function (it) {
+                return {
+                    迭代: it.iteration,
+                    状态: it.status,
+                    入基变量: it.entering || '—',
+                    离基变量: it.leaving || '—',
+                    基变量: (it.basis || []).join(', '),
+                    当前辅助目标w: typeof it.wValue === 'number' ? it.wValue.toFixed(4) : '—'
+                };
+            }),
+            第二阶段迭代摘要: payload.phase2_iteration_data.map(function (it) {
+                const z = (Array.isArray(it.cB) && Array.isArray(it.b))
+                    ? it.cB.reduce(function (sum, cb, i) {
+                        return sum + cb * it.b[i];
+                    }, 0)
+                    : null;
+                return {
+                    迭代: it.iteration,
+                    状态: it.status,
+                    入基变量: it.entering || '—',
+                    离基变量: it.leaving || '—',
+                    基变量: (it.basis || []).join(', '),
+                    当前目标值Z: typeof z === 'number' ? z.toFixed(4) : '—'
+                };
+            })
+        };
+
+        const jsonText = JSON.stringify(pretty, null, 2);
+        const blob = new Blob([jsonText], {type: 'application/json;charset=utf-8'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'linear-programming.two_phase-实验迭代数据.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+
+    async function saveTwoPhaseLogToProfile() {
+        const payload = createTwoPhaseRecordPayload();
+        if (!payload) {
+            alert('当前尚无实验数据，请先运行一次两阶段法求解。');
+            return;
+        }
+        pushTwoPhaseEvent('save_to_profile_click', {
+            steps: payload.iteration_data.length
+        });
+
+        if (typeof apiPost !== 'function' || typeof getStoredToken !== 'function' || !getStoredToken()) {
+            if (window.LoginModal && typeof window.LoginModal.open === 'function') {
+                window.LoginModal.open({mode: 'login', notice: '请先登录后再保存至个人中心。'});
+            } else {
+                alert('请先登录后再保存至个人中心。');
+            }
+            return;
+        }
+
+        const defaultAlias = (window.RecordSaveModal && typeof window.RecordSaveModal.makeDefaultAlias === 'function')
+            ? window.RecordSaveModal.makeDefaultAlias('TWO_PHASE')
+            : ('TWO_PHASE-' + new Date().toISOString().slice(0, 16).replace('T', ' '));
+
+        if (window.RecordSaveModal && typeof window.RecordSaveModal.open === 'function') {
+            window.RecordSaveModal.open({
+                title: '保存至个人中心',
+                subtitle: '两阶段法交互实验记录将保存到你的个人中心',
+                aliasPrefix: 'TWO_PHASE',
+                defaultAlias,
+                onConfirm: function (alias) {
+                    pushTwoPhaseEvent('save_to_profile_confirm', {alias: String(alias || '').trim()});
+                    return apiPost('/experiments/records', {
+                        alias: String(alias).trim(),
+                        source_page: 'linear-programming.two_phase',
+                        payload: payload
+                    });
+                }
+            });
+        } else {
+            alert('保存弹窗未加载，请刷新页面后重试。');
+        }
+    }
+
     // 初始化
     generateCoeffTable();
-    
+    updateTwoPhaseExperimentData({reason: 'init'});
+
     // 事件监听
     numVarsInput.addEventListener('change', generateCoeffTable);
     numConstraintsInput.addEventListener('change', handleConstraintCountChange);
@@ -68,6 +467,16 @@ document.addEventListener('DOMContentLoaded', function() {
     checkBtn.addEventListener('click', validateInputs);
     solveBtn.addEventListener('click', solveTwoPhase);
     loadExampleBtn.addEventListener('click', loadExample);
+
+    if (twoPhaseLogOpenBtn) twoPhaseLogOpenBtn.addEventListener('click', openTwoPhaseLogModal);
+    if (twoPhaseLogExportJsonBtn) twoPhaseLogExportJsonBtn.addEventListener('click', exportTwoPhaseLogAsJson);
+    if (twoPhaseLogSaveToProfileBtn) twoPhaseLogSaveToProfileBtn.addEventListener('click', saveTwoPhaseLogToProfile);
+    if (twoPhaseLogCloseBtn) twoPhaseLogCloseBtn.addEventListener('click', closeTwoPhaseLogModal);
+    if (twoPhaseLogModal) {
+        twoPhaseLogModal.addEventListener('click', function (e) {
+            if (e.target === twoPhaseLogModal) closeTwoPhaseLogModal();
+        });
+    }
 
     function handleConstraintCountChange() {
         const m = parseInt(numConstraintsInput.value);
@@ -87,7 +496,9 @@ document.addEventListener('DOMContentLoaded', function() {
         warning.textContent = '已达到最大约束数量 (10条)';
         document.body.appendChild(warning);
 
-        setTimeout(() => { warning.remove(); }, 5000);
+        setTimeout(() => {
+            warning.remove();
+        }, 5000);
     }
 
     function loadExample() {
@@ -117,6 +528,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         resetResults();
+
+        // 系数表行数变化会引起像素级高度差，使用两次 requestAnimationFrame
+        // 确保布局完成后再同步（避免拿到过渡中的高度）。
+        (window.requestAnimationFrame || function (cb) {
+            return setTimeout(cb, 0);
+        })(function () {
+            syncResultAreaHeight();
+            (window.requestAnimationFrame || function (cb) {
+                return setTimeout(cb, 0);
+            })(function () {
+                syncResultAreaHeight();
+            });
+        });
     }
 
     function generateCoeffTable() {
@@ -173,19 +597,34 @@ document.addEventListener('DOMContentLoaded', function() {
         phase2Conclusion.classList.add('hidden');
         updatePhaseStatus(1, 'pending');
         updatePhaseStatus(2, 'pending');
+
+        lastRunRecord = null;
+        twoPhaseEventBuffer.length = 0;
+        updateTwoPhaseExperimentData({reason: 'reset_results'});
+
+        (window.requestAnimationFrame || function (cb) {
+            return setTimeout(cb, 0);
+        })(function () {
+            syncResultAreaHeight();
+            (window.requestAnimationFrame || function (cb) {
+                return setTimeout(cb, 0);
+            })(function () {
+                syncResultAreaHeight();
+            });
+        });
     }
 
     function updatePhaseStatus(phase, status) {
         const statusEl = phase === 1 ? phase1Status : phase2Status;
         const statusMap = {
-            'pending': { text: phase === 1 ? '等待求解' : '未开始', class: 'pending' },
-            'running': { text: '计算中...', class: 'running' },
-            'success': { text: '已完成', class: 'success' },
-            'infeasible': { text: '无可行解', class: 'infeasible' },
-            'unbounded': { text: '无界', class: 'unbounded' },
-            'cycle': { text: '检测到循环', class: 'cycle' }
+            'pending': {text: phase === 1 ? '等待求解' : '未开始', class: 'pending'},
+            'running': {text: '计算中...', class: 'running'},
+            'success': {text: '已完成', class: 'success'},
+            'infeasible': {text: '无可行解', class: 'infeasible'},
+            'unbounded': {text: '无界', class: 'unbounded'},
+            'cycle': {text: '检测到循环', class: 'cycle'}
         };
-        
+
         const info = statusMap[status] || statusMap['pending'];
         statusEl.textContent = info.text;
         statusEl.className = 'phase-status-badge ' + info.class;
@@ -224,6 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const n = parseInt(numVarsInput.value);
         const m = parseInt(numConstraintsInput.value);
         const solveType = document.querySelector('input[name="solve-type"]:checked').value;
+        pushTwoPhaseEvent('solve_start', {n: n, m: m, solve_type: solveType});
 
         // 读取系数
         const c = [];
@@ -242,6 +682,11 @@ document.addEventListener('DOMContentLoaded', function() {
             b.push(parseFloat(document.getElementById(`b-${i}`).value));
         }
 
+        const objective = c;
+        const constraints = a.map(function (row, idx) {
+            return {coeffs: row, b: b[idx]};
+        });
+
         // 显示面板
         placeholder.classList.add('hidden');
         phase1Panel.classList.remove('hidden');
@@ -251,7 +696,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 构造 Phase I 初始表: min w = sum(人工变量)
         const totalVarsPhase1 = n + m;
         const artificialIndices = [];
-        
+
         const cjPhase1 = new Array(totalVarsPhase1).fill(0);
         for (let i = 0; i < m; i++) {
             cjPhase1[n + i] = 1;
@@ -289,7 +734,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const remainingArtificial = LPCore.getRemainingArtificialVars(
             phase1Result.finalBasis, artificialIndices
         );
-        
+
         if (phase1Result.cycleDetected) {
             updatePhaseStatus(1, 'cycle');
             phase1Conclusion.innerHTML = `
@@ -298,6 +743,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             phase1Conclusion.classList.remove('hidden');
+            lastRunRecord = {
+                n: n,
+                m: m,
+                solveType: solveType,
+                objective: objective,
+                constraints: constraints,
+                phase1: phase1Result,
+                phase2: null
+            };
+            updateTwoPhaseExperimentData({reason: 'phase1_cycle'});
+            pushTwoPhaseEvent('solve_complete', {stage: 'phase1', status: 'cycle'});
             return;
         }
 
@@ -310,6 +766,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             phase1Conclusion.classList.remove('hidden');
+            lastRunRecord = {
+                n: n,
+                m: m,
+                solveType: solveType,
+                objective: objective,
+                constraints: constraints,
+                phase1: phase1Result,
+                phase2: null
+            };
+            updateTwoPhaseExperimentData({reason: 'phase1_infeasible'});
+            pushTwoPhaseEvent('solve_complete', {stage: 'phase1', status: 'infeasible'});
             return;
         }
 
@@ -321,13 +788,25 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         phase1Conclusion.classList.remove('hidden');
 
+        // Phase II 之前先暴露 Phase I 数据（若用户立即生成笔记，也能获得完整输入）
+        lastRunRecord = {
+            n: n,
+            m: m,
+            solveType: solveType,
+            objective: objective,
+            constraints: constraints,
+            phase1: phase1Result,
+            phase2: null
+        };
+        updateTwoPhaseExperimentData({reason: 'phase1_success'});
+
         // ========== 第二阶段 ==========
         phase2Panel.classList.remove('hidden');
         phase2Panel.removeAttribute('disabled');
         phase2Panel.open = true;
         updatePhaseStatus(2, 'running');
 
-        const { A: APhase2, b: bPhase2, basis: basisPhase2, cB: cBPhase2 } = 
+        const {A: APhase2, b: bPhase2, basis: basisPhase2, cB: cBPhase2} =
             LPCore.preparePhase2(phase1Result, artificialIndices, n, c);
 
         const phase2Result = LPCore.iterateSimplex({
@@ -378,16 +857,23 @@ document.addEventListener('DOMContentLoaded', function() {
         phase2Conclusion.classList.remove('hidden');
 
         lastRunRecord = {
-            n, m, solveType,
+            n: n,
+            m: m,
+            solveType: solveType,
+            objective: objective,
+            constraints: constraints,
             phase1: phase1Result,
             phase2: phase2Result
         };
+
+        updateTwoPhaseExperimentData({reason: 'solve_complete'});
+        pushTwoPhaseEvent('solve_complete', {stage: 'phase2', status: phase2Result.status});
     }
 
     function renderPhaseResults(phase, result) {
         const container = phase === 1 ? phase1Container : phase2Container;
         const solveType = document.querySelector('input[name="solve-type"]:checked').value;
-        
+
         container.innerHTML = '';
 
         if (!result || !result.steps || result.steps.length === 0) {
@@ -410,15 +896,15 @@ document.addEventListener('DOMContentLoaded', function() {
             tableWrapper.className = 'table-wrapper';
             const svg = d3.select(tableWrapper).append('svg')
                 .attr('class', 'simplex-svg');
-            
+
             LPCore.renderSimplexTable(svg, step);
             card.appendChild(tableWrapper);
 
             const explanation = document.createElement('div');
             explanation.className = 'explanation';
-            
+
             if (phase === 1 && step.wValue !== null) {
-                explanation.innerHTML = LPCore.generateExplanation(step, 'min') + 
+                explanation.innerHTML = LPCore.generateExplanation(step, 'min') +
                     `<br><strong>当前辅助目标值：</strong> w = ${step.wValue.toFixed(4)}`;
             } else {
                 explanation.innerHTML = LPCore.generateExplanation(step, solveType);
@@ -437,23 +923,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (window.MathJax && window.MathJax.typesetPromise) {
-            MathJax.typesetPromise([container]).catch((err) => 
+            MathJax.typesetPromise([container]).catch((err) =>
                 console.log('MathJax typeset failed: ' + err.message)
             );
         }
+
+        (window.requestAnimationFrame || function (cb) {
+            return setTimeout(cb, 0);
+        })(function () {
+            syncResultAreaHeight();
+            (window.requestAnimationFrame || function (cb) {
+                return setTimeout(cb, 0);
+            })(function () {
+                syncResultAreaHeight();
+            });
+        });
+
     }
 
     // ========== 结果区域高度同步逻辑 (对齐左侧面板) ==========
     const leftColumn = document.querySelector('.left-column');
     const resultArea = document.querySelector('.result-area');
-    
+
     function syncResultAreaHeight() {
         if (!leftColumn || !resultArea) return;
-        
+
         if (window.innerWidth > 1024) {
-            const leftHeight = leftColumn.offsetHeight;
-            resultArea.style.height = `${leftHeight}px`;
-            resultArea.style.maxHeight = `${leftHeight}px`;
+            // 精准对齐：左侧由 input-panel + experiment-data-panel 组成，
+            // 中间由 grid/flex gap 控制，直接用 leftColumn.offsetHeight 会引入像素误差。
+            const inputPanel = leftColumn.querySelector('.input-panel');
+            const dataPanel = leftColumn.querySelector('.experiment-data-panel');
+            if (inputPanel && dataPanel) {
+                const gap = 14; // two_phase.css: .left-column { gap: 14px; }
+                const target = inputPanel.offsetHeight + gap + dataPanel.offsetHeight;
+                resultArea.style.height = `${target}px`;
+                resultArea.style.maxHeight = `${target}px`;
+            } else {
+                const leftHeight = leftColumn.offsetHeight;
+                resultArea.style.height = `${leftHeight}px`;
+                resultArea.style.maxHeight = `${leftHeight}px`;
+            }
         } else {
             resultArea.style.height = 'auto';
             resultArea.style.maxHeight = 'none';
@@ -466,10 +975,10 @@ document.addEventListener('DOMContentLoaded', function() {
             syncResultAreaHeight();
         });
         resizeObserver.observe(leftColumn);
-        
+
         // 也监听窗口缩放
         window.addEventListener('resize', syncResultAreaHeight);
-        
+
         // 初始同步
         syncResultAreaHeight();
     }

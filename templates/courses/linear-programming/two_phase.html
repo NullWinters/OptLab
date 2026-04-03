@@ -4,6 +4,7 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/courses/linear-programming/two_phase.css">
+<link rel="stylesheet" href="/static/css/courses/linear-programming/simplex.css">
 <script src="/static/js/vendors/d3/d3.min.js"></script>
 {% endblock %}
 
@@ -36,7 +37,7 @@
                     <h3>示例数据加载</h3>
                     <div class="input-inline">
                         <div class="input-group" style="flex: 2;">
-                            <select id="example-select">
+                            <label for="example-select"></label><select id="example-select">
                                 <option value="max">最大化示例</option>
                                 <option value="min">最小化示例</option>
                                 <option value="infeasible">无可行解示例</option>
@@ -102,12 +103,12 @@
         <!-- 右侧结果展示区 -->
         <main class="result-area">
             <div id="iteration-results" class="results-container">
-                
+
                 <!-- 初始占位状态 -->
                 <div id="two-phase-placeholder" class="placeholder-text">
                     请在左侧输入参数并点击"求解"开始实验。
                 </div>
-                
+
                 <!-- 第一阶段面板 -->
                 <details id="phase1-panel" class="phase-panel hidden" open>
                     <summary class="phase-header">
@@ -129,7 +130,7 @@
                         <div id="phase1-conclusion" class="phase-conclusion hidden"></div>
                     </div>
                 </details>
-                
+
                 <!-- 第二阶段面板 -->
                 <details id="phase2-panel" class="phase-panel hidden" disabled>
                     <summary class="phase-header">
@@ -147,15 +148,204 @@
                         <div id="phase2-conclusion" class="phase-conclusion hidden"></div>
                     </div>
                 </details>
-                
+
             </div>
         </main>
     </div>
+
+    <div id="two-phase-log-modal" class="simplex-log-modal modal hidden" aria-hidden="true">
+        <div class="simplex-log-card" role="dialog" aria-modal="true" aria-labelledby="two-phase-log-title">
+            <div class="simplex-log-head">
+                <h3 id="two-phase-log-title">两阶段法实验迭代数据</h3>
+                <button id="two-phase-log-close" class="simplex-log-close" type="button" aria-label="关闭">×</button>
+            </div>
+            <div class="simplex-log-summary" id="two-phase-log-summary"></div>
+            <div class="simplex-log-table-wrap">
+                <table class="simplex-log-table">
+                    <thead>
+                        <tr>
+                            <th>阶段</th>
+                            <th>迭代</th>
+                            <th>入基变量</th>
+                            <th>离基变量</th>
+                            <th>状态</th>
+                            <th>基变量</th>
+                            <th>当前基解 b</th>
+                            <th>目标值</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="two-phase-log-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% block experiment_notes %}
+    {% include 'components/_experiment_notes.html' %}
+    {% endblock %}
 
     <footer class="footer">
         线性规划 · OptLab 教学资源
     </footer>
 </div>
+
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'two_phase_method',
+        BUTTON_REGISTRY: [
+            { id: "example-select", description: "预设场景选择下拉框", type: "normal" },
+            { id: "load-example-btn", description: "加载示例数据按钮", type: "normal" },
+            { id: "num-vars", description: "设置变量数量输入框", type: "normal" },
+            { id: "num-constraints", description: "设置约束数量输入框", type: "normal" },
+            { id: "reset-btn", description: "重置输入数据按钮", type: "normal" },
+            { id: "check-btn", description: "校验输入数据准确性按钮", type: "normal" },
+            { id: "solve-btn", description: "执行两阶段法求解按钮", type: "normal" },
+            { id: "two-phase-log-open-btn", description: "查看实验数据按钮", type: "normal" },
+            { id: "two-phase-log-export-json-btn", description: "导出实验数据按钮", type: "normal" },
+            { id: "two-phase-log-save-to-profile-btn", description: "保存实验数据至个人中心按钮", type: "normal" }
+        ],
+        GUIDEBOOK: `
+这是线性规划两阶段法交互实验，支持求解最大化或最小化线性规划问题。
+采用的约束条件为：Ax=b且x>=0，用户需在输入前自主添加松弛变量，系统自动追加人工变量，构造初始基本可行解。
+用户可在下拉栏选择示例线性规划问题，加载并点击求解按钮查看迭代过程。
+`
+    };
+
+    window.EXPERIMENT_NOTES_CONFIG = {
+        experimentKey: 'linear-programming.two_phase',
+        mountSelector: '#exp-notes-mount',
+        getPageData: function () {
+            var numVars = document.getElementById('num-vars');
+            var numConstraints = document.getElementById('num-constraints');
+            var solveTypeEl = document.querySelector('input[name="solve-type"]:checked');
+
+            var n = numVars ? parseInt(numVars.value) : null;
+            var m = numConstraints ? parseInt(numConstraints.value) : null;
+            var solveType = solveTypeEl ? solveTypeEl.value : null;
+
+            function safeNum(v) {
+                var x = parseFloat(v);
+                return Number.isFinite(x) ? x : null;
+            }
+
+            var objective = [];
+            var constraints = [];
+            if (Number.isInteger(n) && Number.isInteger(m)) {
+                for (var j = 1; j <= n; j++) {
+                    var cEl = document.getElementById('c-' + j);
+                    objective.push(cEl ? safeNum(cEl.value) : null);
+                }
+                for (var i = 1; i <= m; i++) {
+                    var row = [];
+                    for (var k = 1; k <= n; k++) {
+                        var aEl = document.getElementById('a-' + i + '-' + k);
+                        row.push(aEl ? safeNum(aEl.value) : null);
+                    }
+                    var bEl = document.getElementById('b-' + i);
+                    constraints.push({ coeffs: row, b: bEl ? safeNum(bEl.value) : null });
+                }
+            }
+
+            var phase1Cards = document.querySelectorAll('#phase1-iteration-cards .iteration-card');
+            var phase2Cards = document.querySelectorAll('#phase2-iteration-cards .iteration-card');
+            var phase1Count = phase1Cards ? phase1Cards.length : 0;
+            var phase2Count = phase2Cards ? phase2Cards.length : 0;
+            var totalCount = (phase1Count || 0) + (phase2Count || 0);
+
+            var phase1Conclusion = document.getElementById('phase1-conclusion');
+            var phase2Conclusion = document.getElementById('phase2-conclusion');
+            var resultText = '';
+            if (phase2Conclusion && !phase2Conclusion.classList.contains('hidden')) {
+                resultText = (phase2Conclusion.textContent || '').trim();
+            } else if (phase1Conclusion && !phase1Conclusion.classList.contains('hidden')) {
+                resultText = (phase1Conclusion.textContent || '').trim();
+            }
+
+            var twoPhaseData = window.TwoPhaseExperimentData || null;
+            var behavior = (window.ExperimentNotes && typeof window.ExperimentNotes.getBehavior === 'function')
+                ? window.ExperimentNotes.getBehavior()
+                : null;
+
+            var phase1Log = [];
+            var phase2Log = [];
+            if (twoPhaseData && twoPhaseData.latestPayload) {
+                phase1Log = Array.isArray(twoPhaseData.latestPayload.phase1_iteration_data)
+                    ? twoPhaseData.latestPayload.phase1_iteration_data
+                    : [];
+                phase2Log = Array.isArray(twoPhaseData.latestPayload.phase2_iteration_data)
+                    ? twoPhaseData.latestPayload.phase2_iteration_data
+                    : [];
+            }
+
+            return {
+                algorithm: '两阶段法',
+                num_vars: n,
+                num_constraints: m,
+                solve_type: solveType,
+                objective_coeffs: objective,
+                constraints: constraints,
+                iteration_card_count: totalCount,
+                result_text: resultText,
+                user_result_summary: {
+                    has_phase1: phase1Count > 0,
+                    has_phase2: phase2Count > 0
+                },
+                two_phase_run_record: twoPhaseData && twoPhaseData.lastRunRecord ? twoPhaseData.lastRunRecord : null,
+                two_phase_log_payload: twoPhaseData && twoPhaseData.latestPayload ? twoPhaseData.latestPayload : null,
+                two_phase_tableau_steps: twoPhaseData && Array.isArray(twoPhaseData.tableauSteps) ? twoPhaseData.tableauSteps : [],
+                phase1_iteration_log: phase1Log,
+                phase2_iteration_log: phase2Log,
+                operation_history: behavior && Array.isArray(behavior.events) ? behavior.events : []
+            };
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var btnMap = {
+            "solve-btn": "求解",
+            "check-btn": "检查输入",
+            "reset-btn": "重置",
+            "load-example-btn": "加载示例",
+            "two-phase-log-open-btn": "查看实验数据",
+            "two-phase-log-export-json-btn": "导出实验数据",
+            "two-phase-log-save-to-profile-btn": "保存至个人中心"
+        };
+        Object.keys(btnMap).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', function () {
+                ExperimentNotes.trackEvent('control', { action: btnMap[id] });
+            }, { capture: true });
+        });
+
+        var exampleSelect = document.getElementById('example-select');
+        if (exampleSelect) {
+            exampleSelect.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', { param: 'example_select', value: exampleSelect.value });
+            }, { capture: true });
+        }
+
+        var numVars = document.getElementById('num-vars');
+        if (numVars) {
+            numVars.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', { param: 'num_vars', value: numVars.value });
+            }, { capture: true });
+        }
+
+        var numConstraints = document.getElementById('num-constraints');
+        if (numConstraints) {
+            numConstraints.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', { param: 'num_constraints', value: numConstraints.value });
+            }, { capture: true });
+        }
+
+        document.querySelectorAll('input[name="solve-type"]').forEach(function (el) {
+            el.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', { param: 'solve_type', value: el.value });
+            }, { capture: true });
+        });
+    });
+</script>
 
 <script src="/static/js/courses/linear-programming/lp-core.js"></script>
 <script src="/static/js/courses/linear-programming/two_phase.js"></script>

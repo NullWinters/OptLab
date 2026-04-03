@@ -651,6 +651,122 @@ function _collectAiPayloadSnapshot() {
     return pd;
 }
 
+function _hasNonEmptyIterationLogValue(v) {
+    // `iteration_log` 在部分页面可能是数组，也可能是对象（对象的 value 为数组）。
+    if (Array.isArray(v)) return v.length > 0;
+    if (!v || typeof v !== 'object') return false;
+    return Object.values(v).some(function (item) {
+        return Array.isArray(item) && item.length > 0;
+    });
+}
+
+function _payloadHasExperimentData(pd) {
+    if (!pd || typeof pd !== 'object') return false;
+
+    // 单纯形法：常用的“已求解证据”
+    if (typeof pd.iteration_card_count === 'number' && pd.iteration_card_count > 0) return true;
+    if (Array.isArray(pd.simplex_tableau_steps) && pd.simplex_tableau_steps.length > 0) return true;
+    if (pd.simplex_run_record) return true;
+
+    // 收敛结果：有最终结果通常意味着已产生实验数据
+    if (pd.convergence_result) {
+        if (Array.isArray(pd.convergence_result)) return pd.convergence_result.length > 0;
+        if (typeof pd.convergence_result === 'object') {
+            var vals = Object.values(pd.convergence_result);
+            return vals.some(function (x) {
+                if (x === null || x === undefined) return false;
+                if (typeof x === 'object') return Object.keys(x || {}).length > 0;
+                return true;
+            });
+        }
+    }
+
+    // 通用：扫描任意层级中“iteration+log”的字段是否含非空数据。
+    // 例如：range-search/point-search/smo/kernel-trick 均使用 iteration_log。
+    function scan(obj, depth) {
+        if (depth < 0 || !obj || typeof obj !== 'object') return false;
+        if (Array.isArray(obj)) return false;
+        return Object.keys(obj).some(function (k) {
+            if (k === '_behavior' || k === 'guidebook') return false;
+            var v = obj[k];
+            var kLower = String(k).toLowerCase();
+
+            // 只处理关键命名：避免把初始参数当作“实验数据”
+            var isIterLogKey = kLower.includes('iteration') && kLower.includes('log');
+            if (isIterLogKey) return _hasNonEmptyIterationLogValue(v);
+
+            return scan(v, depth - 1);
+        });
+    }
+
+    return scan(pd, 4);
+}
+
+function _payloadHasExperimentDataForCurrentExperiment(pd) {
+    // 核技巧：只要“parse_csv/过程日志”并不算实验数据，
+    // 需要至少完成一次可视化后 state.points 才会非空（即 sample_count > 0）。
+    if (_cfg && _cfg.experimentKey === 'svm-smo.kernel_trick.visualization') {
+        var sc = pd ? pd.sample_count : null;
+        return Number.isFinite(sc) && sc > 0;
+    }
+
+    // 两阶段法：仅初始输入不算实验数据，必须至少有一阶段迭代步骤
+    if (_cfg && _cfg.experimentKey === 'linear-programming.two_phase') {
+        if (pd && typeof pd.iteration_card_count === 'number' && pd.iteration_card_count > 0) return true;
+        if (pd && Array.isArray(pd.phase1_iteration_log) && pd.phase1_iteration_log.length > 0) return true;
+        return pd && Array.isArray(pd.phase2_iteration_log) && pd.phase2_iteration_log.length > 0;
+
+    }
+
+    return _payloadHasExperimentData(pd);
+}
+
+function _getExperimentDataMissingMessage(experimentKey, pd) {
+    if (!experimentKey) return '当前尚无可用的实验数据，无法生成笔记。';
+
+    if (experimentKey === 'linear-programming.simplex') {
+        return '当前尚无实验数据，请先运行一次单纯形法求解。';
+    }
+
+    if (experimentKey === 'linear-programming.two_phase') {
+        return '当前尚无实验数据，请先运行一次两阶段法求解。';
+    }
+
+    if (
+        experimentKey === 'line-search.range_search.observation' ||
+        experimentKey === 'line-search.point_search.observation'
+    ) {
+        return '当前尚无迭代数据，请先运行一次完整实验。';
+    }
+
+    if (experimentKey === 'line-search.range_search.comparison') {
+        return '暂无实验数据，请先运行实验';
+    }
+
+    if (experimentKey === 'line-search.point_search.comparison') {
+        return '当前尚无迭代数据，请先运行一次实验。';
+    }
+
+    if (experimentKey === 'line-search.application.main') {
+        var lsLog = pd && pd.ls ? pd.ls.iteration_log : null;
+        var profitLog = pd && pd.profit ? pd.profit.iteration_log : null;
+        var hasLs = Array.isArray(lsLog) && lsLog.length > 0;
+        var hasProfit = Array.isArray(profitLog) && profitLog.length > 0;
+        if (!hasLs && !hasProfit) return '当前尚无迭代数据，请先运行一次完整拟合实验。';
+        return '当前阶段尚无可用的迭代数据，无法生成笔记。';
+    }
+
+    if (experimentKey === 'svm-smo.smo_iteration.observation') {
+        return '当前尚无迭代数据，请先播放或单步运行一次 SMO 算法。';
+    }
+
+    if (experimentKey === 'svm-smo.kernel_trick.visualization') {
+        return '未检测到可用数据，请先上传或加载预设数据集。';
+    }
+
+    return '当前尚无可用的实验数据，无法生成笔记。';
+}
+
 function _isLikelyDomEventObject(obj) {
     if (!obj || typeof obj !== 'object') return false;
     return (
@@ -692,6 +808,14 @@ async function _aiGen(payloadOverride) {
     try{
         var pd = _normalizeAiPayloadOverride(payloadOverride) || _collectAiPayloadSnapshot();
         console.log('[Notes] Sending AI request with data keys:', Object.keys(pd));
+
+        // 生成前校验：没有实验数据就不请求后端（与“查看实验数据”一致的行为体验）
+        if (!_payloadHasExperimentDataForCurrentExperiment(pd)) {
+            var msg = _getExperimentDataMissingMessage(_cfg.experimentKey, pd);
+            setGSt(_gStEl, 'error', msg);
+            alert(msg);
+            return;
+        }
         
         var d=await apiRequest('/notes/'+encodeURIComponent(_cfg.experimentKey)+'/ai-generate',{
             method:'POST',
@@ -728,7 +852,9 @@ async function _aiGen(payloadOverride) {
                 window.LoginModal.open();
             }
         } else {
-            setGSt(_gStEl,'error','AI 生成失败：'+(e.message||'未知错误')+' 请检查浏览器控制台。');
+            var detail = e && e.message ? String(e.message) : '未知错误';
+            // 这是“预期内”的失败（例如无实验数据导致后端 400），不要再额外提示“请检查浏览器控制台”
+            setGSt(_gStEl,'error','AI 生成失败：'+detail);
         }
     }finally{
         if(btn){btn.disabled=false;btn.textContent='AI 生成笔记';}
