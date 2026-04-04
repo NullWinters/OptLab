@@ -4,52 +4,9 @@ from sqlalchemy import select
 from sqlalchemy import delete
 
 from models import AsyncSession
-from models.experiment import ExperimentNote
 from models.experiment_record import ExperimentRecord
 
 
-class ExperimentNoteRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
-
-    async def get_for_user_and_key(
-        self, *, user_id: int, experiment_key: str
-    ) -> ExperimentNote | None:
-        async with self.session.begin():
-            stmt = select(ExperimentNote).where(
-                ExperimentNote.user_id == user_id,
-                ExperimentNote.experiment_key == experiment_key,
-            )
-            return await self.session.scalar(stmt)
-
-    async def upsert_for_user_and_key(
-        self,
-        *,
-        user_id: int,
-        experiment_key: str,
-        reflection: str,
-        extra_data: dict[str, Any] | None,
-    ) -> ExperimentNote:
-        async with self.session.begin():
-            stmt = select(ExperimentNote).where(
-                ExperimentNote.user_id == user_id,
-                ExperimentNote.experiment_key == experiment_key,
-            )
-            note = await self.session.scalar(stmt)
-
-            if note is None:
-                note = ExperimentNote(
-                    user_id=user_id,
-                    experiment_key=experiment_key,
-                    reflection=reflection,
-                    extra_data=extra_data,
-                )
-                self.session.add(note)
-            else:
-                note.reflection = reflection
-                note.extra_data = extra_data
-
-            return note
 
 
 class ExperimentRecordRepository:

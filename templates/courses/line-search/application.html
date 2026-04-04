@@ -92,7 +92,11 @@
                     <tbody id="dataTableBody"></tbody>
                 </table>
             </div>
-            <p>样本数量: <span id="sampleCount" class="value-display">0</span> <button class="btn btn-primary" id="applyColSelection" style="display: none; padding: 2px 10px; margin-left: 10px;">应用</button></p>
+            <p>样本数量: <span id="sampleCount" class="value-display">0</span>
+                <button class="btn btn-primary" id="applyColSelection"
+                        style="display: none; padding: 2px 10px; margin-left: 10px;">应用
+                </button>
+            </p>
         </div>
 
         <!-- 拟合可视化布局 -->
@@ -105,13 +109,13 @@
                             <div class="control-group" style="flex-direction: row; align-items: center; gap: 8px;">
                                 <label style="white-space: nowrap;">选择搜索方法：</label>
                                 <label for="lsMethodSelect"></label><select id="lsMethodSelect">
-                                    <option value="golden">黄金分割法</option>
-                                    <option value="fib">斐波那契数列法</option>
-                                    <option value="bisect">二分法</option>
-                                    <option value="gd">梯度下降法</option>
-                                    <option value="newton">牛顿法</option>
-                                    <option value="secant">割线法</option>
-                                </select>
+                                <option value="golden">黄金分割法</option>
+                                <option value="fib">斐波那契数列法</option>
+                                <option value="bisect">二分法</option>
+                                <option value="gd">梯度下降法</option>
+                                <option value="newton">牛顿法</option>
+                                <option value="secant">割线法</option>
+                            </select>
                             </div>
                         </div>
                     </div>
@@ -242,13 +246,13 @@
                             <div class="control-group" style="flex-direction: row; align-items: center; gap: 8px;">
                                 <label style="white-space: nowrap;">选择搜索方法：</label>
                                 <label for="profitMethodSelect"></label><select id="profitMethodSelect">
-                                    <option value="golden">黄金分割法</option>
-                                    <option value="fib">斐波那契数列法</option>
-                                    <option value="bisect">二分法</option>
-                                    <option value="gd">梯度下降法</option>
-                                    <option value="newton">牛顿法</option>
-                                    <option value="secant">割线法</option>
-                                </select>
+                                <option value="golden">黄金分割法</option>
+                                <option value="fib">斐波那契数列法</option>
+                                <option value="bisect">二分法</option>
+                                <option value="gd">梯度下降法</option>
+                                <option value="newton">牛顿法</option>
+                                <option value="secant">割线法</option>
+                            </select>
                             </div>
                         </div>
                     </div>
@@ -429,7 +433,7 @@
     window.AI_CONFIG = {
         PAGE_ID: 'line_search_application',
         BUTTON_REGISTRY: [
-            {id: "dataFile", description: "上传数据集按钮", type: "normal"},
+            {id: "dataFile", description: "上传数据集按钮", type: "optional"},
             {id: "loadDefaultBtn", description: "重置示例数据按钮", type: "normal"},
             {id: "lsMethodSelect", description: "拟合阶段搜索方法选择", type: "normal"},
             {id: "lsPlayBtn", description: "拟合阶段播放按钮", type: "normal"},

@@ -156,7 +156,8 @@
                     <div class="smo-data-actions">
                         <button id="smo-iteration-log-open-btn" class="btn btn-primary">查看实验数据</button>
                         <button id="smo-iteration-log-export-csv-btn" class="btn btn-secondary">导出实验数据</button>
-                        <button id="smo-iteration-log-save-to-profile-btn" class="btn btn-primary">保存至个人中心</button>
+                        <button id="smo-iteration-log-save-to-profile-btn" class="btn btn-primary">保存至个人中心
+                        </button>
                     </div>
                 </div>
             </div>
@@ -227,7 +228,7 @@
     window.AI_CONFIG = {
         PAGE_ID: 'svm_smo_interaction',
         BUTTON_REGISTRY: [
-            {id: 'csv-upload', description: '上传CSV数据集文件', type: 'normal'},
+            {id: 'csv-upload', description: '上传CSV数据集文件', type: 'optional'},
             {id: 'x-col', description: 'x坐标列选择框', type: 'normal'},
             {id: 'y-col', description: 'y坐标列选择框', type: 'normal'},
             {id: 'label-col', description: '标签列选择框', type: 'normal'},
@@ -246,6 +247,7 @@
 用户上传二分类数据集或直接使用默认数据集。
 用户可以通过滑动条调节SMO算法参数。
 用户可以点击播放查看算法优化过程。
+仅在用户要求演示实验流程或在用户需要寻找某些按钮、划条时实施交互式引导。
 `
     };
 </script>

@@ -41,10 +41,21 @@ body {
     margin-right: auto;
 }
 
-.max-w-6xl { max-width: 72rem; }
-.max-w-4xl { max-width: 56rem; }
-.max-w-7xl { max-width: 80rem; }
-.max-w-5xl { max-width: 64rem; }
+.max-w-6xl {
+    max-width: 72rem;
+}
+
+.max-w-4xl {
+    max-width: 56rem;
+}
+
+.max-w-7xl {
+    max-width: 80rem;
+}
+
+.max-w-5xl {
+    max-width: 64rem;
+}
 
 .btn-back {
     display: inline-block;
@@ -147,9 +158,20 @@ body {
     margin-bottom: 1.5rem;
 }
 
-.bg-amber-100 { background-color: var(--amber-100); color: var(--amber-600); }
-.bg-orange-100 { background-color: var(--orange-100); color: var(--orange-600); }
-.bg-red-100 { background-color: #fee2e2; color: #dc2626; }
+.bg-amber-100 {
+    background-color: var(--amber-100);
+    color: var(--amber-600);
+}
+
+.bg-orange-100 {
+    background-color: var(--orange-100);
+    color: var(--orange-600);
+}
+
+.bg-red-100 {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
 
 .card h2 {
     font-size: 1.5rem;

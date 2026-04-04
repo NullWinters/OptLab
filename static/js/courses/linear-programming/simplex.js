@@ -2,7 +2,7 @@
  * 单纯形法交互实验 JavaScript
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // DOM 元素
     const numVarsInput = document.getElementById('num-vars');
     const numConstraintsInput = document.getElementById('num-constraints');
@@ -104,7 +104,9 @@ document.addEventListener('DOMContentLoaded', function() {
     syncResultCanvasHeight();
     window.addEventListener('resize', syncResultCanvasHeight);
     if (window.ResizeObserver && leftColumn) {
-        leftResizeObserver = new ResizeObserver(function () { syncResultCanvasHeight(); });
+        leftResizeObserver = new ResizeObserver(function () {
+            syncResultCanvasHeight();
+        });
         leftResizeObserver.observe(leftColumn);
     }
 
@@ -112,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         n: parseInt(numVarsInput && numVarsInput.value, 10),
         m: parseInt(numConstraintsInput && numConstraintsInput.value, 10)
     });
-    updateSimplexExperimentData({ reason: 'init' });
+    updateSimplexExperimentData({reason: 'init'});
 
     // 事件监听
     numVarsInput.addEventListener('change', generateCoeffTable);
@@ -138,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (togglePanelBtn && panelContent) {
-        togglePanelBtn.addEventListener('click', function() {
+        togglePanelBtn.addEventListener('click', function () {
             const isCollapsed = panelContent.classList.toggle('collapsed');
             stickyWrapper.classList.toggle('is-collapsed', isCollapsed);
 
@@ -183,9 +185,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function syncResultCanvasHeightSafely() {
         // 系数表 DOM 更新后会发生一次渲染布局排队，
         // 用两次 rAF 再测一次，减少像素级高度差导致的底部不对齐。
-        (window.requestAnimationFrame || function (cb) { return setTimeout(cb, 0); })(function () {
+        (window.requestAnimationFrame || function (cb) {
+            return setTimeout(cb, 0);
+        })(function () {
             syncResultCanvasHeight();
-            (window.requestAnimationFrame || function (cb) { return setTimeout(cb, 0); })(function () {
+            (window.requestAnimationFrame || function (cb) {
+                return setTimeout(cb, 0);
+            })(function () {
                 syncResultCanvasHeight();
             });
         });
@@ -229,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = examples[selected];
         if (!data) return;
 
-        pushSimplexEvent('example_load', { example: selected });
+        pushSimplexEvent('example_load', {example: selected});
 
         numVarsInput.value = data.n;
         numConstraintsInput.value = Math.min(data.m, 10);
@@ -255,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setEmptyState('已加载示例数据，点击"求解"开始实验。');
         viz2dContainer.classList.add('hidden');
         lastRunRecord = null;
-        updateSimplexExperimentData({ reason: 'load_example' });
+        updateSimplexExperimentData({reason: 'load_example'});
     }
 
     /**
@@ -304,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setEmptyState('请在左侧输入参数并点击"求解"开始实验。');
         viz2dContainer.classList.add('hidden');
         lastRunRecord = null;
-        updateSimplexExperimentData({ reason: 'reset' });
+        updateSimplexExperimentData({reason: 'reset'});
     }
 
     function getSimplexStatusLabel(status) {
@@ -375,7 +381,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const header = ['cB', 'Basis', 'b']
-            .concat(tableau.cj.map(function (_, idx) { return 'x' + (idx + 1); }))
+            .concat(tableau.cj.map(function (_, idx) {
+                return 'x' + (idx + 1);
+            }))
             .concat(['θ']);
 
         const bArr = Array.isArray(tableau.b) ? tableau.b : [];
@@ -385,7 +393,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const sigmaArr = Array.isArray(tableau.sigma) ? tableau.sigma : [];
 
         let html = '<div class="simplex-tableau-wrap"><table class="simplex-tableau-table"><thead><tr>';
-        header.forEach(function (h) { html += '<th>' + h + '</th>'; });
+        header.forEach(function (h) {
+            html += '<th>' + h + '</th>';
+        });
         html += '</tr></thead><tbody>';
 
         tableau.a.forEach(function (row, rowIdx) {
@@ -430,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('当前尚无实验数据，请先运行一次单纯形法求解。');
             return;
         }
-        pushSimplexEvent('open_log_modal', { steps: payload.iteration_data.length });
+        pushSimplexEvent('open_log_modal', {steps: payload.iteration_data.length});
         if (simplexLogSummary) {
             simplexLogSummary.innerHTML =
                 '<div>求解类型：' + (lastRunRecord.solveType === 'max' ? '最大化' : '最小化') + '</div>' +
@@ -441,7 +451,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (simplexLogBody) {
             simplexLogBody.innerHTML = payload.iteration_data.map(function (row) {
                 const statusLabel = getSimplexStatusLabel(row.status);
-                const bText = Array.isArray(row.b) ? row.b.map(function (v) { return Number(v).toFixed(4); }).join(', ') : '--';
+                const bText = Array.isArray(row.b) ? row.b.map(function (v) {
+                    return Number(v).toFixed(4);
+                }).join(', ') : '--';
                 const basisText = Array.isArray(row.basis) ? row.basis.join(', ') : '--';
                 const detailHtml = buildTableauDetailHtml(row.tableau);
                 return '<tr>' +
@@ -473,10 +485,12 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('当前尚无实验数据，请先运行一次单纯形法求解。');
             return;
         }
-        pushSimplexEvent('export_json', { steps: payload.iteration_data.length });
+        pushSimplexEvent('export_json', {steps: payload.iteration_data.length});
 
         function compactNums(arr) {
-            return (Array.isArray(arr) ? arr : []).map(function (v) { return Number(v).toFixed(4); }).join(', ');
+            return (Array.isArray(arr) ? arr : []).map(function (v) {
+                return Number(v).toFixed(4);
+            }).join(', ');
         }
 
         function compactConstraints(items) {
@@ -488,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pretty = {
             文件说明: {
                 名称: '线性规划-单纯形法实验记录',
-                导出时间: new Date().toLocaleString('zh-CN', { hour12: false }),
+                导出时间: new Date().toLocaleString('zh-CN', {hour12: false}),
                 页面: 'linear-programming.simplex',
                 备注: '按“概览-输入-结果-迭代摘要-逐步tableau(紧凑)”组织，便于阅读与复现实验。'
             },
@@ -522,15 +536,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     cB: '[' + compactNums(it.tableau.cB) + ']',
                     basis: (it.tableau.basis || []).join(', '),
                     b: '[' + compactNums(it.tableau.b) + ']',
-                    a_rows: (it.tableau.a || []).map(function (row) { return '[' + compactNums(row) + ']'; }),
+                    a_rows: (it.tableau.a || []).map(function (row) {
+                        return '[' + compactNums(row) + ']';
+                    }),
                     sigma: '[' + compactNums(it.tableau.sigma) + ']',
-                    theta: '[' + (Array.isArray(it.tableau.theta) ? it.tableau.theta.map(function (v) { return v == null ? '—' : Number(v).toFixed(4); }).join(', ') : '') + ']'
+                    theta: '[' + (Array.isArray(it.tableau.theta) ? it.tableau.theta.map(function (v) {
+                        return v == null ? '—' : Number(v).toFixed(4);
+                    }).join(', ') : '') + ']'
                 };
             })
         };
 
         const jsonText = JSON.stringify(pretty, null, 2);
-        const blob = new Blob([jsonText], { type: 'application/json;charset=utf-8' });
+        const blob = new Blob([jsonText], {type: 'application/json;charset=utf-8'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -547,10 +565,10 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('当前尚无实验数据，请先运行一次单纯形法求解。');
             return;
         }
-        pushSimplexEvent('save_to_profile_click', { steps: payload.iteration_data.length });
+        pushSimplexEvent('save_to_profile_click', {steps: payload.iteration_data.length});
         if (typeof apiPost !== 'function' || typeof getStoredToken !== 'function' || !getStoredToken()) {
             if (window.LoginModal && typeof window.LoginModal.open === 'function') {
-                window.LoginModal.open({ mode: 'login', notice: '请先登录后再保存至个人中心。' });
+                window.LoginModal.open({mode: 'login', notice: '请先登录后再保存至个人中心。'});
             } else {
                 alert('请先登录后再保存至个人中心。');
             }
@@ -568,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 aliasPrefix: 'SIMPLEX',
                 defaultAlias,
                 onConfirm: function (alias) {
-                    pushSimplexEvent('save_to_profile_confirm', { alias: String(alias || '').trim() });
+                    pushSimplexEvent('save_to_profile_confirm', {alias: String(alias || '').trim()});
                     return apiPost('/experiments/records', {
                         alias: String(alias).trim(),
                         source_page: 'linear-programming.simplex',
@@ -589,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const inputs = coeffTableContainer.querySelectorAll('input[type="number"]');
         for (let input of inputs) {
             if (input.value === "" || isNaN(parseFloat(input.value))) {
-                pushSimplexEvent('validate_failed', { reason: 'invalid_number', input_id: input.id || null });
+                pushSimplexEvent('validate_failed', {reason: 'invalid_number', input_id: input.id || null});
                 alert("请确保所有单元格都填写了有效的数字。");
                 input.focus();
                 return false;
@@ -600,14 +618,14 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= m; i++) {
             const bVal = parseFloat(document.getElementById(`b-${i}`).value);
             if (bVal < 0) {
-                pushSimplexEvent('validate_failed', { reason: 'negative_rhs', constraint: i, b: bVal });
+                pushSimplexEvent('validate_failed', {reason: 'negative_rhs', constraint: i, b: bVal});
                 alert(`约束 ${i} 的右端项 (b) 必须是非负数。`);
                 document.getElementById(`b-${i}`).focus();
                 return false;
             }
         }
 
-        pushSimplexEvent('validate_success', { n: n, m: m });
+        pushSimplexEvent('validate_success', {n: n, m: m});
         alert("输入验证通过！");
         return true;
     }
@@ -624,7 +642,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const m = parseInt(numConstraintsInput.value);
         const solveType = document.querySelector('input[name="solve-type"]:checked').value;
 
-        pushSimplexEvent('solve_start', { n: n, m: m, solve_type: solveType });
+        pushSimplexEvent('solve_start', {n: n, m: m, solve_type: solveType});
 
         const c = [];
         for (let j = 1; j <= n; j++) {
@@ -684,7 +702,9 @@ document.addEventListener('DOMContentLoaded', function() {
             m: m,
             solveType: solveType,
             objective: c,
-            constraints: a.map(function (row, idx) { return { coeffs: row, b: b[idx] }; }),
+            constraints: a.map(function (row, idx) {
+                return {coeffs: row, b: b[idx]};
+            }),
             steps: steps,
             status: status,
             solution: solution,
@@ -715,7 +735,7 @@ document.addEventListener('DOMContentLoaded', function() {
             objective_value: finalObjectiveValue,
             solution: solution
         });
-        updateSimplexExperimentData({ reason: 'solve_complete' });
+        updateSimplexExperimentData({reason: 'solve_complete'});
     }
 
     function renderResults(steps, status, solveType) {
@@ -763,7 +783,7 @@ document.addEventListener('DOMContentLoaded', function() {
             finalAlert.className = 'alert alert-success';
             const lastStep = steps[steps.length - 1];
             let z = 0;
-            for(let i=0; i<lastStep.cB.length; i++) z += lastStep.cB[i] * lastStep.b[i];
+            for (let i = 0; i < lastStep.cB.length; i++) z += lastStep.cB[i] * lastStep.b[i];
             finalAlert.innerHTML = `<strong>求解成功！</strong> 找到最优解。最优目标函数值 Z = ${z.toFixed(4)}`;
         } else if (status === 'unbounded') {
             finalAlert.className = 'alert alert-danger';
@@ -778,7 +798,7 @@ document.addEventListener('DOMContentLoaded', function() {
             MathJax.typesetPromise([simplexIterationCards]).catch((err) => console.log('MathJax typeset failed: ' + err.message));
         }
 
-        updateSimplexExperimentData({ reason: 'render_results' });
+        updateSimplexExperimentData({reason: 'render_results'});
 
         // 渲染卡片后同步高度，防止撑开 Grid Row
         syncResultCanvasHeightSafely();
@@ -918,7 +938,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         return {
-            show: function(title, badge, equation, details, event) {
+            show: function (title, badge, equation, details, event) {
                 clearTimeout(hideTimeout);
 
                 // 构建面板内容
@@ -950,12 +970,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     panel.classed('visible', true);
                 }, 50);
             },
-            move: function(event) {
+            move: function (event) {
                 if (panel.classed('visible')) {
                     updatePanelPosition(event);
                 }
             },
-            hide: function() {
+            hide: function () {
                 clearTimeout(showTimeout);
                 hideTimeout = setTimeout(() => {
                     panel.classed('visible', false);
@@ -981,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function calculateOptimalRange(constraints, steps) {
         let minX = 0, maxX = 5, minY = 0, maxY = 5;
-        
+
         // 收集所有截距点
         const intercepts = [];
         constraints.forEach(c => {
@@ -1022,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const x2Idx = step.basis.indexOf('x2');
             if (x1Idx !== -1) x1 = step.b[x1Idx];
             if (x2Idx !== -1) x2 = step.b[x2Idx];
-            
+
             if (Math.abs(x1) <= upperLimit) {
                 minX = Math.min(minX, x1 * 1.1);
                 maxX = Math.max(maxX, x1 * 1.1);
@@ -1046,9 +1066,9 @@ document.addEventListener('DOMContentLoaded', function() {
         a.forEach((row, i) => {
             const [a1, a2] = row;
             const bi = b[i];
-            
+
             let slope, xIntercept, yIntercept;
-            
+
             if (a2 !== 0) {
                 slope = -a1 / a2;
                 yIntercept = bi / a2;
@@ -1056,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 slope = Infinity;
                 yIntercept = null;
             }
-            
+
             if (a1 !== 0) {
                 xIntercept = bi / a1;
             } else {
@@ -1065,7 +1085,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // 检测重合（使用斜率和截距作为key）
             const key = `${slope.toFixed(10)}_${(yIntercept !== null ? yIntercept : xIntercept).toFixed(10)}`;
-            
+
             if (overlapMap.has(key)) {
                 overlapMap.get(key).push(i);
             } else {
@@ -1101,7 +1121,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function drawGrid(svg, scales, bounds) {
         const {xScale, yScale, width, height} = scales;
-        
+
         // 计算网格步长
         const xRange = bounds.maxX - bounds.minX;
         const yRange = bounds.maxY - bounds.minY;
@@ -1236,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (uniquePoints.length < 2) return;
-        
+
         // 绘制透明的交互线（增大命中区域）
         const interactiveLine = svg.append('line')
             .attr('x1', xScale(uniquePoints[0][0]))
@@ -1262,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 绘制单个约束的可行域填充
         const feasiblePolygon = calculateConstraintFeasibleRegion(constraint, bounds);
         if (feasiblePolygon.length >= 3) {
-            const pathData = feasiblePolygon.map((p, i) => 
+            const pathData = feasiblePolygon.map((p, i) =>
                 (i === 0 ? 'M' : 'L') + xScale(p[0]) + ',' + yScale(p[1])
             ).join(' ') + ' Z';
 
@@ -1292,12 +1312,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 添加悬停事件
-        interactiveLine.on('mouseover', function(event) {
+        interactiveLine.on('mouseover', function (event) {
             line.attr('stroke-width', 3).attr('stroke', 'var(--primary-color)');
             infoPanel.show(title, badge, equation, details, event);
-        }).on('mousemove', function(event) {
+        }).on('mousemove', function (event) {
             infoPanel.move(event);
-        }).on('mouseout', function() {
+        }).on('mouseout', function () {
             line.attr('stroke-width', 1.5).attr('stroke', '#666');
             infoPanel.hide();
         });
@@ -1384,18 +1404,18 @@ document.addEventListener('DOMContentLoaded', function() {
     function lineSegmentIntersection(p1, p2, constraint, epsilon) {
         const [a1, a2] = constraint.a;
         const b = constraint.b;
-        
+
         const dx = p2[0] - p1[0];
         const dy = p2[1] - p1[1];
-        
+
         // 线段参数方程: P = p1 + t*(p2-p1)
         // 与约束线 a1*x + a2*y = b 的交点
         const denom = a1 * dx + a2 * dy;
         if (Math.abs(denom) < epsilon) return null; // 平行
-        
+
         const t = (b - a1 * p1[0] - a2 * p1[1]) / denom;
         if (t < -epsilon || t > 1 + epsilon) return null; // 交点不在线段上
-        
+
         return [p1[0] + t * dx, p1[1] + t * dy];
     }
 
@@ -1406,20 +1426,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const [a1, a2] = constraint.a;
         const b = constraint.b;
         const newPolygon = [];
-        
+
         const n = polygon.length;
         if (n === 0) return [];
-        
+
         for (let i = 0; i < n; i++) {
             const current = polygon[i];
             const next = polygon[(i + 1) % n];
-            
+
             const currVal = a1 * current[0] + a2 * current[1] - b;
             const nextVal = a1 * next[0] + a2 * next[1] - b;
-            
+
             const currInside = currVal <= epsilon;
             const nextInside = nextVal <= epsilon;
-            
+
             if (currInside && nextInside) {
                 // 两点都在内部：保留终点
                 newPolygon.push(next);
@@ -1435,7 +1455,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             // 两点都在外部：不保留
         }
-        
+
         return newPolygon;
     }
 
@@ -1450,21 +1470,21 @@ document.addEventListener('DOMContentLoaded', function() {
             [bounds.maxX, bounds.maxY],
             [bounds.minX, bounds.maxY]
         ];
-        
+
         // 2. 添加非负约束
         const allConstraints = [
             ...userConstraints,
-            { a: [-1, 0], b: 0 },  // x₁ ≥ 0
-            { a: [0, -1], b: 0 }   // x₂ ≥ 0
+            {a: [-1, 0], b: 0},  // x₁ ≥ 0
+            {a: [0, -1], b: 0}   // x₂ ≥ 0
         ];
-        
+
         // 3. 依次用所有约束裁剪视图矩形
         const epsilon = 1e-10;
         for (const c of allConstraints) {
             polygon = clipPolygon(polygon, c, epsilon);
             if (polygon.length === 0) return []; // 无可行域
         }
-        
+
         // 4. 结果已经是视图内的可行域，转换为顶点对象数组
         return polygon.map(p => ({x: p[0], y: p[1]}));
     }
@@ -1489,7 +1509,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function removeDuplicatePoints(vertices, epsilon) {
         const unique = [];
         vertices.forEach(v => {
-            const isDuplicate = unique.some(u => 
+            const isDuplicate = unique.some(u =>
                 Math.abs(u.x - v.x) < epsilon && Math.abs(u.y - v.y) < epsilon
             );
             if (!isDuplicate) {
@@ -1517,7 +1537,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function isPointInBounds(point, bounds) {
         const [x, y] = point;
         return x >= bounds.minX - 1e-10 && x <= bounds.maxX + 1e-10 &&
-               y >= bounds.minY - 1e-10 && y <= bounds.maxY + 1e-10;
+            y >= bounds.minY - 1e-10 && y <= bounds.maxY + 1e-10;
     }
 
     /**
@@ -1566,7 +1586,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // 绘制深红色填充区域
-        const pathData = uniqueVertices.map((v, i) => 
+        const pathData = uniqueVertices.map((v, i) =>
             (i === 0 ? 'M' : 'L') + xScale(v.x) + ',' + yScale(v.y)
         ).join(' ') + ' Z';
 
@@ -1641,12 +1661,12 @@ document.addEventListener('DOMContentLoaded', function() {
         ];
 
         // 添加悬停事件
-        interactiveLine.on('mouseover', function(event) {
+        interactiveLine.on('mouseover', function (event) {
             line.attr('stroke-width', 4);
             infoPanel.show(title, badge, equation, details, event);
-        }).on('mousemove', function(event) {
+        }).on('mousemove', function (event) {
             infoPanel.move(event);
-        }).on('mouseout', function() {
+        }).on('mouseout', function () {
             line.attr('stroke-width', 2);
             infoPanel.hide();
         });
@@ -1690,9 +1710,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .attr('fill', 'var(--primary-color)');
 
         // 添加悬停事件
-        dots.on('mouseover', function(event, d) {
+        dots.on('mouseover', function (event, d) {
             d3.select(this).attr('r', 8);
-            
+
             const title = `迭代 ${d.iter}`;
             const badge = d.iter === 0 ? '起始' : (d.iter === steps.length - 1 ? '最优' : `第 ${d.iter} 步`);
             const equation = `(x₁, x₂) = (${d.x.toFixed(4)}, ${d.y.toFixed(4)})`;
@@ -1700,18 +1720,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 `x₁ 坐标: ${d.x.toFixed(4)}`,
                 `x₂ 坐标: ${d.y.toFixed(4)}`
             ];
-            
+
             infoPanel.show(title, badge, equation, details, event);
-        }).on('mousemove', function(event) {
+        }).on('mousemove', function (event) {
             infoPanel.move(event);
-        }).on('mouseout', function() {
+        }).on('mouseout', function () {
             d3.select(this).attr('r', 5);
             infoPanel.hide();
         });
     }
+
     // 窗口尺寸自适应
     let resizeTimer = null;
-    window.addEventListener('resize', function() {
+    window.addEventListener('resize', function () {
         if (resizeTimer) clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
             if (lastSolvedData && parseInt(numVarsInput.value) === 2) {

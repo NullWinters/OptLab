@@ -3,6 +3,9 @@
     let highlightIds = [];
     let currentHighlightIndex = -1;
     let uiRegistryMap = new Map();
+    let optionalAdvanceTimer = null;
+    const OPTIONAL_ADVANCE_MS = 2600;
+    const TYPEWRITER_SPEED_MS = 18;
 
     // 会话状态
     let currentSessionId = null;
@@ -55,7 +58,13 @@
         const dataLabel = el.getAttribute('data-ai-label');
         if (dataLabel) return dataLabel;
         const text = (el.textContent || '').trim().replace(/\s+/g, ' ');
-        if (text) return text.length > 40 ? text.slice(0, 40) + '...' : text;
+        if (text) {
+            // 质量校验：如果文本主要由数字、坐标轴符号（如减号、点、逗号）、下标和变量x组成，且较长，则视为低质量描述（坐标轴特征）
+            if (text.length > 10 && /^[0-9.,\-\s\u2080-\u2089\u2212x]+$/.test(text)) {
+                return '';
+            }
+            return text.length > 40 ? text.slice(0, 40) + '...' : text;
+        }
         return el.tagName.toLowerCase() + ' 元素';
     }
 
@@ -81,7 +90,18 @@
             map.set(id, {
                 id: id,
                 description: inferDescription(el),
-                type: 'normal'
+                type: "normal"
+            });
+        });
+
+        const graphicSelector = 'canvas[id], #scene, div[id*="canvas"], div[id*="plot"], div[id*="chart"]';
+        document.querySelectorAll(graphicSelector).forEach(function (el) {
+            const id = el.id;
+            if (!id || map.has(id)) return;
+            map.set(id, {
+                id: id,
+                description: inferDescription(el),
+                type: "svg"
             });
         });
 
@@ -90,21 +110,160 @@
         svgElements.forEach(function (el, idx) {
             const id = ensureElementId(el, 'svg-node');
             if (!id || map.has(id)) return;
+            const desc = inferDescription(el);
+            if (!desc) return; // 跳过描述为空（如坐标轴数值）的图元
             map.set(id, {
                 id: id,
-                description: inferDescription(el) + ' (SVG图元 ' + el.tagName.toLowerCase() + ' #' + (idx + 1) + ')',
+                description: desc + ' (SVG图元 ' + el.tagName.toLowerCase() + ' #' + (idx + 1) + ')',
                 type: 'svg'
             });
         });
 
         uiRegistryMap = map;
-        return Array.from(map.values());
+        // 过滤掉类型为 svg 的按钮，不作为交互引导项发送给 AI，避免生成无效的高亮引导消息
+        return Array.from(map.values()).filter(item => item.type !== 'svg');
+    }
+
+    function escapeHtml(text) {
+        return String(text || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function createMessageShell(type) {
+        const div = document.createElement('div');
+        const baseClass = type.split(' ')[0];
+        div.className = 'ai-message ai-' + baseClass;
+        if (type.indexOf('loading') !== -1) div.classList.add('ai-loading');
+        if (type.indexOf('error') !== -1) div.classList.add('ai-error');
+        const content = document.createElement('div');
+        content.className = 'ai-message-content';
+        div.appendChild(content);
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return {div: div, content: content};
+    }
+
+    function renderMathAndMarkdown(container) {
+        if (!container) return;
+        if (window.marked && typeof window.marked.parse === 'function') {
+            const raw = container.textContent || '';
+            container.innerHTML = window.marked.parse(raw);
+        }
+        if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+            window.MathJax.typesetPromise([container]).catch(function () {
+            });
+        }
+    }
+
+    async function typewriterToElement(contentEl, text, speedMs) {
+        const source = String(text || '');
+        contentEl.textContent = '';
+        for (let i = 0; i < source.length; i++) {
+            contentEl.textContent += source[i];
+            if (i % 2 === 0) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            await new Promise(function (resolve) {
+                setTimeout(resolve, speedMs);
+            });
+        }
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function splitReplyText(text) {
+        return String(text || '')
+            .split(/\n\s*\n/g)
+            .map(function (item) {
+                return item.trim();
+            })
+            .filter(Boolean);
+    }
+
+    function appendAssistantHistoryMessages(msg) {
+        const customBlocks = Array.isArray(msg.text_blocks) ? msg.text_blocks : [];
+        const blocks = customBlocks.length ? customBlocks : splitReplyText(msg.content);
+        if (!blocks.length) {
+            addMessage(String(msg.content || ''), 'bot');
+            return;
+        }
+        blocks.forEach(function (block) {
+            const shell = createMessageShell('bot');
+            shell.content.textContent = String(block || '');
+            renderMathAndMarkdown(shell.content);
+        });
+    }
+
+    function collectGraphContext() {
+        const context = {
+            hasCanvas: !!document.querySelector('canvas'),
+            canvasCount: document.querySelectorAll('canvas').length,
+            svgCount: document.querySelectorAll('svg').length,
+            hasThreeScene: !!document.getElementById('scene') || !!window.THREE,
+            chartLikeNodes: document.querySelectorAll('[id*="chart"], [class*="chart"], [id*="plot"], [class*="plot"]').length,
+            axisLabelCount: document.querySelectorAll('.axis, [class*="axis"], [id*="axis"]').length
+        };
+
+        // 增强感知能力：提取 SVG 内部图元的简要信息（ID 和 inferDescription）
+        const svgElementsSummary = [];
+        const svgSelector = 'svg circle, svg rect, svg path, svg line, svg polyline, svg polygon, svg ellipse, svg text, svg g';
+        const svgNodes = Array.prototype.slice.call(document.querySelectorAll(svgSelector), 0, 30);
+        svgNodes.forEach(function (el) {
+            const id = el.id;
+            const desc = inferDescription(el);
+            if (desc && desc.length > 2) {
+                svgElementsSummary.push({
+                    id: id || el.tagName.toLowerCase(),
+                    desc: desc
+                });
+            }
+        });
+        context.svgElementsSummary = svgElementsSummary;
+
+        // 增强感知能力：如果页面定义了特定数据提取函数，优先调用 AI 专用钩子
+        const getPageData = window.AI_GET_PAGE_DATA || (window.EXPERIMENT_NOTES_CONFIG && window.EXPERIMENT_NOTES_CONFIG.getPageData);
+        if (typeof getPageData === 'function') {
+            try {
+                context.customPageData = getPageData();
+            } catch (err) {
+                console.error('AI_GET_PAGE_DATA failed:', err);
+            }
+        }
+
+        // 增强 Three.js 的感知能力：尝试从全局变量提取场景摘要
+        const scene = window.scene || (window.THREE_STATE && window.THREE_STATE.scene);
+        if (scene && scene.children) {
+            const threeNodes = [];
+            scene.children.forEach(function (obj) {
+                if (obj.visible && (obj.name || (obj.type && obj.type !== 'Group'))) {
+                    threeNodes.push({
+                        name: obj.name || 'unnamed',
+                        type: obj.type
+                    });
+                }
+            });
+            context.threeElementsSummary = threeNodes.slice(0, 20);
+        }
+
+        const numericSnapshot = [];
+        document.querySelectorAll('input[type="range"], input[type="number"], select').forEach(function (el) {
+            if (!el.id) return;
+            numericSnapshot.push({
+                id: el.id,
+                value: el.value
+            });
+        });
+        context.controlSnapshot = numericSnapshot.slice(0, 40);
+        return context;
     }
 
     function stepMessageById(id, stepNo) {
         const meta = uiRegistryMap.get(id);
         const desc = meta ? meta.description : id;
-        return '步骤' + stepNo + '：请先操作「' + desc + '」。';
+        return '步骤' + stepNo + '：操作「' + desc + '」。';
     }
 
     function setPendingAuthRetry(payload) {
@@ -165,7 +324,11 @@
 
                 if (response.messages && response.messages.length > 0) {
                     response.messages.forEach(function (msg) {
-                        addMessage(msg.content, msg.role === 'user' ? 'user' : 'bot');
+                        if (msg.role === 'user') {
+                            addMessage(msg.content, 'user');
+                        } else {
+                            appendAssistantHistoryMessages(msg);
+                        }
                     });
                 }
             }
@@ -197,18 +360,19 @@
         const registry = buildRuntimeRegistry();
         const guidebook = aiConfig.GUIDEBOOK || '';
         const pageId = aiConfig.PAGE_ID || 'default';
-        const retrySnapshot = { message: message, pageId: pageId, guidebook: guidebook, buttons: registry };
+        const graphContext = collectGraphContext();
+        const retrySnapshot = {message: message, pageId: pageId, guidebook: guidebook, buttons: registry};
 
         // 如果没有会话，先创建
         if (!currentSessionId) {
             try {
-                const session = await apiPost('/api/assistant/session', { page_id: pageId });
+                const session = await apiPost('/api/assistant/session', {page_id: pageId});
                 currentSessionId = session.id;
             } catch (err) {
                 // 检测是否为认证错误
-                const isAuthError = err.status === 401 || 
+                const isAuthError = err.status === 401 ||
                     /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(err.message);
-                
+
                 if (isAuthError) {
                     setPendingAuthRetry(retrySnapshot);
                     var errorHtml = '<div style="margin-bottom: 10px;">您的登录已过期，请重新登录后继续使用。</div>' +
@@ -234,24 +398,45 @@
                 message: message,
                 page_id: pageId,
                 guidebook: guidebook,
-                buttons: registry
+                buttons: registry,
+                graph_context: graphContext
             });
 
             loadingEl.remove();
 
             if (data.highlight_ids && data.highlight_ids.length > 0) {
                 highlightIds = data.highlight_ids.filter(function (id) {
-                    return !!document.getElementById(id);
+                    const el = document.getElementById(id);
+                    if (!el) return false;
+                    const meta = uiRegistryMap.get(id);
+                    // 过滤掉类型为 svg 的按钮，不进行交互引导
+                    if (meta && meta.type === 'svg') return false;
+
+                    // 兜底检查：如果描述是乱码数字（坐标轴特征），剔除。即使 meta 不存在也通过 inferDescription 检查
+                    const desc = meta ? meta.description : inferDescription(el);
+                    if (desc && desc.length > 15 && /^[0-9.,\-\s\u2080-\u2089\u2212x]+$/.test(desc)) {
+                        return false;
+                    }
+
+                    // 额外检查是否为 SVG/Canvas 元素或其容器，防止漏网之鱼
+                    const isSvg = (typeof SVGElement !== "undefined" && el instanceof SVGElement) ||
+                        el.ownerSVGElement ||
+                        el.tagName.toLowerCase() === "svg" ||
+                        el.querySelector("svg") ||
+                        el.tagName.toLowerCase() === "canvas";
+                    if (isSvg) return false;
+                    return true;
                 });
                 currentHighlightIndex = 0;
                 if (highlightIds.length > 0) {
+                    await renderReplyBlocks(data);
                     addMessage(stepMessageById(highlightIds[0], 1), 'bot');
                     highlightCurrentButton();
                     return;
                 }
             }
 
-            addMessage(data.text, 'bot');
+            await renderReplyBlocks(data);
         } catch (err) {
             loadingEl && loadingEl.remove();
             const isAuthError = err && (err.status === 401 || /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(err.message || ''));
@@ -265,6 +450,18 @@
             }
         } finally {
             setSendBusy(false);
+        }
+    }
+
+    async function renderReplyBlocks(data) {
+        const customBlocks = Array.isArray(data.text_blocks) ? data.text_blocks : [];
+        const blocks = customBlocks.length ? customBlocks : splitReplyText(data.text);
+        if (!blocks.length) {
+            await addMessageWithTypewriter(String(data.text || ''), 'bot', true);
+            return;
+        }
+        for (let i = 0; i < blocks.length; i++) {
+            await addMessageWithTypewriter(blocks[i], 'bot', true);
         }
     }
 
@@ -285,7 +482,7 @@
         const pageId = window.AI_CONFIG?.PAGE_ID || 'default';
 
         try {
-            await apiPost('/api/assistant/session/reset', { page_id: pageId });
+            await apiPost('/api/assistant/session/reset', {page_id: pageId});
             currentSessionId = null;
             clearChatMessages();
             hideResetModal();
@@ -323,15 +520,27 @@
 
     // 添加聊天消息
     function addMessage(text, type) {
-        const div = document.createElement('div');
-        const baseClass = type.split(' ')[0];
-        div.className = 'ai-message ai-' + baseClass;
-        if (type.indexOf('loading') !== -1) div.classList.add('ai-loading');
-        if (type.indexOf('error') !== -1) div.classList.add('ai-error');
-        div.innerHTML = '<p>' + text + '</p>';
-        chatMessages.appendChild(div);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return div;
+        const shell = createMessageShell(type);
+        if (type.indexOf('bot') !== -1 && type.indexOf('loading') === -1 && type.indexOf('error') === -1) {
+            shell.content.textContent = String(text || '');
+            renderMathAndMarkdown(shell.content);
+        } else if (type.indexOf('error') !== -1 && String(text || '').indexOf('js-open-login-modal') !== -1) {
+            shell.content.innerHTML = String(text || '');
+        } else {
+            shell.content.innerHTML = '<p>' + escapeHtml(text) + '</p>';
+        }
+        return shell.div;
+    }
+
+    async function addMessageWithTypewriter(text, type, enableMath) {
+        const shell = createMessageShell(type);
+        const paragraph = document.createElement('p');
+        shell.content.appendChild(paragraph);
+        await typewriterToElement(paragraph, String(text || ''), TYPEWRITER_SPEED_MS);
+        if (enableMath) {
+            renderMathAndMarkdown(shell.content);
+        }
+        return shell.div;
     }
 
     // 绑定聊天区内“点击登录”按钮，弹窗登录不跳页
@@ -353,6 +562,10 @@
 
     // ========== 高亮系统 ==========
     function advanceGuideStep() {
+        if (optionalAdvanceTimer) {
+            clearTimeout(optionalAdvanceTimer);
+            optionalAdvanceTimer = null;
+        }
         const currentId = highlightIds[currentHighlightIndex];
         const currentEl = currentId ? document.getElementById(currentId) : null;
         if (currentEl && currentEl._aiClickHandler) {
@@ -378,13 +591,27 @@
 
         const targetId = highlightIds[currentHighlightIndex];
         const targetEl = document.getElementById(targetId);
+        const targetMeta = uiRegistryMap.get(targetId) || {type: 'normal'};
+
+        // 清理旧定时器，防止重叠
+        if (optionalAdvanceTimer) {
+            clearTimeout(optionalAdvanceTimer);
+            optionalAdvanceTimer = null;
+        }
+
         if (!targetEl) {
             currentHighlightIndex++;
             highlightCurrentButton();
             return;
         }
 
-        targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // 清理旧点击事件
+        if (targetEl._aiClickHandler) {
+            targetEl.removeEventListener('click', targetEl._aiClickHandler);
+            delete targetEl._aiClickHandler;
+        }
+
+        targetEl.scrollIntoView({behavior: 'smooth', block: 'center'});
 
         setTimeout(function () {
             positionOverlay(targetEl);
@@ -393,11 +620,23 @@
 
         if (nextStepBtn) nextStepBtn.style.display = 'inline-flex';
 
+        // 识别是否为 SVG 元素（针对自动生成的 ID 或 动态 Registry 未命中）
+        const isSvgElement = (typeof SVGElement !== 'undefined' && targetEl instanceof SVGElement) ||
+            (targetEl.ownerSVGElement) ||
+            (targetEl.tagName.toLowerCase() === 'svg');
+
         // 为当前目标绑定点击事件，点击后跳转到下一个
-        targetEl._aiClickHandler = function () {
-            advanceGuideStep();
-        };
-        targetEl.addEventListener('click', targetEl._aiClickHandler);
+        const metaType = targetMeta.type;
+        if (metaType === 'optional' || metaType === 'svg' || isSvgElement) {
+            optionalAdvanceTimer = setTimeout(function () {
+                advanceGuideStep();
+            }, OPTIONAL_ADVANCE_MS);
+        } else {
+            targetEl._aiClickHandler = function () {
+                advanceGuideStep();
+            };
+            targetEl.addEventListener('click', targetEl._aiClickHandler, {once: true});
+        }
     }
 
     function positionOverlay(el) {
@@ -410,6 +649,10 @@
     }
 
     function clearHighlights() {
+        if (optionalAdvanceTimer) {
+            clearTimeout(optionalAdvanceTimer);
+            optionalAdvanceTimer = null;
+        }
         if (highlightOverlay) highlightOverlay.style.display = 'none';
         if (nextStepBtn) nextStepBtn.style.display = 'none';
         highlightIds.forEach(function (id) {
@@ -428,13 +671,40 @@
         if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {
             const el = document.getElementById(highlightIds[currentHighlightIndex]);
             if (el && highlightOverlay && highlightOverlay.style.display !== 'none') {
-                positionOverlay(el);
+                const rect = el.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.right >= 0) {
+                    positionOverlay(el);
+                } else {
+                    setTimeout(function () {
+                        const nextRect = el.getBoundingClientRect();
+                        if (nextRect.width > 0 && nextRect.height > 0) {
+                            positionOverlay(el);
+                        }
+                    }, 120);
+                }
             }
         }
     }
 
     window.addEventListener('scroll', repositionOverlay, true);
     window.addEventListener('resize', repositionOverlay);
+    window.addEventListener('focus', function () {
+        setTimeout(repositionOverlay, 80);
+        setTimeout(repositionOverlay, 280);
+    });
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') {
+            setTimeout(repositionOverlay, 80);
+            setTimeout(repositionOverlay, 280);
+        }
+    });
+    document.addEventListener('change', function (e) {
+        const t = e.target;
+        if (t && t.matches && t.matches('input[type="file"]')) {
+            setTimeout(repositionOverlay, 80);
+            setTimeout(repositionOverlay, 260);
+        }
+    }, true);
     if (nextStepBtn) {
         nextStepBtn.addEventListener('click', function () {
             if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {

@@ -216,8 +216,10 @@
                 <div class="panel-content">
                     <div class="data-buttons">
                         <button id="iteration-log-open-btn" class="control-btn btn-primary">查看实验数据</button>
-                        <button id="iteration-log-export-csv-btn" class="control-btn btn-secondary">导出实验数据</button>
-                        <button id="iteration-log-save-to-profile-btn" class="control-btn btn-accent">保存至个人中心</button>
+                        <button id="iteration-log-export-csv-btn" class="control-btn btn-secondary">导出实验数据
+                        </button>
+                        <button id="iteration-log-save-to-profile-btn" class="control-btn btn-accent">保存至个人中心
+                        </button>
                     </div>
                 </div>
             </div>
@@ -338,7 +340,7 @@
         });
     }
 
-// 实验笔记持久化（与后端 /experiments/notes 接口对接）
+    // 实验笔记持久化（与后端 /experiments/notes 接口对接）
     function initExperimentNotePersistence() {
         if (typeof apiGet !== "function") {
             // 未登录或公共页面环境下静默跳过
@@ -379,6 +381,7 @@
         }
 
         let saveTimer = null;
+
         async function saveNote() {
             const answers = answerInputs.map((el) => el.value || "");
             const reflection = answers.join("\n\n");
@@ -832,12 +835,20 @@
                     return;
                 }
                 const first = log[0];
-                const esc = (v) => { const s = String(v ?? ""); return (s.includes(",") || s.includes('"') || s.includes("\n")) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const esc = (v) => {
+                    const s = String(v ?? "");
+                    return (s.includes(",") || s.includes('"') || s.includes("\n")) ? `"${s.replace(/"/g, '""')}"` : s;
+                };
                 const summary = [
                     ["项目", "值"],
                     ["原函数/目标", AppState.functionExpr || (first && first.function) || ""],
                     ["算法", (first && first.algorithm) || ""],
-                    ["初始参数", JSON.stringify(first ? { initial_a: first.initial_a, initial_b: first.initial_b, initial_epsilon: first.initial_epsilon, initial_n: first.initial_n } : {})],
+                    ["初始参数", JSON.stringify(first ? {
+                        initial_a: first.initial_a,
+                        initial_b: first.initial_b,
+                        initial_epsilon: first.initial_epsilon,
+                        initial_n: first.initial_n
+                    } : {})],
                     []
                 ];
                 const header = [
@@ -891,14 +902,14 @@
 
     function recordIteration() {
         if (!AppState.solver) return;
-        const { a, b, currentIteration, isComplete, result } = AppState.solver;
+        const {a, b, currentIteration, isComplete, result} = AppState.solver;
         const length = Math.abs(b - a);
         const algoLabel =
             AppState.currentAlgorithm === 'golden-section'
                 ? '黄金分割法'
                 : AppState.currentAlgorithm === 'fibonacci'
-                ? '斐波那契数列法'
-                : '二分法';
+                    ? '斐波那契数列法'
+                    : '二分法';
         let targetLabel;
         if (AppState.currentAlgorithm === 'fibonacci') {
             // 斐波那契数列法同时依赖“修正系数 ε”和“迭代次数 N”
@@ -1145,48 +1156,68 @@
             {id: "pan-right-btn", description: "向右平移按钮，将可视化视图向右移动", type: "normal"},
             {id: "zoom-in-btn", description: "放大按钮，放大可视化视图以查看更多细节", type: "normal"},
             {id: "zoom-out-btn", description: "缩小按钮，缩小可视化视图以查看更大范围", type: "normal"},
-            {id: "iteration-log-open-btn", description: "查看实验数据按钮，打开包含详细迭代记录的模态框", type: "normal"},
-            {id: "iteration-log-export-csv-btn", description: "导出实验数据按钮，将迭代记录导出为 CSV 文件", type: "normal"},
-            {id: "iteration-log-save-to-profile-btn", description: "保存至个人中心按钮，将本次实验记录永久保存", type: "normal"}
+            {
+                id: "iteration-log-open-btn",
+                description: "查看实验数据按钮，打开包含详细迭代记录的模态框",
+                type: "normal"
+            },
+            {
+                id: "iteration-log-export-csv-btn",
+                description: "导出实验数据按钮，将迭代记录导出为 CSV 文件",
+                type: "optional"
+            },
+            {
+                id: "iteration-log-save-to-profile-btn",
+                description: "保存至个人中心按钮，将本次实验记录永久保存",
+                type: "normal"
+            }
         ],
         GUIDEBOOK: `
 这是一维搜索算法交互实验，支持支持黄金分割法、斐波那契数列法、二分法的搜索过程展示。
 用户每次可以选择其中一个算法，设置单谷搜索函数，调整算法对应参数并观察算法运行。
 算法运行结束后，可查看或导出实验数据。
+左侧画布是可视化图，红色实线是搜索函数，左右两条红色垂直虚线是搜索区间。
+ε 在黄金分割法和二分法表示精度，在斐波那契数列法表示修正系数。
+斐波那契数列法没有显式的精度，需要根据目标精度计算迭代次数。
+黄金分割法和斐波那契数列法的左右试点，分别用 a_try 和 b_try 表示。
+二分法的左右区间中点用 m 表示。
+仅在用户要求演示实验流程或在用户需要寻找某些按钮、划条时实施交互式引导。
 `
     };
 </script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    ExperimentNotes.init({
-        experimentKey: 'line-search.range_search.observation',
-        mountSelector: '#exp-notes-mount',
-        getPageData: function() {
-            const st = window.AppState;
-            if (!st) return {};
-            const log = st.iterationLog || [];
-            const algoLabel = st.currentAlgorithm === 'golden-section' ? '黄金分割法'
-                : st.currentAlgorithm === 'fibonacci' ? '斐波那契数列法' : '二分法';
-            // 提取收敛结果
-            const finalRow = log.slice().reverse().find(function(r){ return r.is_complete && r.result != null; }) || null;
-            return {
-                algorithm: algoLabel,
-                function: st.functionExpr,
-                initial_a: st.initialA,
-                initial_b: st.initialB,
-                epsilon: st.initialEpsilon,
-                n: st.initialN,
-                convergence_result: finalRow ? {
-                    iteration: finalRow.iteration,
-                    x_star: finalRow.result,
-                    final_interval: finalRow ? [finalRow.a, finalRow.b] : null,
-                    final_length: finalRow ? Math.abs(finalRow.b - finalRow.a) : null
-                } : null,
-                iteration_log: log
-                // guidebook 由 experiment-notes.js 自动注入
-            };
-        }
+    document.addEventListener('DOMContentLoaded', function () {
+        ExperimentNotes.init({
+            experimentKey: 'line-search.range_search.observation',
+            mountSelector: '#exp-notes-mount',
+            getPageData: function () {
+                const st = window.AppState;
+                if (!st) return {};
+                const log = st.iterationLog || [];
+                const algoLabel = st.currentAlgorithm === 'golden-section' ? '黄金分割法'
+                    : st.currentAlgorithm === 'fibonacci' ? '斐波那契数列法' : '二分法';
+                // 提取收敛结果
+                const finalRow = log.slice().reverse().find(function (r) {
+                    return r.is_complete && r.result != null;
+                }) || null;
+                return {
+                    algorithm: algoLabel,
+                    function: st.functionExpr,
+                    initial_a: st.initialA,
+                    initial_b: st.initialB,
+                    epsilon: st.initialEpsilon,
+                    n: st.initialN,
+                    convergence_result: finalRow ? {
+                        iteration: finalRow.iteration,
+                        x_star: finalRow.result,
+                        final_interval: finalRow ? [finalRow.a, finalRow.b] : null,
+                        final_length: finalRow ? Math.abs(finalRow.b - finalRow.a) : null
+                    } : null,
+                    iteration_log: log
+                    // guidebook 由 experiment-notes.js 自动注入
+                };
+            }
+        });
     });
-});
 </script>
 {% endblock %}

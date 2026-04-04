@@ -38,12 +38,12 @@
                     <div class="input-inline">
                         <div class="input-group" style="flex: 2;">
                             <label for="example-select"></label><select id="example-select">
-                                <option value="max">最大化示例</option>
-                                <option value="min">最小化示例</option>
-                                <option value="unbounded">无界解示例</option>
-                                <option value="degenerate">退化解示例</option>
-                                <option value="multiple">多重最优解示例</option>
-                            </select>
+                            <option value="max">最大化示例</option>
+                            <option value="min">最小化示例</option>
+                            <option value="unbounded">无界解示例</option>
+                            <option value="degenerate">退化解示例</option>
+                            <option value="multiple">多重最优解示例</option>
+                        </select>
                         </div>
                         <button id="load-example-btn" class="action-btn primary" style="flex: 1;">加载</button>
                     </div>
@@ -160,16 +160,16 @@
     window.AI_CONFIG = {
         PAGE_ID: 'simplex_method',
         BUTTON_REGISTRY: [
-            { id: "example-select", description: "预设场景选择下拉框", type: "normal" },
-            { id: "load-example-btn", description: "加载示例数据按钮", type: "normal" },
-            { id: "num-vars", description: "设置变量数量输入框", type: "normal" },
-            { id: "num-constraints", description: "设置约束数量输入框", type: "normal" },
-            { id: "reset-btn", description: "重置输入数据按钮", type: "normal" },
-            { id: "check-btn", description: "校验输入数据准确性按钮", type: "normal" },
-            { id: "solve-btn", description: "执行单纯形法求解按钮", type: "normal" },
-            { id: "simplex-log-open-btn", description: "查看实验数据按钮", type: "normal" },
-            { id: "simplex-log-export-json-btn", description: "导出实验数据按钮", type: "normal" },
-            { id: "simplex-log-save-to-profile-btn", description: "保存实验数据至个人中心按钮", type: "normal" }
+            {id: "example-select", description: "预设场景选择下拉框", type: "optional"},
+            {id: "load-example-btn", description: "加载示例数据按钮", type: "optional"},
+            {id: "num-vars", description: "设置变量数量输入框", type: "normal"},
+            {id: "num-constraints", description: "设置约束数量输入框", type: "normal"},
+            {id: "reset-btn", description: "重置输入数据按钮", type: "normal"},
+            {id: "check-btn", description: "校验输入数据准确性按钮", type: "normal"},
+            {id: "solve-btn", description: "执行单纯形法求解按钮", type: "normal"},
+            {id: "simplex-log-open-btn", description: "查看实验数据按钮", type: "normal"},
+            {id: "simplex-log-export-json-btn", description: "导出实验数据按钮", type: "normal"},
+            {id: "simplex-log-save-to-profile-btn", description: "保存实验数据至个人中心按钮", type: "normal"}
         ],
         GUIDEBOOK: `
 这是线性规划单纯形法交互实验，支持求解最大化或最小化线性规划问题。
@@ -208,7 +208,7 @@
                         row.push(aEl ? safeNum(aEl.value) : null);
                     }
                     var bEl = document.getElementById('b-' + i);
-                    constraints.push({ coeffs: row, b: bEl ? safeNum(bEl.value) : null });
+                    constraints.push({coeffs: row, b: bEl ? safeNum(bEl.value) : null});
                 }
             }
 
@@ -252,34 +252,34 @@
             "simplex-log-export-json-btn": "导出实验数据",
             "simplex-log-save-to-profile-btn": "保存至个人中心"
         };
-        Object.keys(btnMap).forEach(function(id) {
+        Object.keys(btnMap).forEach(function (id) {
             var el = document.getElementById(id);
-            if (el) el.addEventListener('click', function() {
+            if (el) el.addEventListener('click', function () {
                 ExperimentNotes.trackEvent('control', {action: btnMap[id]});
             }, {capture: true});
         });
 
         var exampleSelect = document.getElementById('example-select');
         if (exampleSelect) {
-            exampleSelect.addEventListener('change', function() {
-                ExperimentNotes.trackEvent('param_change', { param: 'example_select', value: exampleSelect.value });
+            exampleSelect.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'example_select', value: exampleSelect.value});
             }, {capture: true});
         }
         var numVars = document.getElementById('num-vars');
         if (numVars) {
-            numVars.addEventListener('change', function() {
-                ExperimentNotes.trackEvent('param_change', { param: 'num_vars', value: numVars.value });
+            numVars.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'num_vars', value: numVars.value});
             }, {capture: true});
         }
         var numConstraints = document.getElementById('num-constraints');
         if (numConstraints) {
-            numConstraints.addEventListener('change', function() {
-                ExperimentNotes.trackEvent('param_change', { param: 'num_constraints', value: numConstraints.value });
+            numConstraints.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'num_constraints', value: numConstraints.value});
             }, {capture: true});
         }
-        document.querySelectorAll('input[name="solve-type"]').forEach(function(el){
-            el.addEventListener('change', function(){
-                ExperimentNotes.trackEvent('param_change', { param: 'solve_type', value: el.value });
+        document.querySelectorAll('input[name="solve-type"]').forEach(function (el) {
+            el.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'solve_type', value: el.value});
             }, {capture: true});
         });
     });

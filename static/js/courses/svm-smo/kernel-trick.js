@@ -1,4 +1,5 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+import * as THREE from '../../vendors/three/three.module.js';
+
 window.THREE = THREE;
 
 const $ = id => document.getElementById(id);
@@ -33,7 +34,8 @@ function refreshCurrentMapText() {
     refreshKernelText();
 
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        window.MathJax.typesetPromise([el]).catch(() => {});
+        window.MathJax.typesetPromise([el]).catch(() => {
+        });
     }
 }
 
@@ -59,7 +61,7 @@ const state = {
     lastUploadedCsvText: '',
     processLog: [],
     latestAccuracy: null,
-    lastPlaneParams: { z: 0, yaw: 0, pitch: 0 },
+    lastPlaneParams: {z: 0, yaw: 0, pitch: 0},
     autoFitTimer: null,
 };
 
@@ -82,28 +84,28 @@ function pushProcessStep(step, detail) {
 
 
 const MAPPING_PRESETS = {
-    textbook: { x: 'x^2', y: 'y^2', z: 'sqrt(2)*x*y' },
-    identity_lift: { x: 'x', y: 'y', z: 'x^2 + y^2' },
-    trig: { x: 'sin(x)', y: 'cos(y)', z: 'x*y' },
-    saddle: { x: 'x', y: 'y', z: 'x^2 - y^2' }
+    quadratic_monomial: {x: 'x^2', y: 'x*y', z: 'y^2'},
+    linear_combo: {x: 'x', y: 'y', z: 'x + y'},
+    mixed_order: {x: 'x', y: 'y', z: 'x*y'},
+    polar_like: {x: 'x', y: 'y', z: 'sqrt(x^2 + y^2)'}
 };
 
 const KERNEL_PRESETS = {
-    textbook: {
-        simplified: 'K(u,v) = (u_x v_x + u_y v_y)^2',
-        expansion: 'u_x^2 v_x^2 + u_y^2 v_y^2 + 2u_x u_y v_x v_y'
+    quadratic_monomial: {
+        simplified: 'K(u,v) = u_x^2 v_x^2 + u_x u_y v_x v_y + u_y^2 v_y^2',
+        expansion: 'u_x^2 v_x^2 + u_x u_y v_x v_y + u_y^2 v_y^2'
     },
-    identity_lift: {
-        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)',
-        expansion: 'u_x v_x + u_y v_y + (u_x^2 + u_y^2)(v_x^2 + v_y^2)'
+    linear_combo: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x+u_y)(v_x+v_y)',
+        expansion: 'u_x v_x + u_y v_y + (u_x+u_y)(v_x+v_y)'
     },
-    trig: {
-        simplified: 'K(u,v) = \\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y',
-        expansion: '\\sin(u_x)\\sin(v_x) + \\cos(u_y)\\cos(v_y) + u_x u_y v_x v_y'
+    mixed_order: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + u_x u_y v_x v_y',
+        expansion: 'u_x v_x + u_y v_y + u_x u_y v_x v_y'
     },
-    saddle: {
-        simplified: 'K(u,v) = u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)',
-        expansion: 'u_x v_x + u_y v_y + (u_x^2 - u_y^2)(v_x^2 - v_y^2)'
+    polar_like: {
+        simplified: 'K(u,v) = u_x v_x + u_y v_y + \\|u\\|\\|v\\|',
+        expansion: 'u_x v_x + u_y v_y + \\sqrt{u_x^2+u_y^2}\\sqrt{v_x^2+v_y^2}'
     }
 };
 
@@ -163,7 +165,8 @@ function refreshKernelText() {
     }
 
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        window.MathJax.typesetPromise([el]).catch(() => {});
+        window.MathJax.typesetPromise([el]).catch(() => {
+        });
     }
 }
 
@@ -175,18 +178,21 @@ if (typeof window.THREE === 'undefined') {
 // ---------- Three.js ----------
 const container = $('scene');
 const scene = new THREE.Scene();
+window.scene = scene; // 暴露给全局，方便 AI 侧栏感知 3D 场景
 scene.background = new THREE.Color(0xfff9f2);
 
 const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 1000);
 
 let renderer;
 try {
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({antialias: true});
 } catch (err) {
     setStatus(`WebGL 初始化失败：${err.message}`, true);
     throw err;
 }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.domElement.id = 'kernel-trick-webgl-canvas';
+renderer.domElement.setAttribute('data-ai-label', '三维可视化画布(WebGL)');
 container.appendChild(renderer.domElement);
 
 const cameraArm = {
@@ -242,7 +248,7 @@ renderer.domElement.addEventListener('wheel', (e) => {
     e.preventDefault();
     cameraArm.radius *= (1 + e.deltaY * 0.0012);
     updateCameraFromArm();
-}, { passive: false });
+}, {passive: false});
 
 const hemi = new THREE.HemisphereLight(0xfff3dd, 0xd8a67a, 1.15);
 scene.add(hemi);
@@ -254,6 +260,7 @@ const grid = new THREE.GridHelper(12, 12, 0xe3b997, 0xf3dcc8);
 scene.add(grid);
 
 const axes = new THREE.AxesHelper(4);
+axes.name = "坐标轴";
 scene.add(axes);
 
 const planeGeom = new THREE.PlaneGeometry(10, 10, 1, 1);
@@ -266,6 +273,7 @@ const planeMat = new THREE.MeshStandardMaterial({
     metalness: 0.0
 });
 const plane = new THREE.Mesh(planeGeom, planeMat);
+plane.name = "分类超平面";
 plane.rotation.x = Math.PI / 2;
 scene.add(plane);
 
@@ -276,6 +284,7 @@ function resize() {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
 }
+
 window.addEventListener('resize', resize);
 resize();
 
@@ -283,6 +292,7 @@ function animate() {
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
 }
+
 animate();
 
 // ---------- CSV ----------
@@ -303,8 +313,8 @@ $('csv-file').addEventListener('change', async (e) => {
         file_size: file.size,
         file_type: file.type || 'text/csv'
     };
-    pushProcessStep('upload_csv', { file_name: file.name, file_size: file.size });
-    trackNoteEvent('upload_csv', { file_name: file.name, file_size: file.size });
+    pushProcessStep('upload_csv', {file_name: file.name, file_size: file.size});
+    trackNoteEvent('upload_csv', {file_name: file.name, file_size: file.size});
     parseCsv(text);
 });
 
@@ -359,11 +369,11 @@ const PRESET_DATASETS = {
 $('load-preset-btn').addEventListener('click', () => {
     const key = $('preset-dataset').value;
     state.datasetSource = 'preset';
-    state.datasetMeta = { preset: key };
+    state.datasetMeta = {preset: key};
     state.uploadedFiles = [];
     state.lastUploadedCsvText = PRESET_DATASETS[key] || '';
-    pushProcessStep('load_preset', { preset: key });
-    trackNoteEvent('dataset_preset_change', { preset: key });
+    pushProcessStep('load_preset', {preset: key});
+    trackNoteEvent('dataset_preset_change', {preset: key});
     parseCsv(PRESET_DATASETS[key]);
     const ok = visualizeFromSelection(false);
     if (ok) {
@@ -387,9 +397,22 @@ function parseCsv(text) {
     const rows = lines.slice(1).map(line => line.split(',').map(x => x.trim()));
     state.headers = headers;
     state.rows = rows;
-    pushProcessStep('parse_csv', { headers_count: headers.length, rows_count: rows.length, headers });
+    pushProcessStep('parse_csv', {headers_count: headers.length, rows_count: rows.length, headers});
     fillSelectors(headers);
     setStatus(`已读取 ${rows.length} 条数据，请确认列映射并加载可视化。`);
+}
+
+function guessColumnIndexes(headers) {
+    const normalized = headers.map(h => String(h || '').toLowerCase().trim());
+    const pickByWords = (words) => normalized.findIndex(h => words.some(w => h.includes(w)));
+    const xIdx = pickByWords(['x', '横坐标', 'feature1', 'f1']);
+    const yIdx = pickByWords(['y', '纵坐标', 'feature2', 'f2']);
+    const labelIdx = pickByWords(['label', 'class', 'target', '类别', '标签']);
+    return {
+        xIdx: xIdx >= 0 ? xIdx : 0,
+        yIdx: yIdx >= 0 && yIdx !== xIdx ? yIdx : Math.min(1, headers.length - 1),
+        labelIdx: labelIdx >= 0 && labelIdx !== xIdx && labelIdx !== yIdx ? labelIdx : Math.min(2, headers.length - 1)
+    };
 }
 
 function fillSelectors(headers) {
@@ -405,12 +428,44 @@ function fillSelectors(headers) {
     });
 
     if (headers.length >= 3) {
-        $('x-col').value = '0';
-        $('y-col').value = '1';
-        $('label-col').value = '2';
+        const guessed = guessColumnIndexes(headers);
+        $('x-col').value = String(guessed.xIdx);
+        $('y-col').value = String(guessed.yIdx);
+        $('label-col').value = String(guessed.labelIdx);
     }
 
     updateSeparationAccuracy();
+}
+
+function showValidationError(message) {
+    setStatus(message, true);
+    window.alert(message);
+}
+
+function validateSelectedColumns(parsedRows, xIdx, yIdx, lIdx) {
+    if (xIdx === yIdx || xIdx === lIdx || yIdx === lIdx) {
+        showValidationError('横坐标、纵坐标和标签列不能重复，请重新选择。');
+        return {ok: false};
+    }
+    const labels = new Set();
+    let validNumericRows = 0;
+    for (const row of parsedRows) {
+        if (Math.max(xIdx, yIdx, lIdx) >= row.length) continue;
+        const x = Number(row[xIdx]);
+        const y = Number(row[yIdx]);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+        validNumericRows++;
+        labels.add(String(row[lIdx]));
+        if (labels.size > 2) {
+            showValidationError('标签列最多只能有两种取值，请更换标签列。');
+            return {ok: false};
+        }
+    }
+    if (!validNumericRows) {
+        showValidationError('所选横纵坐标列未解析到有效实数，请检查 CSV 并重新选择列。');
+        return {ok: false};
+    }
+    return {ok: true};
 }
 
 function computeSplitAccuracy(yawDeg, pitchDeg, zVal) {
@@ -496,19 +551,19 @@ function autoFitPlaneFromCurrentPoints() {
         acc: -1
     };
 
-    const coarseStep = { yaw: 15, pitch: 15, z: 0.4 };
+    const coarseStep = {yaw: 15, pitch: 15, z: 0.4};
     for (let yaw = -90; yaw <= 90; yaw += coarseStep.yaw) {
         for (let pitch = -90; pitch <= 90; pitch += coarseStep.pitch) {
             for (let z = -2; z <= 2.0001; z += coarseStep.z) {
                 const acc = computeSplitAccuracy(yaw, pitch, z);
                 if (acc !== null && acc > best.acc) {
-                    best = { yaw, pitch, z, acc };
+                    best = {yaw, pitch, z, acc};
                 }
             }
         }
     }
 
-    const refineStep = { yaw: 4, pitch: 4, z: 0.1 };
+    const refineStep = {yaw: 4, pitch: 4, z: 0.1};
     const yawMin = Math.max(-90, best.yaw - 12);
     const yawMax = Math.min(90, best.yaw + 12);
     const pitchMin = Math.max(-90, best.pitch - 12);
@@ -521,7 +576,7 @@ function autoFitPlaneFromCurrentPoints() {
             for (let z = zMin; z <= zMax + 1e-8; z += refineStep.z) {
                 const acc = computeSplitAccuracy(yaw, pitch, z);
                 if (acc !== null && acc > best.acc) {
-                    best = { yaw, pitch, z, acc };
+                    best = {yaw, pitch, z, acc};
                 }
             }
         }
@@ -555,6 +610,8 @@ function visualizeFromSelection(showSuccessHint = true) {
 
     const parsed = [];
     const labels = new Set();
+    const validation = validateSelectedColumns(state.rows, xIdx, yIdx, lIdx);
+    if (!validation.ok) return false;
 
     for (const row of state.rows) {
         if (Math.max(xIdx, yIdx, lIdx) >= row.length) continue;
@@ -562,17 +619,17 @@ function visualizeFromSelection(showSuccessHint = true) {
         const y = Number(row[yIdx]);
         const label = row[lIdx];
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-        parsed.push({ x, y, label });
+        parsed.push({x, y, label});
         labels.add(label);
     }
 
     if (!parsed.length) {
-        setStatus('当前列映射无法解析出有效数值，请重新选择列。', true);
+        showValidationError('当前列映射无法解析出有效数值，请重新选择列。');
         return false;
     }
 
     if (labels.size > 2) {
-        setStatus('标签类别超过 2 种，请更换标签列。', true);
+        showValidationError('标签类别超过 2 种，请更换标签列。');
         return false;
     }
 
@@ -584,7 +641,7 @@ function visualizeFromSelection(showSuccessHint = true) {
         sample_count: parsed.length,
         class_count: labels.size
     });
-    trackNoteEvent('apply_columns', { x_col: xIdx, y_col: yIdx, label_col: lIdx, sample_count: parsed.length });
+    trackNoteEvent('apply_columns', {x_col: xIdx, y_col: yIdx, label_col: lIdx, sample_count: parsed.length});
     createOrUpdatePoints();
     updatePlane();
     setStatus(`渲染完成：共 ${parsed.length} 个点，类别数 ${labels.size}。`);
@@ -601,8 +658,10 @@ $('load-btn').addEventListener('click', () => {
 function normalizeXY(points) {
     const xs = points.map(p => p.x);
     const ys = points.map(p => p.y);
-    state.minX = Math.min(...xs); state.maxX = Math.max(...xs);
-    state.minY = Math.min(...ys); state.maxY = Math.max(...ys);
+    state.minX = Math.min(...xs);
+    state.maxX = Math.max(...xs);
+    state.minY = Math.min(...ys);
+    state.maxY = Math.max(...ys);
 
     const dx = Math.max(state.maxX - state.minX, 1e-6);
     const dy = Math.max(state.maxY - state.minY, 1e-6);
@@ -630,7 +689,7 @@ function createOrUpdatePoints() {
     state.currentMapped = [];
     for (let i = 0; i < state.points.length; i++) {
         const p = state.points[i];
-        const m = { x: p.x, y: p.y, z: 0 };
+        const m = {x: p.x, y: p.y, z: 0};
         state.currentMapped.push(m);
         pos[i * 3] = m.x;
         pos[i * 3 + 1] = m.z;
@@ -654,13 +713,14 @@ function createOrUpdatePoints() {
             vertexColors: true
         });
         state.pointsMesh = new THREE.Points(geometry, material);
+        state.pointsMesh.name = "数据样本点";
         scene.add(state.pointsMesh);
     }
 }
 
 function evaluateMappingExpr(expr, x, y) {
     if (window.math && typeof window.math.evaluate === 'function') {
-        return window.math.evaluate(expr, { x, y });
+        return window.math.evaluate(expr, {x, y});
     }
 
     if (!/^[0-9a-zA-Z_+\-*/^().,\s]+$/.test(expr)) {
@@ -730,16 +790,16 @@ $('animate-btn').addEventListener('click', () => {
 
     pushProcessStep('run_lift_animation', {
         sample_count: state.points.length,
-        map_expr: { ...state.mapExpr }
+        map_expr: {...state.mapExpr}
     });
     trackNoteEvent('run_lift_animation', {
         sample_count: state.points.length,
-        map_expr: { ...state.mapExpr }
+        map_expr: {...state.mapExpr}
     });
 
     const duration = 1100;
     const start = performance.now();
-    const from = state.currentMapped.map(p => ({ ...p }));
+    const from = state.currentMapped.map(p => ({...p}));
     const pos = state.pointsMesh.geometry.attributes.position.array;
 
     function step(now) {
@@ -813,8 +873,8 @@ function updatePlane() {
 ['plane-z', 'plane-yaw', 'plane-pitch'].forEach(id => {
     $(id).addEventListener('input', updatePlane);
     $(id).addEventListener('change', () => {
-        trackNoteEvent('plane_adjust', { control: id, value: $(id).value });
-        pushProcessStep('plane_adjust', { control: id, value: $(id).value });
+        trackNoteEvent('plane_adjust', {control: id, value: $(id).value});
+        pushProcessStep('plane_adjust', {control: id, value: $(id).value});
     });
 });
 
@@ -841,13 +901,13 @@ function applyCustomMappingFromInputs() {
     }
 
     try {
-        validateMappingExpr(xExpr, { x: 1.23, y: -0.8 });
-        validateMappingExpr(yExpr, { x: 1.23, y: -0.8 });
-        validateMappingExpr(zExpr, { x: 1.23, y: -0.8 });
-        state.mapExpr = { x: xExpr, y: yExpr, z: zExpr };
+        validateMappingExpr(xExpr, {x: 1.23, y: -0.8});
+        validateMappingExpr(yExpr, {x: 1.23, y: -0.8});
+        validateMappingExpr(zExpr, {x: 1.23, y: -0.8});
+        state.mapExpr = {x: xExpr, y: yExpr, z: zExpr};
         refreshCurrentMapText();
-        pushProcessStep('custom_map_apply', { map_expr: { ...state.mapExpr } });
-        trackNoteEvent('custom_map_apply', { map_expr: { ...state.mapExpr } });
+        pushProcessStep('custom_map_apply', {map_expr: {...state.mapExpr}});
+        trackNoteEvent('custom_map_apply', {map_expr: {...state.mapExpr}});
         setStatus('自定义映射已应用。点击“升维动画”查看效果。');
         $('custom-map-modal').style.display = 'none';
     } catch (err) {
@@ -881,10 +941,10 @@ window.addEventListener('click', (e) => {
 
 // ---------- Default preset ----------
 function applyDefaultMode() {
-    $('map-preset-select').value = 'textbook';
-    $('map-x-input').value = MAPPING_PRESETS.textbook.x;
-    $('map-y-input').value = MAPPING_PRESETS.textbook.y;
-    $('map-z-input').value = MAPPING_PRESETS.textbook.z;
+    $('map-preset-select').value = 'quadratic_monomial';
+    $('map-x-input').value = MAPPING_PRESETS.quadratic_monomial.x;
+    $('map-y-input').value = MAPPING_PRESETS.quadratic_monomial.y;
+    $('map-z-input').value = MAPPING_PRESETS.quadratic_monomial.z;
     state.mapExpr = {
         x: $('map-x-input').value,
         y: $('map-y-input').value,
@@ -964,8 +1024,8 @@ window.getKernelTrickPageData = function () {
             y_col_name: state.headers[yCol] || null,
             label_col_name: state.headers[labelCol] || null,
         },
-        map_expression: { ...state.mapExpr },
-        plane_params: { ...state.lastPlaneParams },
+        map_expression: {...state.mapExpr},
+        plane_params: {...state.lastPlaneParams},
         sample_count: state.points.length,
         class_labels: [...new Set(state.points.map(p => p.label))],
         current_accuracy_percent: state.latestAccuracy,

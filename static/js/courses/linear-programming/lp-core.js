@@ -8,7 +8,7 @@ const LPCore = {
     MAX_ITERATIONS: 1000,
 
     // ========== 核心算法函数 ==========
-    
+
     /**
      * 计算检验数 sigma
      * @param {Array} cj - 目标函数系数
@@ -20,7 +20,7 @@ const LPCore = {
         const m = A.length;
         const n = cj.length;
         const sigma = [];
-        
+
         for (let j = 0; j < n; j++) {
             let zj = 0;
             for (let i = 0; i < m; i++) {
@@ -40,7 +40,7 @@ const LPCore = {
      */
     selectEnteringVariable(sigma, solveType, epsilon = this.EPSILON) {
         let enteringIdx = -1;
-        
+
         if (solveType === 'max') {
             let maxSigma = -Infinity;
             for (let j = 0; j < sigma.length; j++) {
@@ -58,7 +58,7 @@ const LPCore = {
                 }
             }
         }
-        
+
         return enteringIdx;
     },
 
@@ -90,7 +90,7 @@ const LPCore = {
             }
         }
 
-        return { leavingIdx, theta, isUnbounded, minTheta };
+        return {leavingIdx, theta, isUnbounded, minTheta};
     },
 
     /**
@@ -162,7 +162,7 @@ const LPCore = {
         let currentA = phase1Result.finalA.map(r => [...r]);
         let currentB = [...phase1Result.finalB];
         let currentBasis = [...phase1Result.finalBasis];
-        
+
         const m = currentA.length;
         const artificialNames = artificialIndices.map(idx => `x${idx + 1}`);
 
@@ -191,7 +191,7 @@ const LPCore = {
             return idx < n ? (originalCj[idx] || 0) : 0;
         });
 
-        return { A: A2, b: b2, basis: basis2, cB: cB2 };
+        return {A: A2, b: b2, basis: basis2, cB: cB2};
     },
 
     /**
@@ -278,7 +278,7 @@ const LPCore = {
             if (phase === 1 && artificialIndices.length > 0) {
                 const remainingArtificial = this.getRemainingArtificialVars(currentBasis, artificialIndices);
                 const wValue = this.calculateObjectiveValue(currentCB, currentB);
-                
+
                 // 如果人工变量全部出基且 w ≈ 0，可以提前结束
                 if (remainingArtificial.length === 0 && Math.abs(wValue) < epsilon) {
                     // 继续迭代直到检验数满足最优条件
@@ -291,11 +291,11 @@ const LPCore = {
             if (enteringIdx === -1) {
                 status = "optimal";
                 finished = true;
-                
-                const finalW = phase === 1 
+
+                const finalW = phase === 1
                     ? this.calculateObjectiveValue(currentCB, currentB)
                     : null;
-                    
+
                 steps.push({
                     phase,
                     iteration,
@@ -309,7 +309,7 @@ const LPCore = {
                     leaving: null,
                     theta: null,
                     status: "optimal",
-                    artificialVars: phase === 1 
+                    artificialVars: phase === 1
                         ? this.getRemainingArtificialVars(currentBasis, artificialIndices)
                         : [],
                     wValue: finalW
@@ -322,7 +322,7 @@ const LPCore = {
                 status = "cycle";
                 cycleDetected = true;
                 finished = true;
-                
+
                 steps.push({
                     phase,
                     iteration,
@@ -336,7 +336,7 @@ const LPCore = {
                     leaving: null,
                     theta: null,
                     status: "cycle",
-                    artificialVars: phase === 1 
+                    artificialVars: phase === 1
                         ? this.getRemainingArtificialVars(currentBasis, artificialIndices)
                         : [],
                     wValue: phase === 1 ? this.calculateObjectiveValue(currentCB, currentB) : null
@@ -345,14 +345,14 @@ const LPCore = {
             }
 
             // 比值测试
-            const { leavingIdx, theta, isUnbounded } = this.ratioTest(
+            const {leavingIdx, theta, isUnbounded} = this.ratioTest(
                 currentA, currentB, enteringIdx, epsilon
             );
 
             if (isUnbounded) {
                 status = "unbounded";
                 finished = true;
-                
+
                 steps.push({
                     phase,
                     iteration,
@@ -366,7 +366,7 @@ const LPCore = {
                     leaving: null,
                     theta,
                     status: "unbounded",
-                    artificialVars: phase === 1 
+                    artificialVars: phase === 1
                         ? this.getRemainingArtificialVars(currentBasis, artificialIndices)
                         : [],
                     wValue: phase === 1 ? this.calculateObjectiveValue(currentCB, currentB) : null
@@ -388,15 +388,15 @@ const LPCore = {
                 leaving: currentBasis[leavingIdx],
                 theta,
                 status: "iterating",
-                artificialVars: phase === 1 
+                artificialVars: phase === 1
                     ? this.getRemainingArtificialVars(currentBasis, artificialIndices)
                     : [],
                 wValue: phase === 1 ? this.calculateObjectiveValue(currentCB, currentB) : null
             });
 
             // 主元消去
-            this.pivotOperation(currentA, currentB, currentBasis, currentCB, 
-                              enteringIdx, leavingIdx, cj);
+            this.pivotOperation(currentA, currentB, currentBasis, currentCB,
+                enteringIdx, leavingIdx, cj);
         }
 
         if (iteration >= maxIterations && !finished) {
@@ -411,7 +411,7 @@ const LPCore = {
             finalCB: currentCB,
             status,
             cycleDetected,
-            finalW: phase === 1 
+            finalW: phase === 1
                 ? this.calculateObjectiveValue(currentCB, currentB)
                 : null,
             finalObjectiveValue: phase === 2
@@ -489,8 +489,8 @@ const LPCore = {
         cells.push({r: 0, c: 0, val: 'cj'});
         cells.push({r: 0, c: 1, val: ''});
         cells.push({r: 0, c: 2, val: ''});
-        for (let j = 0; j < n; j++) cells.push({r: 0, c: j+3, val: data.cj[j].toFixed(2)});
-        cells.push({r: 0, c: totalCols-1, val: 'θ'});
+        for (let j = 0; j < n; j++) cells.push({r: 0, c: j + 3, val: data.cj[j].toFixed(2)});
+        cells.push({r: 0, c: totalCols - 1, val: 'θ'});
 
         // 数据行
         for (let i = 0; i < m; i++) {
@@ -499,10 +499,10 @@ const LPCore = {
             cells.push({r: rowIdx, c: 1, val: data.basis[i]});
             cells.push({r: rowIdx, c: 2, val: data.b[i].toFixed(2)});
             for (let j = 0; j < n; j++) {
-                cells.push({r: rowIdx, c: j+3, val: data.a[i][j].toFixed(2)});
+                cells.push({r: rowIdx, c: j + 3, val: data.a[i][j].toFixed(2)});
             }
             const thetaVal = data.theta && data.theta[i] !== null ? data.theta[i].toFixed(2) : '-';
-            cells.push({r: rowIdx, c: totalCols-1, val: thetaVal});
+            cells.push({r: rowIdx, c: totalCols - 1, val: thetaVal});
         }
 
         // 检验数行
@@ -511,17 +511,17 @@ const LPCore = {
         cells.push({r: lastRowIdx, c: 1, val: ''});
         cells.push({r: lastRowIdx, c: 2, val: ''});
         for (let j = 0; j < n; j++) {
-            cells.push({r: lastRowIdx, c: j+3, val: data.sigma[j].toFixed(2)});
+            cells.push({r: lastRowIdx, c: j + 3, val: data.sigma[j].toFixed(2)});
         }
-        cells.push({r: lastRowIdx, c: totalCols-1, val: ''});
+        cells.push({r: lastRowIdx, c: totalCols - 1, val: ''});
 
         // 绘制文本
         svg.selectAll('text')
             .data(cells)
             .enter()
             .append('text')
-            .attr('x', d => d.c * colWidth + colWidth/2)
-            .attr('y', d => d.r * rowHeight + rowHeight/2)
+            .attr('x', d => d.c * colWidth + colWidth / 2)
+            .attr('y', d => d.r * rowHeight + rowHeight / 2)
             .attr('text-anchor', 'middle')
             .attr('dominant-baseline', 'middle')
             .attr('font-family', 'Consolas, Monaco, monospace')

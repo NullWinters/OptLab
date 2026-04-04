@@ -244,12 +244,15 @@ select {
     .main-content {
         grid-template-columns: 1fr;
     }
+
     .slider-row {
         grid-template-columns: 1fr;
     }
+
     #function-canvas {
         height: 420px;
     }
+
     .right-column {
         order: 2;
     }

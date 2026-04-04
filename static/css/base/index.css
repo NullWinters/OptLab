@@ -478,7 +478,6 @@ header.hero {
 }
 
 
-
 /* ========== Experiments Section - 单卡片飞入飞出轮播 ========== */
 .experiments-section {
     padding: 7rem 0;
@@ -524,7 +523,7 @@ header.hero {
     width: 80%;
     max-width: 500px;
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     left: 50%;
     transform: translateX(-50%);

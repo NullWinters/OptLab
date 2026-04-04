@@ -8,7 +8,6 @@ from sqlalchemy import (
     Integer,
     String,
     Index,
-    UniqueConstraint,
     Uuid,
 )
 from sqlalchemy.orm import Mapped, mapped_column
@@ -40,6 +39,6 @@ class ChatSession(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     __table_args__ = (
-        # 标准唯一约束
-        UniqueConstraint("user_id", "page_id", name="uq_user_page_session"),
+        # 复合索引优化查询
+        Index("idx_chat_session_lookup", "user_id", "page_id", "is_active"),
     )

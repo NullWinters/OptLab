@@ -88,7 +88,7 @@
     border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .nav-auth a.bg-amber-primary:hover {
@@ -114,7 +114,7 @@
     border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 600;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     transition: background-color 0.15s ease-in-out;
 }
 

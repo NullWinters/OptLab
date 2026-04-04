@@ -46,7 +46,6 @@ class Base(DeclarativeBase):
 
 
 from .user import User
-from .experiment import ExperimentNote
 from .experiment_record import ExperimentRecord
 from .note_item import NoteItem
 from .chat_session import ChatSession

@@ -12,11 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.auth import get_current_user
 from dependencies import get_session
 from models.user import User
-from repository.experiment_repo import ExperimentNoteRepository, ExperimentRecordRepository
-from schemas.experiment import (
-    ExperimentNoteOut,
-    ExperimentNoteUpdate,
-)
+from repository.experiment_repo import ExperimentRecordRepository
 from schemas.experiment_record import (
     ExperimentRecordCreate,
     ExperimentRecordAliasUpdate,
@@ -27,112 +23,6 @@ from schemas.experiment_record import (
 router = APIRouter(prefix="/experiments", tags=["experiments"])
 
 
-@router.get(
-    "/notes/{experiment_key}",
-    response_model=ExperimentNoteOut,
-    summary="获取当前用户在某个实验下的笔记/感想",
-)
-async def get_experiment_note(
-    experiment_key: str,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> ExperimentNoteOut:
-    repo = ExperimentNoteRepository(session)
-    note = await repo.get_for_user_and_key(
-        user_id=current_user.id,
-        experiment_key=experiment_key,
-    )
-    if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Note not found for this experiment",
-        )
-    return ExperimentNoteOut.model_validate(note)
-
-
-@router.put(
-    "/notes/{experiment_key}",
-    response_model=ExperimentNoteOut,
-    summary="保存或更新当前用户在某个实验下的笔记/感想",
-)
-async def upsert_experiment_note(
-    experiment_key: str,
-    payload: ExperimentNoteUpdate,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> ExperimentNoteOut:
-    repo = ExperimentNoteRepository(session)
-    note = await repo.upsert_for_user_and_key(
-        user_id=current_user.id,
-        experiment_key=experiment_key,
-        reflection=payload.reflection,
-        extra_data=payload.extra_data,
-    )
-    return ExperimentNoteOut.model_validate(note)
-
-
-@router.get(
-    "/notes/{experiment_key}/export",
-    summary="导出当前用户在某个实验下的报告（Markdown）",
-)
-async def export_experiment_note_markdown(
-    experiment_key: str,
-    current_user: User = Depends(get_current_user),
-    session: AsyncSession = Depends(get_session),
-) -> Response:
-    """
-    将当前用户在指定实验下的记录导出为 Markdown 实验报告，供下载或打印。
-    """
-    repo = ExperimentNoteRepository(session)
-    note = await repo.get_for_user_and_key(
-        user_id=current_user.id,
-        experiment_key=experiment_key,
-    )
-    if note is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="未找到该实验的记录，无法导出实验报告。",
-        )
-
-    # 组织 Markdown 报告内容
-    lines: list[str] = []
-    lines.append(f"# 实验报告：{experiment_key}")
-    lines.append("")
-    lines.append(f"- 用户：{current_user.username}（{current_user.email}）")
-    lines.append(f"- 实验标识：{experiment_key}")
-    if note.updated_at:
-        lines.append(f"- 最近更新时间：{note.updated_at.isoformat()}")
-    lines.append("")
-
-    lines.append("## 实验思考与感想")
-    lines.append("")
-    reflection = note.reflection.strip() if note.reflection else ""
-    lines.append(reflection or "（暂无记录）")
-    lines.append("")
-
-    # 若 extra_data 中包含分题回答，则按题目列出
-    extra = note.extra_data or {}
-    answers = extra.get("answers")
-    if isinstance(answers, list) and answers:
-        lines.append("## 分题回答记录")
-        lines.append("")
-        for idx, ans in enumerate(answers, start=1):
-            content = (ans or "").strip() or "（无填写内容）"
-            lines.append(f"### 问题 {idx}")
-            lines.append("")
-            lines.append(content)
-            lines.append("")
-
-    md_content = "\n".join(lines)
-    filename = f"{experiment_key}-report.md"
-
-    return Response(
-        content=md_content,
-        media_type="text/markdown; charset=utf-8",
-        headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-        },
-    )
 
 
 # ---------- 实验记录（保存至个人中心） ----------
