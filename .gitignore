@@ -73,3 +73,9 @@ logs/
 # dataset
 datasets/
 output/
+
+# =========================
+# Docker
+# =========================
+Dockerfile
+.dockerignore
