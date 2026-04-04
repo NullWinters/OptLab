@@ -72,7 +72,6 @@ logs/
 
 # dataset
 datasets/
-output/
 
 # =========================
 # Docker
