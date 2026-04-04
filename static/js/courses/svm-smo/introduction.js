@@ -17,11 +17,11 @@ function initLinearSVM() {
     let data = [];
     const n = 20;
     // 类1: 红色圆点
-    for(let i=0; i<n; i++) {
+    for (let i = 0; i < n; i++) {
         data.push({x: Math.random() * 0.45, y: Math.random() * 0.8 + 0.1, label: 1});
     }
     // 类2: 蓝色方点
-    for(let i=0; i<n; i++) {
+    for (let i = 0; i < n; i++) {
         data.push({x: Math.random() * 0.45 + 0.55, y: Math.random() * 0.8 + 0.1, label: -1});
     }
 
@@ -43,16 +43,16 @@ function initLinearSVM() {
     // 手动给定一个大致合适的边界
     const drawBoundary = (C) => {
         svg.selectAll(".boundary").remove();
-        
+
         // 模拟随C变化的边界
         // C 越大，罚项越重，间隔通常越窄，边界越稳定
-        const offset = (C - 50) / 1000; 
+        const offset = (C - 50) / 1000;
         const marginWidth = 0.05 + (100 - C) / 1000;
-        
+
         const line = d3.line()
             .x(d => xScale(d[0]))
             .y(d => yScale(d[1]));
-        
+
         const b = 0.5 + offset;
         const boundaryPoints = [[b, 0], [b + 0.1, 1]];
         const upperPoints = [[b - marginWidth, 0], [b - marginWidth + 0.1, 1]];
@@ -78,7 +78,7 @@ function initLinearSVM() {
             .attr("d", line)
             .attr("stroke", "#999")
             .attr("stroke-dasharray", "5,5");
-            
+
         // 高亮“支持向量”
         svg.selectAll(".sv").remove();
         // 简单模拟：落在边界附近或边界内的点
@@ -106,7 +106,7 @@ function initLinearSVM() {
 
     drawBoundary(50);
 
-    d3.select("#c-slider").on("input", function() {
+    d3.select("#c-slider").on("input", function () {
         d3.select("#c-value").text(this.value);
     });
 
@@ -129,14 +129,14 @@ function initKernelTrick() {
             .attr("height", height + margin.top + margin.bottom)
             .append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`);
-        
+
         const data = [];
-        for(let i=0; i<100; i++) {
+        for (let i = 0; i < 100; i++) {
             const angle = Math.random() * Math.PI * 2;
             const r = Math.random() * 0.25 + 0.1;
             data.push({x: Math.cos(angle) * r, y: Math.sin(angle) * r, label: 1});
         }
-        for(let i=0; i<100; i++) {
+        for (let i = 0; i < 100; i++) {
             const angle = Math.random() * Math.PI * 2;
             const r = Math.random() * 0.25 + 0.6;
             data.push({x: Math.cos(angle) * r, y: Math.sin(angle) * r, label: -1});
@@ -165,7 +165,7 @@ function initKernelTrick() {
             .attr("r", 3)
             .attr("fill", d => d.label === 1 ? "#ef5350" : "#42a5f5")
             .attr("opacity", 0.8);
-            
+
         return data;
     };
 
@@ -178,20 +178,21 @@ function initKernelTrick() {
         const height = container.clientHeight;
 
         const scene = new THREE.Scene();
+        window.scene = scene; // 暴露给全局，方便 AI 侧栏感知 3D 场景
         scene.background = new THREE.Color(0xf9f9f9);
         const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({antialias: true});
         renderer.setSize(width, height);
         container.appendChild(renderer.domElement);
 
         // 映射函数 (多项式核模拟: z = x^2 + y^2)
         data2d.forEach(d => {
             const geometry = new THREE.SphereGeometry(0.05, 16, 16);
-            const material = new THREE.MeshBasicMaterial({ color: d.label === 1 ? 0xef5350 : 0x42a5f5 });
+            const material = new THREE.MeshBasicMaterial({color: d.label === 1 ? 0xef5350 : 0x42a5f5});
             const sphere = new THREE.Mesh(geometry, material);
             const nx = d.x * 4;
             const ny = d.y * 4;
-            const nz = (nx*nx + ny*ny) * 0.5 - 1;
+            const nz = (nx * nx + ny * ny) * 0.5 - 1;
             sphere.position.set(nx, ny, nz);
             scene.add(sphere);
         });
@@ -202,7 +203,12 @@ function initKernelTrick() {
 
         // 分割平面
         const planeGeo = new THREE.PlaneGeometry(5, 5);
-        const planeMat = new THREE.MeshBasicMaterial({ color: 0xaaaaaa, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+        const planeMat = new THREE.MeshBasicMaterial({
+            color: 0xaaaaaa,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.3
+        });
         const plane = new THREE.Mesh(planeGeo, planeMat);
         plane.position.z = 0.5;
         scene.add(plane);
@@ -216,6 +222,7 @@ function initKernelTrick() {
             scene.rotation.y += 0.01;
             renderer.render(scene, camera);
         }
+
         animate();
     };
 
@@ -240,11 +247,11 @@ function initSMO() {
 
     // 使用同样的数据集
     let data = [];
-    for(let i=0; i<15; i++) {
+    for (let i = 0; i < 15; i++) {
         data.push({id: i, x: Math.random() * 0.4, y: Math.random() * 0.8 + 0.1, label: 1});
     }
-    for(let i=0; i<15; i++) {
-        data.push({id: i+15, x: Math.random() * 0.4 + 0.6, y: Math.random() * 0.8 + 0.1, label: -1});
+    for (let i = 0; i < 15; i++) {
+        data.push({id: i + 15, x: Math.random() * 0.4 + 0.6, y: Math.random() * 0.8 + 0.1, label: -1});
     }
 
     svg.selectAll("circle")
@@ -269,7 +276,7 @@ function initSMO() {
         // 随机选择两个点模拟优化
         const idx1 = Math.floor(Math.random() * 30);
         let idx2 = Math.floor(Math.random() * 30);
-        while(idx1 === idx2) idx2 = Math.floor(Math.random() * 30);
+        while (idx1 === idx2) idx2 = Math.floor(Math.random() * 30);
 
         svg.selectAll(".highlight-point").remove();
         svg.selectAll("circle")
@@ -286,7 +293,7 @@ function initSMO() {
         const offset = (Math.random() - 0.5) * 0.1 / (iteration * 0.5 + 1);
         const line = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1]));
         const boundaryPoints = [[0.48 + offset, 0], [0.52 - offset, 1]];
-        
+
         svg.append("path")
             .datum(boundaryPoints)
             .attr("class", "smo-boundary")
@@ -297,7 +304,7 @@ function initSMO() {
 
     d3.select("#play-smo").on("click", () => {
         iteration = 0;
-        if(timer) clearInterval(timer);
+        if (timer) clearInterval(timer);
         timer = setInterval(step, 500);
     });
 }

@@ -1,58 +1,58 @@
 // 全局交互：根据当前路径高亮导航链接 & 显示登录状态
 (function () {
-  const currentPath = location.pathname.replace(/\/$/, "") || "/";
+    const currentPath = location.pathname.replace(/\/$/, "") || "/";
 
-  function markActiveNavLinks() {
-    try {
-      document.querySelectorAll("nav a[href]").forEach((a) => {
-        const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
-        if (href === currentPath) {
-          a.classList.add("active");
+    function markActiveNavLinks() {
+        try {
+            document.querySelectorAll("nav a[href]").forEach((a) => {
+                const href = (a.getAttribute("href") || "").replace(/\/$/, "") || "/";
+                if (href === currentPath) {
+                    a.classList.add("active");
+                }
+            });
+        } catch (e) {
+            console.debug("main.js nav highlight skipped:", e);
         }
-      });
-    } catch (e) {
-      console.debug("main.js nav highlight skipped:", e);
-    }
-  }
-
-  // 先高亮一次（静态导航）
-  markActiveNavLinks();
-
-  try {
-    const authContainer = document.getElementById("auth-status");
-    const heroActions = document.getElementById("hero-auth-actions");
-    if (!authContainer && !heroActions) return;
-
-    function setContainerHtml(container, html) {
-      if (!container) return;
-      container.innerHTML = html;
-      container.classList.remove("is-hidden");
-      markActiveNavLinks();
     }
 
-    function renderLoggedOut() {
-      setContainerHtml(
-        authContainer,
-        `
+    // 先高亮一次（静态导航）
+    markActiveNavLinks();
+
+    try {
+        const authContainer = document.getElementById("auth-status");
+        const heroActions = document.getElementById("hero-auth-actions");
+        if (!authContainer && !heroActions) return;
+
+        function setContainerHtml(container, html) {
+            if (!container) return;
+            container.innerHTML = html;
+            container.classList.remove("is-hidden");
+            markActiveNavLinks();
+        }
+
+        function renderLoggedOut() {
+            setContainerHtml(
+                authContainer,
+                `
         <a href="/auth/login" class="topnav-login-link">登录</a>
         <a href="/auth/register" class="topnav-register-btn">注册</a>
       `
-      );
-      setContainerHtml(
-        heroActions,
-        `
+            );
+            setContainerHtml(
+                heroActions,
+                `
         <a href="/auth/login" class="btn btn-secondary">登录</a>
         <a href="/auth/register" class="btn btn-primary">注册</a>
       `
-      );
-    }
+            );
+        }
 
-    function bindUserMenu(container, user) {
-      if (!container) return;
-      const uid = Math.random().toString(36).slice(2);
-      setContainerHtml(
-        container,
-        `
+        function bindUserMenu(container, user) {
+            if (!container) return;
+            const uid = Math.random().toString(36).slice(2);
+            setContainerHtml(
+                container,
+                `
         <div class="topnav-user-menu">
           <button id="auth-user-trigger-${uid}" type="button" class="topnav-user-trigger">
             <span>欢迎，<span class="topnav-user-name">${user.username}</span></span>
@@ -64,73 +64,74 @@
           </div>
         </div>
       `
-      );
+            );
 
-      const trigger = document.getElementById(`auth-user-trigger-${uid}`);
-      const dropdown = document.getElementById(`auth-user-dropdown-${uid}`);
-      const logoutBtn = document.getElementById(`logout-btn-${uid}`);
+            const trigger = document.getElementById(`auth-user-trigger-${uid}`);
+            const dropdown = document.getElementById(`auth-user-dropdown-${uid}`);
+            const logoutBtn = document.getElementById(`logout-btn-${uid}`);
 
-      if (trigger && dropdown) {
-        trigger.addEventListener("click", (e) => {
-          e.stopPropagation();
-          dropdown.classList.toggle("is-hidden");
-        });
-        document.addEventListener("click", () => dropdown.classList.add("is-hidden"));
-      }
+            if (trigger && dropdown) {
+                trigger.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle("is-hidden");
+                });
+                document.addEventListener("click", () => dropdown.classList.add("is-hidden"));
+            }
 
-      if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
-          if (typeof clearStoredAuth === "function") {
-            clearStoredAuth();
-          }
-          location.href = "/";
-        });
-      }
-    }
+            if (logoutBtn) {
+                logoutBtn.addEventListener("click", () => {
+                    if (typeof clearStoredAuth === "function") {
+                        clearStoredAuth();
+                    }
+                    location.href = "/";
+                });
+            }
+        }
 
-    function renderLoggedIn(user) {
-      bindUserMenu(authContainer, user);
-      setContainerHtml(
-        heroActions,
-        `
+        function renderLoggedIn(user) {
+            bindUserMenu(authContainer, user);
+            setContainerHtml(
+                heroActions,
+                `
         <a href="/profile" class="btn btn-secondary">进入个人中心</a>
       `
-      );
-    }
-
-    if (typeof apiGet !== "function") {
-      renderLoggedOut();
-      return;
-    }
-
-    let cachedUser = null;
-    try {
-      const raw = localStorage.getItem("optlab_user");
-      if (raw) cachedUser = JSON.parse(raw);
-    } catch {
-      cachedUser = null;
-    }
-
-    if (cachedUser) renderLoggedIn(cachedUser);
-    else renderLoggedOut();
-
-    // 只有存在 token 时才请求用户状态，避免未登录时产生 401 错误
-    if (typeof getStoredToken !== "function" || !getStoredToken()) return;
-
-    apiGet("/auth/me")
-      .then((user) => {
-        try {
-          localStorage.setItem("optlab_user", JSON.stringify(user));
-        } catch {}
-        renderLoggedIn(user);
-      })
-      .catch(() => {
-        if (typeof clearStoredAuth === "function") {
-          clearStoredAuth();
+            );
         }
-        renderLoggedOut();
-      });
-  } catch (e) {
-    console.debug("main.js auth init skipped:", e);
-  }
+
+        if (typeof apiGet !== "function") {
+            renderLoggedOut();
+            return;
+        }
+
+        let cachedUser = null;
+        try {
+            const raw = localStorage.getItem("optlab_user");
+            if (raw) cachedUser = JSON.parse(raw);
+        } catch {
+            cachedUser = null;
+        }
+
+        if (cachedUser) renderLoggedIn(cachedUser);
+        else renderLoggedOut();
+
+        // 只有存在 token 时才请求用户状态，避免未登录时产生 401 错误
+        if (typeof getStoredToken !== "function" || !getStoredToken()) return;
+
+        apiGet("/auth/me")
+            .then((user) => {
+                try {
+                    localStorage.setItem("optlab_user", JSON.stringify(user));
+                } catch {
+                }
+                renderLoggedIn(user);
+            })
+            .catch(() => {
+                if (typeof clearStoredAuth === "function") {
+                    clearStoredAuth();
+                }
+                renderLoggedOut();
+            });
+    } catch (e) {
+        console.debug("main.js auth init skipped:", e);
+    }
 })();

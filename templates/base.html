@@ -26,97 +26,97 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-    <div id="app-content">
-        {% block content %}{% endblock %}
-    </div>
+<div id="app-content">
+    {% block content %}{% endblock %}
+</div>
 
-    {% block ai_sidebar %}
-    {% include 'components/_ai_sidebar.html' %}
-    {% endblock %}
-    {% block experiment_notes %}{% endblock %}
+{% block ai_sidebar %}
+{% include 'components/_ai_sidebar.html' %}
+{% endblock %}
+{% block experiment_notes %}{% endblock %}
 
-    <script src="/static/js/api.js"></script>
-    <script src="/static/js/common/login-modal.js"></script>
-    <script src="/static/js/vendors/marked/marked.min.js"></script>
-    <script>
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                packages: { '[+]': ['boldsymbol'] }
-            },
-            loader: {
-                paths: { mathjax: '/static/js/vendors/mathjax' },
-                load: ['[tex]/boldsymbol']
-            },
-            chtml: {
-                fontURL: '/static/js/vendors/mathjax/output/chtml/fonts/tex'
-            }
-        };
-    </script>
-    <script id="MathJax-script" async src="/static/js/vendors/mathjax/es5/tex-mml-chtml.js"></script>
-    <script src="/static/js/common/ai-sidebar.js"></script>
-    <script src="/static/js/common/experiment-notes.js"></script>
-    <script>
-        (function () {
-            function isVisibleModal(el) {
-                if (!el) return false;
-                if (el.classList.contains('exp-notes-confirm-overlay')) return true;
-                if (el.classList.contains('login-modal-overlay')) return el.classList.contains('is-open');
-                if (!el.classList.contains('modal')) return false;
-                var st = window.getComputedStyle(el);
-                return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
-            }
+<script src="/static/js/api.js"></script>
+<script src="/static/js/common/login-modal.js"></script>
+<script src="/static/js/vendors/marked/marked.min.js"></script>
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            packages: {'[+]': ['boldsymbol']}
+        },
+        loader: {
+            paths: {mathjax: '/static/js/vendors/mathjax'},
+            load: ['[tex]/boldsymbol']
+        },
+        chtml: {
+            fontURL: '/static/js/vendors/mathjax/output/chtml/fonts/tex'
+        }
+    };
+</script>
+<script id="MathJax-script" async src="/static/js/vendors/mathjax/es5/tex-mml-chtml.js"></script>
+<script src="/static/js/common/ai-sidebar.js"></script>
+<script src="/static/js/common/experiment-notes.js"></script>
+<script>
+    (function () {
+        function isVisibleModal(el) {
+            if (!el) return false;
+            if (el.classList.contains('exp-notes-confirm-overlay')) return true;
+            if (el.classList.contains('login-modal-overlay')) return el.classList.contains('is-open');
+            if (!el.classList.contains('modal')) return false;
+            var st = window.getComputedStyle(el);
+            return st.display !== 'none' && st.visibility !== 'hidden' && st.opacity !== '0';
+        }
 
-            function refreshModalLock() {
-                var hasVisibleModal = false;
-                document.querySelectorAll('.modal, .exp-notes-confirm-overlay, .login-modal-overlay').forEach(function (el) {
-                    if (isVisibleModal(el)) hasVisibleModal = true;
-                });
-                document.body.classList.toggle('modal-open', hasVisibleModal);
-            }
-
-            document.addEventListener('DOMContentLoaded', function () {
-                refreshModalLock();
-                var observer = new MutationObserver(refreshModalLock);
-                observer.observe(document.body, {
-                    subtree: true,
-                    childList: true,
-                    attributes: true,
-                    attributeFilter: ['style', 'class']
-                });
-
-                function lockBackgroundScroll(event) {
-                    if (!document.body.classList.contains('modal-open')) return;
-                    var inOverlay = event.target.closest('.modal, .login-modal-overlay, .exp-notes-confirm-overlay, .simplex-log-modal');
-                    if (!inOverlay) {
-                        event.preventDefault();
-                    }
-                }
-
-                function isTypingTarget(target) {
-                    if (!target) return false;
-                    var tag = target.tagName;
-                    return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
-                }
-
-                function lockBackgroundKeyboardScroll(event) {
-                    if (!document.body.classList.contains('modal-open')) return;
-                    if (event.altKey || event.ctrlKey || event.metaKey) return;
-                    if (isTypingTarget(event.target)) return;
-
-                    var blockedKeys = ['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
-                    if (blockedKeys.indexOf(event.key) !== -1) {
-                        event.preventDefault();
-                    }
-                }
-
-                window.addEventListener('wheel', lockBackgroundScroll, { passive: false });
-                window.addEventListener('touchmove', lockBackgroundScroll, { passive: false });
-                window.addEventListener('keydown', lockBackgroundKeyboardScroll, { passive: false });
+        function refreshModalLock() {
+            var hasVisibleModal = false;
+            document.querySelectorAll('.modal, .exp-notes-confirm-overlay, .login-modal-overlay').forEach(function (el) {
+                if (isVisibleModal(el)) hasVisibleModal = true;
             });
-        })();
-    </script>
-    {% block scripts %}{% endblock %}
+            document.body.classList.toggle('modal-open', hasVisibleModal);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            refreshModalLock();
+            var observer = new MutationObserver(refreshModalLock);
+            observer.observe(document.body, {
+                subtree: true,
+                childList: true,
+                attributes: true,
+                attributeFilter: ['style', 'class']
+            });
+
+            function lockBackgroundScroll(event) {
+                if (!document.body.classList.contains('modal-open')) return;
+                var inOverlay = event.target.closest('.modal, .login-modal-overlay, .exp-notes-confirm-overlay, .simplex-log-modal');
+                if (!inOverlay) {
+                    event.preventDefault();
+                }
+            }
+
+            function isTypingTarget(target) {
+                if (!target) return false;
+                var tag = target.tagName;
+                return tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable;
+            }
+
+            function lockBackgroundKeyboardScroll(event) {
+                if (!document.body.classList.contains('modal-open')) return;
+                if (event.altKey || event.ctrlKey || event.metaKey) return;
+                if (isTypingTarget(event.target)) return;
+
+                var blockedKeys = ['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '];
+                if (blockedKeys.indexOf(event.key) !== -1) {
+                    event.preventDefault();
+                }
+            }
+
+            window.addEventListener('wheel', lockBackgroundScroll, {passive: false});
+            window.addEventListener('touchmove', lockBackgroundScroll, {passive: false});
+            window.addEventListener('keydown', lockBackgroundKeyboardScroll, {passive: false});
+        });
+    })();
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

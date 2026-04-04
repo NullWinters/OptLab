@@ -222,7 +222,7 @@ strong {
     background: #fff;
     border-radius: 12px;
     padding: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
@@ -250,7 +250,7 @@ strong {
     background: #fff;
     border-radius: 12px;
     padding: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     border: 1px solid var(--border-color);
 }
 

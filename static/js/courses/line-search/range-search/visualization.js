@@ -79,7 +79,7 @@ export class OptimizationVisualizer {
         if (!container) return;
         this.width = container.clientWidth;
         this.height = container.clientHeight || 500;
-        
+
         this.plotWidth = this.width - this.margin.left - this.margin.right;
         this.plotHeight = this.height - this.margin.top - this.margin.bottom;
 
@@ -122,7 +122,7 @@ export class OptimizationVisualizer {
             });
         });
 
-        const yLimit = 1000;
+        const yLimit = 1e10;
         minY = Math.max(minY, -yLimit);
         maxY = Math.min(maxY, yLimit);
 
@@ -154,7 +154,7 @@ export class OptimizationVisualizer {
             .x(d => this.xScale(d.x))
             .y(d => this.yScale(d.y))
             .curve(d3.curveMonotoneX)
-            .defined(d => Math.abs(d.y) <= yLimit); // 过滤超出范围的点
+            .defined(d => Math.abs(d.y) <= yLimit); // 过滤超出极大范围的点
 
         const paths = this.functionLayer.selectAll('path.curve').data(segments);
 
@@ -295,7 +295,7 @@ export class OptimizationVisualizer {
             .attr('fill', '#e53935')
             .style('opacity', 0)
             .merge(texts)
-            .each(function(d) {
+            .each(function (d) {
                 d3.select(this).html(`${d.label}<tspan baseline-shift="sub" font-size="0.7em">${d.iteration}</tspan>=${d.val.toFixed(3)}`);
             })
             .transition().duration(duration)

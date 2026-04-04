@@ -103,9 +103,17 @@ canvas.viz-canvas {
 }
 
 /* 算法特定边框颜色 */
-.panel-1 { border-top: 5px solid var(--primary-color); }
-.panel-2 { border-top: 5px solid var(--secondary-color); }
-.panel-3 { border-top: 5px solid var(--accent-color); }
+.panel-1 {
+    border-top: 5px solid var(--primary-color);
+}
+
+.panel-2 {
+    border-top: 5px solid var(--secondary-color);
+}
+
+.panel-3 {
+    border-top: 5px solid var(--accent-color);
+}
 
 /* 主布局：左侧全局控制 + 右侧画布列 */
 .comparison-main-layout {
@@ -218,24 +226,33 @@ canvas.viz-canvas {
     .triple-status-panel {
         grid-template-columns: 1fr;
     }
-    .control-buttons { grid-template-columns: repeat(2, 1fr); }
-    .left-column { 
+
+    .control-buttons {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .left-column {
         width: 100%;
         box-sizing: border-box;
     }
-    .comparison-main-layout { 
+
+    .comparison-main-layout {
         flex-direction: column;
         align-items: stretch;
     }
+
     .canvas-column {
         width: 100%;
     }
+
     #function-canvas-gd,
     #function-canvas-newton,
     #function-canvas-secant,
     #function-canvas-bisection,
     #function-canvas-golden,
-    #function-canvas-fibonacci { height: 280px; }
+    #function-canvas-fibonacci {
+        height: 280px;
+    }
 }
 
 /* 实验笔记组件在性质对比页面的对齐调整 */

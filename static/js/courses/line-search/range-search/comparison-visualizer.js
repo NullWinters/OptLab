@@ -112,7 +112,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .attr('y', -10 - textOffset)
             .style('opacity', 0)
             .merge(texts)
-            .each(function(d) {
+            .each(function (d) {
                 d3.select(this).html(`${d.label}<tspan baseline-shift="sub" font-size="0.7em">${d.iteration}</tspan>=${d.val.toFixed(3)}`);
             })
             .transition().duration(duration)
@@ -125,7 +125,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
     drawConvergenceComparison(goldenHistory, fibHistory, bisHistory, yScaleType = 'log', onYLabelClick = null, visibility = null) {
         if (visibility) this.currentVisibility = visibility;
         const vis = this.currentVisibility || {golden: true, fibonacci: true, bisection: true};
-        
+
         this.goldenHistory = goldenHistory;
         this.fibonacciHistory = fibHistory;
         this.bisectionHistory = bisHistory;
@@ -172,15 +172,15 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
 
             this.convLegendG = this.convRoot.append('g').attr('class', 'conv-legend')
                 .attr('transform', `translate(${this.plotWidth - 120}, 20)`);
-            
+
             const legendGolden = this.convLegendG.append('g').attr('class', 'legend-item-golden');
             legendGolden.append('rect').attr('width', 15).attr('height', 15).attr('fill', '#d84315');
             legendGolden.append('text').attr('x', 20).attr('y', 12).text('黄金分割法').attr('font-size', '12px');
-            
+
             const legendFib = this.convLegendG.append('g').attr('class', 'legend-item-fibonacci').attr('transform', 'translate(0, 25)');
             legendFib.append('rect').attr('width', 15).attr('height', 15).attr('fill', '#f9a825');
             legendFib.append('text').attr('x', 20).attr('y', 12).text('斐波那契法').attr('font-size', '12px');
-            
+
             const legendBis = this.convLegendG.append('g').attr('class', 'legend-item-bisection').attr('transform', 'translate(0, 50)');
             legendBis.append('rect').attr('width', 15).attr('height', 15).attr('fill', '#6d4c41');
             legendBis.append('text').attr('x', 20).attr('y', 12).text('二分法').attr('font-size', '12px');
@@ -229,7 +229,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.convXLabel.transition().duration(duration)
             .attr('x', this.plotWidth / 2)
             .attr('y', this.plotHeight + 35);
-        
+
         this.convYLabel.transition().duration(duration)
             .attr('x', -this.plotHeight / 2);
 
@@ -338,7 +338,11 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
         this.fibonacciLayer.selectAll('*').remove();
     }
 
-    updateTripleTrialPoints(gPoints, fPoints, bAlgo, calculateFunc, options, visibility = {golden: true, fibonacci: true, bisection: true}) {
+    updateTripleTrialPoints(gPoints, fPoints, bAlgo, calculateFunc, options, visibility = {
+        golden: true,
+        fibonacci: true,
+        bisection: true
+    }) {
         // 黄金分割 G: 红色 yOffset=0
         if (visibility.golden) {
             const gIter = (this.goldenHistory && this.goldenHistory.length > 0) ? this.goldenHistory[this.goldenHistory.length - 1].iter : 0;
@@ -388,8 +392,18 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
     drawAlgorithmTrialPoints(points, calculateFunc, color, labelPrefix, options, yOffset, iteration = 0) {
         const duration = 400;
         const pts = [];
-        if (points && options.showA) pts.push({id: `${labelPrefix}-a`, label: 'a', x: points.a_try, iteration: iteration});
-        if (points && options.showB) pts.push({id: `${labelPrefix}-b`, label: 'b', x: points.b_try, iteration: iteration});
+        if (points && options.showA) pts.push({
+            id: `${labelPrefix}-a`,
+            label: 'a',
+            x: points.a_try,
+            iteration: iteration
+        });
+        if (points && options.showB) pts.push({
+            id: `${labelPrefix}-b`,
+            label: 'b',
+            x: points.b_try,
+            iteration: iteration
+        });
 
         // 1. 引导线
         let lines = this.trialPointsLayer.selectAll(`line.trial-line-${labelPrefix}`).data(pts, d => d.id);
@@ -430,7 +444,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             .attr('y', d => this.yScale(calculateFunc(d.x)) - 5 - yOffset)
             .style('opacity', 0)
             .merge(labels)
-            .each(function(d) {
+            .each(function (d) {
                 d3.select(this).html(`${d.label}<tspan baseline-shift="sub" font-size="0.7em">${d.iteration}</tspan>=${d.x.toFixed(3)}`);
             })
             .transition().duration(duration)

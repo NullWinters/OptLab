@@ -49,8 +49,13 @@ body {
     box-sizing: border-box;
 }
 
-.max-w-7xl { max-width: 80rem; }
-.max-w-5xl { max-width: 64rem; }
+.max-w-7xl {
+    max-width: 80rem;
+}
+
+.max-w-5xl {
+    max-width: 64rem;
+}
 
 /* Navigation */
 .nav-bar {
@@ -210,14 +215,29 @@ body {
 }
 
 /* Card Themes */
-.theme-amber .course-image-container { background-color: var(--amber-50); }
-.theme-amber .course-placeholder-img { color: var(--amber-200); }
+.theme-amber .course-image-container {
+    background-color: var(--amber-50);
+}
 
-.theme-orange .course-image-container { background-color: var(--orange-50); }
-.theme-orange .course-placeholder-img { color: var(--orange-200); }
+.theme-amber .course-placeholder-img {
+    color: var(--amber-200);
+}
 
-.theme-red .course-image-container { background-color: var(--red-50); }
-.theme-red .course-placeholder-img { color: var(--red-200); }
+.theme-orange .course-image-container {
+    background-color: var(--orange-50);
+}
+
+.theme-orange .course-placeholder-img {
+    color: var(--orange-200);
+}
+
+.theme-red .course-image-container {
+    background-color: var(--red-50);
+}
+
+.theme-red .course-placeholder-img {
+    color: var(--red-200);
+}
 
 .course-content {
     padding: 2rem;
@@ -356,7 +376,18 @@ body {
 }
 
 /* Utility classes from style tag in HTML */
-.text-amber-primary { color: var(--amber-primary); }
-.bg-amber-primary { background-color: var(--amber-primary); }
-.border-amber-primary { border-color: var(--amber-primary); }
-.hover-amber-primary:hover { background-color: var(--amber-secondary); }
+.text-amber-primary {
+    color: var(--amber-primary);
+}
+
+.bg-amber-primary {
+    background-color: var(--amber-primary);
+}
+
+.border-amber-primary {
+    border-color: var(--amber-primary);
+}
+
+.hover-amber-primary:hover {
+    background-color: var(--amber-secondary);
+}

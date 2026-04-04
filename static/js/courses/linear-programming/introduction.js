@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
     const container = d3.select("#lp-viz");
     const width = container.node().getBoundingClientRect().width || 400;
     const height = 300;
@@ -120,25 +120,25 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function initObservationViz() {
     const constraints = [
-        { id: 1, name: "C1", x1: 1, x2: 5, b: 40, slack: 3, color: "#FB8C00" },
-        { id: 2, name: "C2", x1: 2, x2: 1, b: 20, slack: 4, color: "#D84315" },
-        { id: 3, name: "C3", x1: 1, x2: 1, b: 12, slack: 5, color: "#8D6E63" }
+        {id: 1, name: "C1", x1: 1, x2: 5, b: 40, slack: 3, color: "#FB8C00"},
+        {id: 2, name: "C2", x1: 2, x2: 1, b: 20, slack: 4, color: "#D84315"},
+        {id: 3, name: "C3", x1: 1, x2: 1, b: 12, slack: 5, color: "#8D6E63"}
     ];
 
     const vertices = [
-        { x: 0, y: 0, basic: [3, 4, 5], nonBasic: [1, 2], sigma: { 1: 3, 2: 5 } },
-        { x: 10, y: 0, basic: [1, 3, 5], nonBasic: [2, 4], sigma: { 2: 3.5, 4: -1.5 } },
-        { x: 8, y: 4, basic: [1, 2, 3], nonBasic: [4, 5], sigma: { 4: 2, 5: -7 } },
-        { x: 5, y: 7, basic: [1, 2, 4], nonBasic: [3, 5], sigma: { 3: -1.5, 5: -2.5 } },
-        { x: 0, y: 8, basic: [2, 4, 5], nonBasic: [1, 3], sigma: { 1: 2, 3: -1 } }
+        {x: 0, y: 0, basic: [3, 4, 5], nonBasic: [1, 2], sigma: {1: 3, 2: 5}},
+        {x: 10, y: 0, basic: [1, 3, 5], nonBasic: [2, 4], sigma: {2: 3.5, 4: -1.5}},
+        {x: 8, y: 4, basic: [1, 2, 3], nonBasic: [4, 5], sigma: {4: 2, 5: -7}},
+        {x: 5, y: 7, basic: [1, 2, 4], nonBasic: [3, 5], sigma: {3: -1.5, 5: -2.5}},
+        {x: 0, y: 8, basic: [2, 4, 5], nonBasic: [1, 3], sigma: {1: 2, 3: -1}}
     ];
 
     const vertexAdjacency = {
-        0: { 1: 1, 2: 4 },
-        1: { 2: 2, 4: 0 },
-        2: { 4: 3, 5: 1 },
-        3: { 3: 2, 5: 4 },
-        4: { 1: 3, 3: 0 }
+        0: {1: 1, 2: 4},
+        1: {2: 2, 4: 0},
+        2: {4: 3, 5: 1},
+        3: {3: 2, 5: 4},
+        4: {1: 3, 3: 0}
     };
 
     let currentStateIndex = 0;
@@ -149,7 +149,7 @@ function initObservationViz() {
 
     const width = container.node().getBoundingClientRect().width || 400;
     const height = 400;
-    const margin = { top: 30, right: 30, bottom: 40, left: 50 };
+    const margin = {top: 30, right: 30, bottom: 40, left: 50};
 
     const svg = container.append("svg")
         .attr("width", width)
@@ -168,7 +168,7 @@ function initObservationViz() {
 
     // 绘制可行域
     const polyPoints = [
-        { x: 0, y: 0 }, { x: 10, y: 0 }, { x: 8, y: 4 }, { x: 5, y: 7 }, { x: 0, y: 8 }
+        {x: 0, y: 0}, {x: 10, y: 0}, {x: 8, y: 4}, {x: 5, y: 7}, {x: 0, y: 8}
     ];
     svg.append("polygon")
         .attr("points", polyPoints.map(p => `${xScale(p.x)},${yScale(p.y)}`).join(" "))
@@ -206,7 +206,7 @@ function initObservationViz() {
         let x1_s = -1, x2_s = (z - 3 * x1_s) / 5;
         let x1_e = 15, x2_e = (z - 3 * x1_e) / 5;
         objLine.attr("x1", xScale(x1_s)).attr("y1", yScale(x2_s))
-               .attr("x2", xScale(x1_e)).attr("y2", yScale(x2_e));
+            .attr("x2", xScale(x1_e)).attr("y2", yScale(x2_e));
     }
 
     // 当前点
@@ -285,7 +285,7 @@ function initObservationViz() {
         }
     }
 
-    window.iterate = function(enteringVar) {
+    window.iterate = function (enteringVar) {
         if (isAnimating) return;
         const enteringIdx = parseInt(enteringVar.substring(1));
         const nextIndex = vertexAdjacency[currentStateIndex]?.[enteringIdx];
@@ -316,13 +316,13 @@ function initObservationViz() {
         }
     };
 
-    document.getElementById("reset-btn").onclick = function() {
+    document.getElementById("reset-btn").onclick = function () {
         currentStateIndex = 0;
         document.getElementById("algebraic-steps").innerText = "等待操作...";
         updateUI();
     };
 
-    document.getElementById("auto-btn").onclick = async function() {
+    document.getElementById("auto-btn").onclick = async function () {
         if (isAnimating) return;
         isAnimating = true;
         this.disabled = true;

@@ -1,5 +1,17 @@
 function toSubscript(n) {
-    const map = {'-':'\u208B','0':'\u2080','1':'\u2081','2':'\u2082','3':'\u2083','4':'\u2084','5':'\u2085','6':'\u2086','7':'\u2087','8':'\u2088','9':'\u2089'};
+    const map = {
+        '-': '\u208B',
+        '0': '\u2080',
+        '1': '\u2081',
+        '2': '\u2082',
+        '3': '\u2083',
+        '4': '\u2084',
+        '5': '\u2085',
+        '6': '\u2086',
+        '7': '\u2087',
+        '8': '\u2088',
+        '9': '\u2089'
+    };
     return String(n).split('').map(ch => map[ch] || ch).join('');
 }
 
@@ -125,13 +137,13 @@ export class PointSearchVisualizer {
             .attr('transform', `translate(0,${this.plotHeight})`)
             .call(d3.axisBottom(this.xScale));
         this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
-        
+
         this.gridX.transition().duration(duration)
             .attr('transform', `translate(0,${this.plotHeight})`)
             .call(d3.axisBottom(this.xScale).tickSize(-this.plotHeight).tickFormat(''));
         this.gridY.transition().duration(duration)
             .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
-        
+
         this.gridLayer.selectAll(".tick line").attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
         this.gridLayer.selectAll(".domain").attr("stroke-width", 0);
     }
@@ -308,13 +320,13 @@ export class PointSearchVisualizer {
             this.drawFunction(this.currentExpr, newDomain);
         }
     }
-    
+
     pan(direction) {
         const [x0, x1] = this.xScale.domain();
         const shift = (x1 - x0) * 0.2 * direction;
         this.drawFunction(this.currentExpr, [x0 + shift, x1 + shift]);
     }
-    
+
     zoom(factor) {
         const [x0, x1] = this.xScale.domain();
         const center = (x0 + x1) / 2;
@@ -325,7 +337,7 @@ export class PointSearchVisualizer {
     // 在缩放/平移或更新历史时，根据当前比例尺与状态，平滑更新已绘制的迭代点、连线与样式
     repositionHistory(animated = true) {
         if (!this.currentHistory || this.currentHistory.length === 0) return;
-        
+
         const history = this.currentHistory;
         const algo = this.currentAlgorithm;
         const t = animated ? this.duration : 0;
@@ -334,7 +346,7 @@ export class PointSearchVisualizer {
         const lineGen = d3.line()
             .x(d => this.xScale(d.x))
             .y(d => this.yScale(d.y));
-            
+
         this.linesLayer.selectAll('path.history-path')
             .transition().duration(t)
             .attr('d', lineGen(history));

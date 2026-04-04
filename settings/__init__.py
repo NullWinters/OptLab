@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # 显式指定项目根目录下的 .env 文件路径
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(_project_root, ".env"))
+load_dotenv(str(os.path.join(str(_project_root), ".env")))
 
 # database：默认使用 SQLite，可通过 OPTLAB_DB_URI 覆盖为 PostgreSQL 等
 DB_URI = os.getenv(

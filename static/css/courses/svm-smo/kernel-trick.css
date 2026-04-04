@@ -7,7 +7,9 @@
     --muted: #8f6a4f;
 }
 
-* { box-sizing: border-box; }
+* {
+    box-sizing: border-box;
+}
 
 .page {
     max-width: 1000px; /* 原为 1400px，这里设置 max-width 为 none 在 content 中覆盖 */
@@ -121,11 +123,11 @@ label {
     height: 6px;
     border-radius: 999px;
     background: linear-gradient(
-        90deg,
-        var(--primary) 0%,
-        var(--primary) var(--range-progress),
-        #ead9c7 var(--range-progress),
-        #ead9c7 100%
+            90deg,
+            var(--primary) 0%,
+            var(--primary) var(--range-progress),
+            #ead9c7 var(--range-progress),
+            #ead9c7 100%
     );
 }
 
@@ -174,7 +176,9 @@ label {
     transition: 0.2s;
 }
 
-.panel button:hover { background: var(--primary-dark); }
+.panel button:hover {
+    background: var(--primary-dark);
+}
 
 .scene-wrap {
     background: var(--panel);
@@ -271,7 +275,15 @@ label {
 }
 
 @media (max-width: 1100px) {
-    .page { grid-template-columns: 1fr; }
-    .panel { position: static; }
-    .scene-wrap { min-height: 65vh; }
+    .page {
+        grid-template-columns: 1fr;
+    }
+
+    .panel {
+        position: static;
+    }
+
+    .scene-wrap {
+        min-height: 65vh;
+    }
 }

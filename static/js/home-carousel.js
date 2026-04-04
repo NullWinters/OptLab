@@ -40,8 +40,12 @@
         startAutoPlay();
 
         // 事件绑定
-        prevBtn.addEventListener('click', function () { navigate('prev'); });
-        nextBtn.addEventListener('click', function () { navigate('next'); });
+        prevBtn.addEventListener('click', function () {
+            navigate('prev');
+        });
+        nextBtn.addEventListener('click', function () {
+            navigate('next');
+        });
 
         // 点击指示器
         dots.forEach(function (dot, index) {
@@ -56,14 +60,14 @@
         let touchStartX = 0;
         container.addEventListener('touchstart', function (e) {
             touchStartX = e.changedTouches[0].screenX;
-        }, { passive: true });
+        }, {passive: true});
 
         container.addEventListener('touchend', function (e) {
             const diff = touchStartX - e.changedTouches[0].screenX;
             if (Math.abs(diff) > 50) {
                 navigate(diff > 0 ? 'next' : 'prev');
             }
-        }, { passive: true });
+        }, {passive: true});
 
         // 导航到上一张或下一张
         function navigate(direction) {
@@ -87,7 +91,7 @@
 
             // 确定飞出/飞入方向
             const isNext = direction === 'next';
-            
+
             // 获取当前卡片
             const currentCard = viewport.querySelector('.carousel-card');
             if (!currentCard) {
@@ -99,7 +103,7 @@
             const newCard = document.createElement('div');
             newCard.className = 'carousel-card';
             newCard.innerHTML = experiments[currentIndex].innerHTML;
-            
+
             // 新卡片初始位置：在屏幕外
             if (isNext) {
                 // 从右侧进入
@@ -110,7 +114,7 @@
                 newCard.style.transform = 'translateX(-150vw)';
                 newCard.style.opacity = '0';
             }
-            
+
             viewport.appendChild(newCard);
 
             // 触发同时动画
@@ -138,17 +142,17 @@
                 if (currentCard && currentCard.parentNode) {
                     currentCard.remove();
                 }
-                
+
                 // 新卡片重置为正常状态
                 newCard.className = 'carousel-card current';
                 newCard.style.cssText = '';
-                
+
                 isAnimating = false;
             }, 500);
 
             // 更新指示器
             updateDots();
-            
+
             // 暂停自动播放
             pauseAutoPlay();
         }

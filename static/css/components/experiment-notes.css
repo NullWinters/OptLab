@@ -71,9 +71,18 @@
     min-height: 18px;
     transition: color 0.3s;
 }
-.exp-notes-global-status.saving { color: #FF8F00; }
-.exp-notes-global-status.saved  { color: #43A047; }
-.exp-notes-global-status.error  { color: #E53935; }
+
+.exp-notes-global-status.saving {
+    color: #FF8F00;
+}
+
+.exp-notes-global-status.saved {
+    color: #43A047;
+}
+
+.exp-notes-global-status.error {
+    color: #E53935;
+}
 
 /* 笔记列表容器 */
 .exp-notes-list {
@@ -266,7 +275,9 @@
     background: rgba(255, 250, 245, 0.6);
 }
 
-.exp-note-render-view.active { display: block; }
+.exp-note-render-view.active {
+    display: block;
+}
 
 /* MathJax overflow handling */
 .exp-note-render-view mjx-container,
@@ -278,14 +289,21 @@
     vertical-align: middle;
 }
 
-.exp-note-render-view p { margin: 0 0 8px; }
-.exp-note-render-view p:last-child { margin-bottom: 0; }
+.exp-note-render-view p {
+    margin: 0 0 8px;
+}
+
+.exp-note-render-view p:last-child {
+    margin-bottom: 0;
+}
+
 .exp-note-render-view h1,
 .exp-note-render-view h2,
 .exp-note-render-view h3 {
     color: #D84315;
     margin: 12px 0 6px;
 }
+
 .exp-note-render-view .exp-note-section-header {
     display: block;
     color: #D84315;
@@ -296,9 +314,11 @@
     border-bottom: 1.5px solid #FFE0B2;
     letter-spacing: 0.03em;
 }
+
 .exp-note-render-view .exp-note-section-header:first-child {
     margin-top: 4px;
 }
+
 .exp-note-render-view code {
     background: #FFF3E0;
     padding: 1px 5px;
@@ -306,12 +326,14 @@
     font-size: 0.88em;
     font-family: 'SFMono-Regular', 'Consolas', monospace;
 }
+
 .exp-note-render-view pre {
     background: #FFF3E0;
     padding: 10px;
     border-radius: 6px;
     overflow-x: auto;
 }
+
 .exp-note-render-view blockquote {
     border-left: 3px solid #D84315;
     padding-left: 12px;
@@ -319,11 +341,13 @@
     color: #8D6E63;
     font-style: italic;
 }
+
 .exp-note-render-view ul,
 .exp-note-render-view ol {
     padding-left: 20px;
     margin: 4px 0 8px;
 }
+
 .exp-note-render-view .exp-note-table-wrap {
     width: 100%;
     overflow-x: auto;
@@ -340,6 +364,7 @@
     margin: 0;
     font-size: 0.9em;
 }
+
 .exp-note-render-view th,
 .exp-note-render-view td {
     border: 1px solid #FFE0B2;
@@ -347,6 +372,7 @@
     text-align: left;
     white-space: nowrap;
 }
+
 .exp-note-render-view th {
     background: #FFF3E0;
     font-weight: 700;
@@ -354,9 +380,11 @@
     top: 0;
     z-index: 1;
 }
+
 .exp-note-render-view tbody tr:nth-child(even) td {
     background: #FFFAF5;
 }
+
 .exp-note-render-view tbody tr:hover td {
     background: #FFF1E3;
 }
@@ -378,9 +406,17 @@
     transition: color 0.3s;
 }
 
-.exp-note-status.saving { color: #FF8F00; }
-.exp-note-status.saved  { color: #43A047; }
-.exp-note-status.error  { color: #E53935; }
+.exp-note-status.saving {
+    color: #FF8F00;
+}
+
+.exp-note-status.saved {
+    color: #43A047;
+}
+
+.exp-note-status.error {
+    color: #E53935;
+}
 
 .exp-note-footer-actions {
     display: flex;
@@ -428,7 +464,9 @@
     box-shadow: 0 5px 16px rgba(216, 67, 21, 0.32);
 }
 
-.exp-notes-add-btn:active { transform: translateY(0); }
+.exp-notes-add-btn:active {
+    transform: translateY(0);
+}
 
 /* 工具按钮（导出、AI 生成、保存等） */
 .exp-notes-action-btn {
@@ -450,6 +488,7 @@
     color: #D84315;
     border: 1px solid #FFE0B2;
 }
+
 .exp-notes-action-btn.secondary:hover {
     background: #FFE0B2;
     box-shadow: 0 2px 8px rgba(216, 67, 21, 0.12);
@@ -460,10 +499,12 @@
     color: white;
     box-shadow: 0 2px 8px rgba(92, 107, 192, 0.28);
 }
+
 .exp-notes-action-btn.ai:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 14px rgba(92, 107, 192, 0.38);
 }
+
 .exp-notes-action-btn.ai:disabled {
     opacity: 0.65;
     cursor: not-allowed;
@@ -472,13 +513,16 @@
 
 /* AI 生成加载动画 */
 @keyframes exp-notes-spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
+
 .exp-notes-ai-spinner {
     display: inline-block;
     width: 13px;
     height: 13px;
-    border: 2px solid rgba(255,255,255,0.4);
+    border: 2px solid rgba(255, 255, 255, 0.4);
     border-top-color: white;
     border-radius: 50%;
     animation: exp-notes-spin 0.7s linear infinite;
@@ -498,8 +542,12 @@
 }
 
 @keyframes exp-notes-fadein {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .exp-notes-confirm-box {
@@ -508,14 +556,20 @@
     padding: 28px 30px 22px;
     max-width: 360px;
     width: 90%;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
     text-align: center;
     animation: exp-notes-slideup 0.18s ease;
 }
 
 @keyframes exp-notes-slideup {
-    from { transform: translateY(12px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(12px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .exp-notes-confirm-box p {
@@ -609,6 +663,7 @@
     transition: all 0.2s;
     font-family: inherit;
 }
+
 .exp-notes-confirm-cancel:hover {
     background: #EFEBE9;
 }
@@ -626,6 +681,7 @@
     font-family: inherit;
     box-shadow: 0 2px 6px rgba(216, 67, 21, 0.3);
 }
+
 .exp-notes-confirm-delete:hover {
     box-shadow: 0 4px 12px rgba(216, 67, 21, 0.4);
     transform: translateY(-1px);
@@ -659,7 +715,16 @@
 
 /* 响应式 */
 @media (max-width: 600px) {
-    .exp-notes-section { padding: 20px 16px; }
-    .exp-notes-header { flex-direction: column; align-items: flex-start; }
-    .exp-note-card { padding: 14px 14px 10px; }
+    .exp-notes-section {
+        padding: 20px 16px;
+    }
+
+    .exp-notes-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .exp-note-card {
+        padding: 14px 14px 10px;
+    }
 }

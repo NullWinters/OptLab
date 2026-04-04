@@ -290,7 +290,7 @@
             {id: "step-btn", description: "单步迭代按钮", type: "normal"},
             {id: "reset-btn", description: "重置实验按钮", type: "normal"},
             {id: "iteration-log-open-btn", description: "查看实验数据按钮", type: "normal"},
-            {id: "iteration-log-export-csv-btn", description: "导出实验数据按钮", type: "normal"},
+            {id: "iteration-log-export-csv-btn", description: "导出实验数据按钮", type: "optional"},
             {id: "iteration-log-save-to-profile-btn", description: "保存实验数据至个人中心按钮", type: "normal"},
             {id: "pan-left-btn", description: "画布向左平移按钮", type: "normal"},
             {id: "pan-right-btn", description: "画布向右平移按钮", type: "normal"},
@@ -300,7 +300,8 @@
         GUIDEBOOK: `
 这是一维搜索方法可视化交互实验，用户可从梯度下降法、牛顿法、割线法中选择一个调参、运行并观察其迭代过程。
 右侧面板集成了算法控制、参数状态显示、实验数据管理以及画布平移缩放功能，用户点击播放按钮即可自动运行算法。
-实验大致流程包括：设置搜索函数、选择搜索方法、设置初始点和参数、运行算法、查看实验数据。
+实验大致流程包括：设置搜索函数、选择搜索方法、设置初始点和参数、播放算法、查看实验数据。
+仅在用户要求演示实验流程或在用户需要寻找某些按钮、划条时实施交互式引导。
 `
     };
 </script>

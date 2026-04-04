@@ -157,7 +157,7 @@ class SMO {
                     for (let k = 0; k < this.N; k++) {
                         if (k === this.i) continue;
                         if (this.alphas[k] > 0 && this.alphas[k] < this.C) {
-                            nonBoundCandidates.push({ idx: k, deltaE: Math.abs(Ei - this.errors[k]) });
+                            nonBoundCandidates.push({idx: k, deltaE: Math.abs(Ei - this.errors[k])});
                         }
                     }
                     if (nonBoundCandidates.length > 0) {
@@ -393,7 +393,7 @@ const App = {
             .attr("width", this.width)
             .attr("height", this.height);
 
-        const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+        const margin = {top: 20, right: 20, bottom: 30, left: 40};
         this.innerWidth = this.width - margin.left - margin.right;
         this.innerHeight = this.height - margin.top - margin.bottom;
 
@@ -436,13 +436,13 @@ const App = {
         document.getElementById('csv-upload').onchange = (e) => this.handleUpload(e);
         document.getElementById('btn-apply-cols').onclick = () => this.applySelectedColumns();
 
-        ['btn-play','btn-pause','btn-step','btn-reset'].forEach((id) => {
+        ['btn-play', 'btn-pause', 'btn-step', 'btn-reset'].forEach((id) => {
             const el = document.getElementById(id);
             if (el) {
                 el.addEventListener('click', () => {
-                    this.trackNoteEvent('control', { action: id.replace('btn-', '') });
-                    this.pushProcessStep('control', { action: id.replace('btn-', '') });
-                }, { capture: true });
+                    this.trackNoteEvent('control', {action: id.replace('btn-', '')});
+                    this.pushProcessStep('control', {action: id.replace('btn-', '')});
+                }, {capture: true});
             }
         });
 
@@ -454,22 +454,22 @@ const App = {
         // Sliders
         const updateC = (val) => {
             this.C = Math.pow(10, parseFloat(val));
-            this.pushProcessStep('set_hyperparam', { param: 'C', value: this.C });
-            this.trackNoteEvent('param_change', { param: 'C', value: this.C });
+            this.pushProcessStep('set_hyperparam', {param: 'C', value: this.C});
+            this.trackNoteEvent('param_change', {param: 'C', value: this.C});
             document.getElementById('val-c').innerText = (this.C < 0.01 || this.C > 1000) ? this.C.toExponential(2) : this.C.toFixed(2);
             if (this.state !== 'unstarted') this.reset();
         };
         const updateTol = (val) => {
             this.tol = Math.pow(10, parseFloat(val));
-            this.pushProcessStep('set_hyperparam', { param: 'tol', value: this.tol });
-            this.trackNoteEvent('param_change', { param: 'tol', value: this.tol });
+            this.pushProcessStep('set_hyperparam', {param: 'tol', value: this.tol});
+            this.trackNoteEvent('param_change', {param: 'tol', value: this.tol});
             document.getElementById('val-tol').innerText = (this.tol < 0.01) ? this.tol.toExponential(2) : this.tol.toFixed(4);
             if (this.state !== 'unstarted') this.reset();
         };
         const updateMaxIter = (val) => {
             this.maxIter = parseInt(val);
-            this.pushProcessStep('set_hyperparam', { param: 'maxIter', value: this.maxIter });
-            this.trackNoteEvent('param_change', { param: 'maxIter', value: this.maxIter });
+            this.pushProcessStep('set_hyperparam', {param: 'maxIter', value: this.maxIter});
+            this.trackNoteEvent('param_change', {param: 'maxIter', value: this.maxIter});
             document.getElementById('val-max-iter').innerText = this.maxIter;
             if (this.state !== 'unstarted') this.reset();
         };
@@ -484,8 +484,8 @@ const App = {
             // In observation.html: AppState.speed = 2100 - parseInt(e.target.value);
             // Higher value in slider means faster speed (smaller interval)
             this.speed = 2100 - parseInt(e.target.value);
-            this.trackNoteEvent('param_change', { param: 'speed', value: this.speed });
-            this.pushProcessStep('set_speed', { slider: parseInt(e.target.value), interval: this.speed });
+            this.trackNoteEvent('param_change', {param: 'speed', value: this.speed});
+            this.pushProcessStep('set_speed', {slider: parseInt(e.target.value), interval: this.speed});
             let speedText;
             speedText = this.speed < 500 ? '快速' : this.speed < 1500 ? '正常' : '慢速';
             document.getElementById('speed-value').innerText = speedText;
@@ -507,18 +507,18 @@ const App = {
     loadExampleData() {
         // Simple linear separable data
         this.data = [
-            { x: 1, y: 1, label: 1 }, { x: 2, y: 1, label: 1 }, { x: 1, y: 2, label: 1 },
-            { x: 4, y: 4, label: -1 }, { x: 5, y: 4, label: -1 }, { x: 4, y: 5, label: -1 },
-            { x: 2, y: 3, label: 1 }, { x: 3, y: 2, label: 1 },
-            { x: 5, y: 5, label: -1 }, { x: 6, y: 5, label: -1 }, { x: 5, y: 6, label: -1 }
+            {x: 1, y: 1, label: 1}, {x: 2, y: 1, label: 1}, {x: 1, y: 2, label: 1},
+            {x: 4, y: 4, label: -1}, {x: 5, y: 4, label: -1}, {x: 4, y: 5, label: -1},
+            {x: 2, y: 3, label: 1}, {x: 3, y: 2, label: 1},
+            {x: 5, y: 5, label: -1}, {x: 6, y: 5, label: -1}, {x: 5, y: 6, label: -1}
         ];
         this.data.forEach((d, i) => d.id = i);
         this.datasetSource = 'example';
         this.rawCSVHeader = ['x', 'y', 'label'];
         this.rawCSVData = this.data.map((d) => [String(d.x), String(d.y), String(d.label)]);
         this.uploadedFiles = [];
-        this.dataSnapshotForNote = this.data.map((d) => ({ ...d }));
-        this.pushProcessStep('load_example_data', { sample_count: this.data.length });
+        this.dataSnapshotForNote = this.data.map((d) => ({...d}));
+        this.pushProcessStep('load_example_data', {sample_count: this.data.length});
         document.getElementById('column-selection').style.display = 'none';
         document.getElementById('csv-upload').value = '';
         this.reset();
@@ -537,8 +537,8 @@ const App = {
                 type: file.type || 'text/csv',
                 text_preview: String(text || '').slice(0, 6000)
             }];
-            this.trackNoteEvent('upload_csv', { file_name: file.name, file_size: file.size });
-            this.pushProcessStep('upload_csv', { file_name: file.name, file_size: file.size });
+            this.trackNoteEvent('upload_csv', {file_name: file.name, file_size: file.size});
+            this.pushProcessStep('upload_csv', {file_name: file.name, file_size: file.size});
             this.processCSV(text);
         };
         reader.readAsText(file);
@@ -553,7 +553,7 @@ const App = {
 
         this.rawCSVHeader = header;
         this.rawCSVData = dataRows;
-        this.pushProcessStep('parse_csv', { headers: header, rows_count: dataRows.length });
+        this.pushProcessStep('parse_csv', {headers: header, rows_count: dataRows.length});
 
         this.fillColumnSelects(header);
         document.getElementById('column-selection').style.display = 'block';
@@ -604,7 +604,7 @@ const App = {
 
             if (isNaN(x) || isNaN(y)) continue;
 
-            newData.push({ x, y, originalLabel: label });
+            newData.push({x, y, originalLabel: label});
             labels.add(label);
         }
 
@@ -620,7 +620,7 @@ const App = {
         });
 
         this.data = newData;
-        this.dataSnapshotForNote = this.data.map((d) => ({ ...d }));
+        this.dataSnapshotForNote = this.data.map((d) => ({...d}));
         this.pushProcessStep('apply_columns', {
             x_col: xIdx,
             y_col: yIdx,
@@ -785,7 +785,7 @@ const App = {
                 .attr("fill", "#f1c40f")
                 .attr("font-weight", "bold")
                 .attr("style", "font-family: Arial, sans-serif; pointer-events: none;");
-            
+
             text_i.append("tspan").text("a");
             text_i.append("tspan")
                 .attr("baseline-shift", "sub")
@@ -866,7 +866,7 @@ const App = {
             .attr("clip-path", "url(#clip)")
             .on("mouseover", (event) => {
                 this.tooltip.transition().duration(200).style("opacity", .9);
-                
+
                 const fmtNum = (val, isFirst = false) => {
                     const sign = val >= 0 ? (isFirst ? "" : "+ ") : (isFirst ? "-" : "- ");
                     return sign + Math.abs(val).toFixed(3);
@@ -1098,7 +1098,7 @@ const App = {
         ]);
 
         const csv = [...summary, header, ...rows].map((cols) => cols.map(esc).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -1112,7 +1112,7 @@ const App = {
     saveIterationDataToProfile() {
         if (typeof getStoredToken !== 'function' || !getStoredToken()) {
             if (window.LoginModal && typeof window.LoginModal.open === 'function') {
-                window.LoginModal.open({ mode: 'login', notice: '请先登录后再保存至个人中心。' });
+                window.LoginModal.open({mode: 'login', notice: '请先登录后再保存至个人中心。'});
             } else {
                 alert('请先登录后再保存至个人中心。');
             }
@@ -1161,7 +1161,9 @@ const App = {
             });
         }
         if (closeBtn && modal) {
-            closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) modal.style.display = 'none';
             });

@@ -144,17 +144,23 @@ async def chat(
                 page_id=data.page_id,
                 guidebook=data.guidebook,
                 buttons=data.buttons,
+                graph_context=data.graph_context,
                 history=history,
             )
 
             # 保存AI回复
             await service.save_message(
-                session_id, "assistant", result.text, result.highlight_ids
+                session_id,
+                "assistant",
+                result.text,
+                result.highlight_ids,
+                text_blocks=result.text_blocks or None,
             )
             await db.commit()
 
             return ChatMessageResponse(
                 text=result.text,
+                text_blocks=result.text_blocks,
                 highlight_ids=result.highlight_ids,
                 session_id=data.session_id,
             )
@@ -166,10 +172,11 @@ async def chat(
                 page_id=data.page_id,
                 guidebook=data.guidebook,
                 buttons=data.buttons,
+                graph_context=data.graph_context,
             )
 
             return ChatMessageResponse(
-                text=result.text, highlight_ids=result.highlight_ids, session_id=""
+                text=result.text, text_blocks=result.text_blocks, highlight_ids=result.highlight_ids, session_id=""
             )
 
     except HTTPException:
@@ -181,7 +188,7 @@ async def chat(
 
 
 async def _ask_with_context(
-        message: str, page_id: str, guidebook: str, buttons: list, history: list
+        message: str, page_id: str, guidebook: str, buttons: list, graph_context: dict | None, history: list
 ) -> AssistantSchema:
     """
     带上下文调用AI助手
@@ -193,17 +200,19 @@ async def _ask_with_context(
     )
 
     # 构建带上下文的系统提示
-    buttons_desc = "\n".join(
-        [
-            f"- ID: `{b['id']}`, 描述: {b['description']}, 类型: {b['type']}"
-            for b in buttons
-        ]
-    )
+    lines = []
+    for b in buttons:
+        bid = b.get("id") if isinstance(b, dict) else getattr(b, "id", "")
+        desc = b.get("description") if isinstance(b, dict) else getattr(b, "description", "")
+        btype = b.get("type") if isinstance(b, dict) else getattr(b, "type", "normal")
+        lines.append(f"- ID: `{bid}`, 描述: {desc}, 类型: {btype}")
+    buttons_desc = "\n".join(lines)
 
     system_prompt = (
         "你是一个流程观察页面的操作助手，帮助用户理解和使用该页面的各项功能。\n\n"
         f"以下是页面指导书：\n{guidebook}\n\n"
         f"以下是页面上所有可用的按钮/控件及其信息：\n{buttons_desc}\n\n"
+        f"以下是页面图形上下文（二维/三维场景摘要，可能为空）：\n{graph_context or {}}\n\n"
     )
 
     system_prompt += (
@@ -211,9 +220,11 @@ async def _ask_with_context(
         "请基于上下文继续回答用户问题。\n\n"
         "回答要求：\n"
         '1. "text" 字段：简洁、清晰地回答用户问题\n'
-        '2. "highlight_ids" 字段：按钮ID数组，按操作顺序排列\n\n'
+        '2. "text_blocks" 字段：当是分步引导时，返回分段文本数组\n'
+        '3. "highlight_ids" 字段：按钮ID数组，按操作顺序排列\n\n'
         "注意：\n"
         "- highlight_ids 中的 ID 必须来自可用按钮列表\n"
+        "- type=normal 必须用户点击后才能下一步；type=optional 可以自动推进\n"
         "- 如果询问算法原理，highlight_ids 返回空数组\n"
         "- 如果问题无关，礼貌回应并返回空数组"
     )

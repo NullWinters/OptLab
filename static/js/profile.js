@@ -90,7 +90,7 @@
         try {
             const token = typeof getStoredToken === "function" ? getStoredToken() : null;
             const res = await fetch("/experiments/records/" + id, {
-                headers: token ? { Authorization: "Bearer " + token } : {},
+                headers: token ? {Authorization: "Bearer " + token} : {},
             });
             if (!res.ok) throw new Error("加载失败");
             const data = await res.json();
@@ -184,7 +184,7 @@
             }
 
             function formatDisplayValue(key, value) {
-                if (value == null) return { isComplex: false, text: "—" };
+                if (value == null) return {isComplex: false, text: "—"};
 
                 if (key === 'constraints' && Array.isArray(value)) {
                     const lines = value.map(function (item, idx) {
@@ -196,7 +196,7 @@
                         }).join('');
                         return '约束' + (idx + 1) + ': ' + expr + ' ≤ ' + Number(item.b);
                     });
-                    return { isComplex: false, text: lines.join('\n'), multiline: true };
+                    return {isComplex: false, text: lines.join('\n'), multiline: true};
                 }
 
                 if (Array.isArray(value)) {
@@ -211,14 +211,14 @@
                             }).join(", ")
                         };
                     }
-                    return { isComplex: true, text: JSON.stringify(value, null, 2) };
+                    return {isComplex: true, text: JSON.stringify(value, null, 2)};
                 }
 
                 if (typeof value === "object") {
-                    return { isComplex: true, text: JSON.stringify(value, null, 2) };
+                    return {isComplex: true, text: JSON.stringify(value, null, 2)};
                 }
 
-                return { isComplex: false, text: String(value) };
+                return {isComplex: false, text: String(value)};
             }
 
             const summaryItems = [];
@@ -273,7 +273,9 @@
 
                     iter.forEach(function (row) {
                         const basisText = Array.isArray(row.basis) ? row.basis.join(', ') : '—';
-                        const bText = Array.isArray(row.b) ? row.b.map(function (v) { return formatNum(v); }).join(', ') : '—';
+                        const bText = Array.isArray(row.b) ? row.b.map(function (v) {
+                            return formatNum(v);
+                        }).join(', ') : '—';
                         const tableauHtml = buildSimplexTableauHtml(row.tableau || row);
                         html += "<tr>" +
                             "<td>" + escapeHtml(row.iteration) + "</td>" +
@@ -371,12 +373,12 @@
         try {
             const token = typeof getStoredToken === "function" ? getStoredToken() : null;
             const res = await fetch("/experiments/records/" + id, {
-                headers: token ? { Authorization: "Bearer " + token } : {},
+                headers: token ? {Authorization: "Bearer " + token} : {},
             });
             if (!res.ok) throw new Error("导出失败");
             const data = await res.json();
             const csv = buildCsvFromRecord(data);
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+            const blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
@@ -394,7 +396,7 @@
         try {
             if (typeof apiRequest !== "function") {
                 if (window.LoginModal && typeof window.LoginModal.open === 'function') {
-                    window.LoginModal.open({ mode: 'login', notice: '请先登录后再修改备注名。' });
+                    window.LoginModal.open({mode: 'login', notice: '请先登录后再修改备注名。'});
                 } else {
                     alert("请先登录后再修改备注名。");
                 }
@@ -416,7 +418,7 @@
                     onConfirm: async function (alias) {
                         await apiRequest('/experiments/records/' + id, {
                             method: 'PATCH',
-                            body: JSON.stringify({ alias: String(alias).trim() }),
+                            body: JSON.stringify({alias: String(alias).trim()}),
                         });
                         await loadList();
                     }
@@ -433,7 +435,7 @@
         try {
             if (typeof apiRequest !== "function") {
                 if (window.LoginModal && typeof window.LoginModal.open === 'function') {
-                    window.LoginModal.open({ mode: 'login', notice: '请先登录后再删除记录。' });
+                    window.LoginModal.open({mode: 'login', notice: '请先登录后再删除记录。'});
                 } else {
                     alert("请先登录后再删除记录。");
                 }
@@ -445,14 +447,14 @@
                     subtitle: '请确认是否删除该记录',
                     message: '确定删除这条实验记录吗？删除后无法恢复。',
                     onConfirm: async function () {
-                        await apiRequest('/experiments/records/' + id, { method: 'DELETE' });
+                        await apiRequest('/experiments/records/' + id, {method: 'DELETE'});
                         await loadList();
                     }
                 });
             } else {
                 const ok = window.confirm("确定删除这条实验记录吗？删除后无法恢复。");
                 if (!ok) return;
-                await apiRequest("/experiments/records/" + id, { method: "DELETE" });
+                await apiRequest("/experiments/records/" + id, {method: "DELETE"});
                 await loadList();
             }
         } catch (e) {

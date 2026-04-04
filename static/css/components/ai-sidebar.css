@@ -180,11 +180,79 @@ body.ai-sidebar-open .ai-toggle-btn {
     font-size: 14px;
     outline: none;
     box-shadow: none;
+    text-decoration: none;
+    background-image: none;
+    appearance: none;
+    -webkit-appearance: none;
 }
 
 .ai-chat-input input:focus {
     border-color: #d84315;
     box-shadow: 0 0 0 3px rgba(216, 67, 21, 0.14);
+    text-decoration: none;
+}
+
+.ai-message-content p {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.ai-message-content h1,
+.ai-message-content h2,
+.ai-message-content h3,
+.ai-message-content h4 {
+    margin: 12px 0 8px 0;
+    color: #d84315;
+    font-size: 1.1em;
+}
+
+.ai-message-content ol,
+.ai-message-content ul {
+    margin: 8px 0;
+    padding-left: 28px;
+    list-style-position: outside;
+}
+
+.ai-message-content li {
+    margin-bottom: 4px;
+}
+
+.ai-message-content li:last-child {
+    margin-bottom: 0;
+}
+
+.ai-message-content blockquote {
+    border-left: 4px solid #d84315;
+    margin: 8px 0;
+    padding: 4px 12px;
+    color: #666;
+    background: rgba(216, 67, 21, 0.05);
+    border-radius: 0 4px 4px 0;
+}
+
+.ai-message-content pre {
+    background: #fdf6f0;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+    border: 1px solid #eee;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.ai-message-content pre code {
+    background: none;
+    padding: 0;
+    color: #333;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+.ai-message-content code {
+    background: #fff3e8;
+    color: #9a3b10;
+    padding: 1px 4px;
+    border-radius: 4px;
 }
 
 #ai-send-btn {
@@ -227,14 +295,14 @@ body.ai-sidebar-open .ai-toggle-btn {
 /* ========== 光栅高亮滤镜 ========== */
 .ai-highlight-overlay {
     position: fixed;
-    z-index: 9999;
+    z-index: 2000000; /* 提升层级，确保在 Canvas/SVG 上方显示 */
     pointer-events: none;
     background: repeating-linear-gradient(
-        45deg,
-        rgba(216, 67, 21, 0.13),
-        rgba(216, 67, 21, 0.13) 4px,
-        transparent 4px,
-        transparent 8px
+            45deg,
+            rgba(216, 67, 21, 0.13),
+            rgba(216, 67, 21, 0.13) 4px,
+            transparent 4px,
+            transparent 8px
     );
     border: 2.5px solid rgba(216, 67, 21, 0.85);
     border-radius: 6px;
@@ -252,8 +320,12 @@ body.ai-sidebar-open .ai-toggle-btn {
 }
 
 @keyframes ai-dots {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
 }
 
 /* ========== 头部操作按钮 ========== */

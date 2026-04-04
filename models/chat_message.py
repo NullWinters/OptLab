@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4, UUID
 
-from sqlalchemy import ForeignKey, Boolean, DateTime, Integer, JSON, String, Text, Uuid
+from sqlalchemy import ForeignKey, Boolean, DateTime, Integer, JSON, String, Text, Uuid, Index
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -20,6 +20,7 @@ class ChatMessage(Base):
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    text_blocks: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     highlight_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     sequence_number: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(
@@ -27,4 +28,9 @@ class ChatMessage(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=func.now(), nullable=False
+    )
+    
+    __table_args__ = (
+        # 窗口查询优化
+        Index("idx_chat_message_window", "session_id", "sequence_number", "is_active"),
     )

@@ -11,6 +11,7 @@ class BisectionSearch {
         this.isComplete = false;
         this.currentIteration = 0;
     }
+
     iterate() {
         if (this.isComplete || (this.b - this.a) < this.eps) {
             this.isComplete = true;
@@ -21,7 +22,7 @@ class BisectionSearch {
         const da = this.df(this.a);
         const db = this.df(this.b);
 
-        this.history.push({ x: mid, y: this.func(mid), a: this.a, b: this.b, df: dmid });
+        this.history.push({x: mid, y: this.func(mid), a: this.a, b: this.b, df: dmid});
 
         if (Math.abs(dmid) < 1e-10) {
             this.a = mid;
@@ -54,6 +55,7 @@ class GoldenSectionSearch {
         this.isComplete = false;
         this.currentIteration = 0;
     }
+
     iterate() {
         if (this.isComplete || (this.b - this.a) < this.eps) {
             this.isComplete = true;
@@ -65,7 +67,7 @@ class GoldenSectionSearch {
         const f1 = this.func(x1);
         const f2 = this.func(x2);
 
-        this.history.push({ a: this.a, b: this.b, x1, x2, f1, f2 });
+        this.history.push({a: this.a, b: this.b, x1, x2, f1, f2});
 
         if (f1 > f2) {
             this.a = x1;
@@ -94,6 +96,7 @@ class FibonacciSearch {
         this.history = [];
         this.isComplete = false;
     }
+
     iterate() {
         if (this.isComplete || this.k >= this.n) {
             this.isComplete = true;
@@ -107,9 +110,9 @@ class FibonacciSearch {
         const x2 = this.b - rho * l;
         const f1 = this.func(x1);
         const f2 = this.func(x2);
-        
-        this.history.push({ a: this.a, b: this.b, x1, x2, f1, f2 });
-        
+
+        this.history.push({a: this.a, b: this.b, x1, x2, f1, f2});
+
         if (f1 > f2) {
             this.a = x1;
         } else if (f1 < f2) {
@@ -118,7 +121,7 @@ class FibonacciSearch {
             this.a = x1;
             this.b = x2;
         }
-        
+
         this.k++;
         if (this.k >= this.n) this.isComplete = true;
         return true;
@@ -132,10 +135,11 @@ class GradientDescent {
         this.xk = x0;
         this.alpha = alpha;
         this.n = n;
-        this.history = [{ x: x0, y: func(x0), df: df(x0) }];
+        this.history = [{x: x0, y: func(x0), df: df(x0)}];
         this.isComplete = false;
         this.currentIteration = 0;
     }
+
     iterate() {
         if (this.isComplete || this.currentIteration >= this.n) {
             this.isComplete = true;
@@ -150,8 +154,8 @@ class GradientDescent {
         this.currentIteration++;
         const y = this.func(this.xk);
         const nextDf = this.df(this.xk);
-        this.history.push({ x: this.xk, y: y, df: nextDf });
-        
+        this.history.push({x: this.xk, y: y, df: nextDf});
+
         if (this.currentIteration >= this.n || !isFinite(this.xk) || !isFinite(y)) {
             this.isComplete = true;
         }
@@ -166,10 +170,11 @@ class NewtonsMethod {
         this.ddf = ddf;
         this.xk = x0;
         this.n = n;
-        this.history = [{ x: x0, y: func(x0), df: df(x0), ddf: ddf(x0) }];
+        this.history = [{x: x0, y: func(x0), df: df(x0), ddf: ddf(x0)}];
         this.isComplete = false;
         this.currentIteration = 0;
     }
+
     iterate() {
         const d = this.df(this.xk);
         if (this.isComplete || this.currentIteration >= this.n || Math.abs(d) < 1e-10) {
@@ -185,7 +190,7 @@ class NewtonsMethod {
         this.currentIteration++;
         const nextDf = this.df(this.xk);
         const nextDdf = this.ddf(this.xk);
-        this.history.push({ x: this.xk, y: this.func(this.xk), df: nextDf, ddf: nextDdf });
+        this.history.push({x: this.xk, y: this.func(this.xk), df: nextDf, ddf: nextDdf});
         if (this.currentIteration >= this.n || Math.abs(nextDf) < 1e-10) this.isComplete = true;
         return true;
     }
@@ -199,12 +204,13 @@ class SecantMethod {
         this.x_prev = x_prev;
         this.n = n;
         this.history = [
-            { x: x_prev, y: func(x_prev), df: df(x_prev) },
-            { x: x0, y: func(x0), df: df(x0) }
+            {x: x_prev, y: func(x_prev), df: df(x_prev)},
+            {x: x0, y: func(x0), df: df(x0)}
         ];
         this.isComplete = false;
         this.currentIteration = 0;
     }
+
     iterate() {
         const dfk = this.df(this.xk);
         if (this.isComplete || this.currentIteration >= this.n || Math.abs(dfk) < 1e-10) {
@@ -221,29 +227,41 @@ class SecantMethod {
         this.xk = nextX;
         this.currentIteration++;
         const nextDf = this.df(this.xk);
-        this.history.push({ x: this.xk, y: this.func(this.xk), df: nextDf });
+        this.history.push({x: this.xk, y: this.func(this.xk), df: nextDf});
         if (this.currentIteration >= this.n || Math.abs(nextDf) < 1e-10) this.isComplete = true;
         return true;
     }
 }
 
-(function() {
+(function () {
     function toSubscript(n) {
-        const map = {'-':'\u208B','0':'\u2080','1':'\u2081','2':'\u2082','3':'\u2083','4':'\u2084','5':'\u2085','6':'\u2086','7':'\u2087','8':'\u2088','9':'\u2089'};
+        const map = {
+            '-': '\u208B',
+            '0': '\u2080',
+            '1': '\u2081',
+            '2': '\u2082',
+            '3': '\u2083',
+            '4': '\u2084',
+            '5': '\u2085',
+            '6': '\u2086',
+            '7': '\u2087',
+            '8': '\u2088',
+            '9': '\u2089'
+        };
         return String(n).split('').map(ch => map[ch] || ch).join('');
     }
 
     class SearchVisualizer {
         constructor(containerId) {
             this.containerId = containerId;
-            this.margin = { top: 40, right: 40, bottom: 50, left: 70 };
+            this.margin = {top: 40, right: 40, bottom: 50, left: 70};
             this.container = document.getElementById(containerId);
             this.width = this.container.clientWidth;
             this.height = this.container.clientHeight || 350;
-            
+
             this.plotWidth = this.width - this.margin.left - this.margin.right;
             this.plotHeight = this.height - this.margin.top - this.margin.bottom;
-            
+
             this.duration = 400;
             this.currentDomain = null;
             this.currentFunc = null;
@@ -270,7 +288,7 @@ class SecantMethod {
                     this.update(this.lastArgs.func, this.lastArgs.domain, this.lastArgs.history, this.lastArgs.type, this.lastArgs.algo, this.lastArgs.subStep);
                 }
             };
-            
+
             this.initSvg();
         }
 
@@ -279,7 +297,7 @@ class SecantMethod {
             this.height = this.container.clientHeight;
             this.plotWidth = Math.max(0, this.width - this.margin.left - this.margin.right);
             this.plotHeight = Math.max(0, this.height - this.margin.top - this.margin.bottom);
-            
+
             // 只有在尺寸有效时才初始化 SVG
             if (this.width > 0 && this.height > 0) {
                 this.initSvg();
@@ -300,7 +318,7 @@ class SecantMethod {
 
             this.plot = this.svg.append("g")
                 .attr("transform", `translate(${this.margin.left},${this.margin.top})`);
-            
+
             this.xScale = d3.scaleLinear().range([0, this.plotWidth]);
             this.yScale = d3.scaleLinear().range([this.plotHeight, 0]);
 
@@ -323,7 +341,7 @@ class SecantMethod {
                 .attr("fill", "none")
                 .attr("stroke", "var(--primary-color)")
                 .attr("stroke-width", 2.5);
-                
+
             // 轴标签
             this.plot.append("text")
                 .attr("x", this.plotWidth)
@@ -332,7 +350,7 @@ class SecantMethod {
                 .attr("fill", "#8d6e63")
                 .attr("font-size", "12px")
                 .text("x");
-                
+
             this.plot.append("text")
                 .attr("x", -10)
                 .attr("y", -15)
@@ -353,9 +371,9 @@ class SecantMethod {
 
         updateAxes(duration = this.duration) {
             const t = d3.transition().duration(duration);
-            
+
             this.xAxisG.transition(t).call(d3.axisBottom(this.xScale).ticks(8));
-            
+
             // 针对极端大数据集的 Y 轴格式化
             const yAxis = d3.axisLeft(this.yScale)
                 .ticks(6)
@@ -366,7 +384,7 @@ class SecantMethod {
                     return d3.format(".2s")(d);
                 });
             this.yAxisG.transition(t).call(yAxis);
-            
+
             // 网格更新
             let gridX = this.gridLayer.selectAll("line.grid-x").data(this.xScale.ticks(8));
             gridX.exit().remove();
@@ -392,9 +410,9 @@ class SecantMethod {
         }
 
         update(func, domain, history = [], type = "point", algo = null, subStep = 0) {
-            this.lastArgs = { func, domain, history, type, algo, subStep };
+            this.lastArgs = {func, domain, history, type, algo, subStep};
             this.currentFunc = func;
-            
+
             // 检测并修复隐藏容器导致的尺寸为0问题
             if ((this.width <= 0 || this.height <= 0) && this.container.clientWidth > 0 && this.container.clientHeight > 0) {
                 this.width = this.container.clientWidth;
@@ -403,29 +421,29 @@ class SecantMethod {
                 this.plotHeight = Math.max(0, this.height - this.margin.top - this.margin.bottom);
                 this.initSvg();
             }
-            
+
             // domain 校验
             let dom = this.currentDomain || domain;
             if (!dom || !isFinite(dom[0]) || !isFinite(dom[1]) || dom[0] === dom[1]) {
                 dom = [-10, 10];
             }
             this.xScale.domain(dom);
-            
+
             // 自适应采样
             const rangeSamples = 100;
             let xSamples = d3.range(dom[0], dom[1], (dom[1] - dom[0]) / rangeSamples);
-            
-            const optVal = (type === "range" && algo && algo.constructor.name === "BisectionSearch") ? 
-                          (algo.a + algo.b)/2 : (type === "ls" ? b_fit : p_opt_val);
+
+            const optVal = (type === "range" && algo && algo.constructor.name === "BisectionSearch") ?
+                (algo.a + algo.b) / 2 : (type === "ls" ? b_fit : p_opt_val);
             if (isFinite(optVal) && optVal >= dom[0] && optVal <= dom[1]) {
                 xSamples.push(optVal);
             }
-            xSamples.sort((a,b) => a - b);
-            
+            xSamples.sort((a, b) => a - b);
+
             // 计算 y 轴范围，增加稳健性
             const yValues = xSamples.map(x => func(x)).filter(y => isFinite(y));
             let yExtent = d3.extent(yValues);
-            
+
             if (yExtent[0] === undefined) yExtent = [0, 1];
             if (yExtent[0] === yExtent[1]) yExtent = [yExtent[0] - 1, yExtent[0] + 1];
 
@@ -440,13 +458,13 @@ class SecantMethod {
                 .defined(d => isFinite(d.y) && Math.abs(d.y) < 1e25) // 过滤掉极端异常值
                 .x(d => this.xScale(d.x))
                 .y(d => this.yScale(d.y));
-            
+
             let curvePoints = d3.range(dom[0], dom[1], (dom[1] - dom[0]) / adaptiveSamples);
             if (isFinite(optVal) && optVal >= dom[0] && optVal <= dom[1]) curvePoints.push(optVal);
-            curvePoints.sort((a,b) => a - b);
+            curvePoints.sort((a, b) => a - b);
 
             const curveData = curvePoints
-                .map(x => ({ x, y: func(x) }))
+                .map(x => ({x, y: func(x)}))
                 .filter(d => isFinite(d.y));
 
             this.functionPath.datum(curveData)
@@ -472,8 +490,8 @@ class SecantMethod {
 
         updateRangeHistory(history, func, algo, subStep = 0) {
             const duration = this.duration;
-            let latest = algo ? { a: algo.a, b: algo.b } : history[history.length - 1];
-            
+            let latest = algo ? {a: algo.a, b: algo.b} : history[history.length - 1];
+
             const intervalData = latest ? [latest] : [];
             let rect = this.intervalLayer.selectAll("rect.interval-rect").data(intervalData);
             rect.exit().remove();
@@ -523,8 +541,20 @@ class SecantMethod {
                 const method = algo.constructor.name;
                 if (method === "BisectionSearch") {
                     if (subStep >= 1) {
-                        trialPoints.push({x: algo.a, label: "f'(a)", y: algo.func(algo.a), df: algo.df(algo.a), color: '#d84315'});
-                        trialPoints.push({x: algo.b, label: "f'(b)", y: algo.func(algo.b), df: algo.df(algo.b), color: '#d84315'});
+                        trialPoints.push({
+                            x: algo.a,
+                            label: "f'(a)",
+                            y: algo.func(algo.a),
+                            df: algo.df(algo.a),
+                            color: '#d84315'
+                        });
+                        trialPoints.push({
+                            x: algo.b,
+                            label: "f'(b)",
+                            y: algo.func(algo.b),
+                            df: algo.df(algo.b),
+                            color: '#d84315'
+                        });
                     }
                     if (subStep >= 2) {
                         const mid = (algo.a + algo.b) / 2;
@@ -587,7 +617,7 @@ class SecantMethod {
                     if (d.df !== undefined) txt += ` (f'=${d.df.toFixed(3)})`;
                     return txt;
                 });
-                
+
             let compText = this.pointsLayer.selectAll("text.compare-info").data(compareInfo ? [compareInfo] : []);
             compText.exit().remove();
             compText.enter().append("text").attr("class", "compare-info")
@@ -603,15 +633,15 @@ class SecantMethod {
             if (algo && subStep === 1 && !algo.isComplete) {
                 const method = algo.constructor.name;
                 if (method === "GradientDescent") {
-                    nextPoint = { x: algo.xk - algo.alpha * algo.df(algo.xk) };
+                    nextPoint = {x: algo.xk - algo.alpha * algo.df(algo.xk)};
                 } else if (method === "NewtonsMethod") {
                     const df = algo.df(algo.xk);
                     const ddf = algo.ddf(algo.xk);
-                    if (Math.abs(ddf) > 1e-10) nextPoint = { x: algo.xk - df / ddf };
+                    if (Math.abs(ddf) > 1e-10) nextPoint = {x: algo.xk - df / ddf};
                 } else if (method === "SecantMethod") {
                     const dfk = algo.df(algo.xk);
                     const df_prev = algo.df(algo.x_prev);
-                    if (Math.abs(dfk - df_prev) > 1e-10) nextPoint = { x: algo.xk - dfk * (algo.xk - algo.x_prev) / (dfk - df_prev) };
+                    if (Math.abs(dfk - df_prev) > 1e-10) nextPoint = {x: algo.xk - dfk * (algo.xk - algo.x_prev) / (dfk - df_prev)};
                 }
                 if (nextPoint) {
                     nextPoint.y = algo.func(nextPoint.x);
@@ -661,7 +691,7 @@ class SecantMethod {
     let b_search = 0, a_search = 0; // 搜索解结果 (LS)
 
     let lsViz, profitViz;
-    
+
     // 状态管理
     const AppState = {
         ls: {
@@ -725,6 +755,7 @@ class SecantMethod {
             updateSliders('ls');
             resetAlgo('ls');
         });
+
         function speedLabel(sliderValue) {
             const v = Number(sliderValue);
             if (!isFinite(v)) return '—';
@@ -958,7 +989,10 @@ class SecantMethod {
                     alert('当前尚无迭代数据，请先运行一次完整拟合实验。');
                     return;
                 }
-                const esc = v => { const s = String(v ?? ''); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const esc = v => {
+                    const s = String(v ?? '');
+                    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+                };
                 const summary = [
                     ['项目', '值'],
                     ['原函数/目标', 'L(β)'],
@@ -998,7 +1032,7 @@ class SecantMethod {
                 ]);
                 const csvLines = [...summary, header, ...rows].map(cols => cols.map(esc).join(',')).join('\n');
 
-                const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
+                const blob = new Blob([csvLines], {type: 'text/csv;charset=utf-8;'});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1037,7 +1071,14 @@ class SecantMethod {
                     alert('当前尚无迭代数据，请先运行一次完整拟合实验后再保存。');
                     return;
                 }
-                const methodLabels = { golden: '黄金分割法', fib: '斐波那契数列法', bisect: '二分法', gd: '梯度下降法', newton: '牛顿法', secant: '割线法' };
+                const methodLabels = {
+                    golden: '黄金分割法',
+                    fib: '斐波那契数列法',
+                    bisect: '二分法',
+                    gd: '梯度下降法',
+                    newton: '牛顿法',
+                    secant: '割线法'
+                };
                 const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
                 if (alias == null || String(alias).trim() === '') return;
                 const payload = {
@@ -1046,7 +1087,11 @@ class SecantMethod {
                     initial_state: AppState.ls.initialParams || {},
                     iteration_data: log
                 };
-                apiPost('/experiments/records', { alias: String(alias).trim(), source_page: 'line-search.application.main', payload })
+                apiPost('/experiments/records', {
+                    alias: String(alias).trim(),
+                    source_page: 'line-search.application.main',
+                    payload
+                })
                     .then(() => alert('已保存至个人中心。'))
                     .catch(() => alert('保存失败，请检查登录状态后重试。'));
             });
@@ -1201,7 +1246,10 @@ class SecantMethod {
                     alert('当前尚无迭代数据，请先运行一次完整利润优化实验。');
                     return;
                 }
-                const esc = v => { const s = String(v ?? ''); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s; };
+                const esc = v => {
+                    const s = String(v ?? '');
+                    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+                };
                 const summary = [
                     ['项目', '值'],
                     ['原函数/目标', '-π(p)'],
@@ -1241,7 +1289,7 @@ class SecantMethod {
                 ]);
                 const csvLines = [...summary, header, ...rows].map(cols => cols.map(esc).join(',')).join('\n');
 
-                const blob = new Blob([csvLines], { type: 'text/csv;charset=utf-8;' });
+                const blob = new Blob([csvLines], {type: 'text/csv;charset=utf-8;'});
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1279,7 +1327,14 @@ class SecantMethod {
                     alert('当前尚无迭代数据，请先运行一次完整利润优化实验后再保存。');
                     return;
                 }
-                const methodLabels = { golden: '黄金分割法', fib: '斐波那契数列法', bisect: '二分法', gd: '梯度下降法', newton: '牛顿法', secant: '割线法' };
+                const methodLabels = {
+                    golden: '黄金分割法',
+                    fib: '斐波那契数列法',
+                    bisect: '二分法',
+                    gd: '梯度下降法',
+                    newton: '牛顿法',
+                    secant: '割线法'
+                };
                 const methodForProfit = AppState.profit.method || '';
                 const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
                 if (alias == null || String(alias).trim() === '') return;
@@ -1289,7 +1344,11 @@ class SecantMethod {
                     initial_state: AppState.profit.initialParams || {},
                     iteration_data: log
                 };
-                apiPost('/experiments/records', { alias: String(alias).trim(), source_page: 'line-search.application.main', payload })
+                apiPost('/experiments/records', {
+                    alias: String(alias).trim(),
+                    source_page: 'line-search.application.main',
+                    payload
+                })
                     .then(() => alert('已保存至个人中心。'))
                     .catch(() => alert('保存失败，请检查登录状态后重试。'));
             });
@@ -1299,13 +1358,13 @@ class SecantMethod {
     function loadDefaultData() {
         prices = [10, 20, 30, 40, 50];
         demands = [200, 150, 110, 80, 60];
-        rawData = [["价格", "需求"], [10,200], [20,150], [30,110], [40,80], [50,60]];
+        rawData = [["价格", "需求"], [10, 200], [20, 150], [30, 110], [40, 80], [50, 60]];
         AppState.data.source = 'default';
         AppState.data.uploadedFiles = [];
         AppState.data.headers = ['价格', '需求'];
         AppState.data.sample_count = prices.length;
         if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
-            window.ExperimentNotes.trackEvent('dataset_reset_default', { sample_count: prices.length });
+            window.ExperimentNotes.trackEvent('dataset_reset_default', {sample_count: prices.length});
         }
         document.getElementById('columnSelector').style.display = 'none';
         document.getElementById('applyColSelection').style.display = 'none';
@@ -1333,7 +1392,7 @@ class SecantMethod {
                 text_preview: String(content || '').slice(0, 6000)
             }];
             if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
-                window.ExperimentNotes.trackEvent('upload_csv', { file_name: file.name, file_size: file.size });
+                window.ExperimentNotes.trackEvent('upload_csv', {file_name: file.name, file_size: file.size});
             }
             const priceSelect = document.getElementById('priceColSelect');
             const demandSelect = document.getElementById('demandColSelect');
@@ -1354,14 +1413,22 @@ class SecantMethod {
     function updateDataFromSelectedColumns() {
         const pIdx = parseInt(document.getElementById('priceColSelect').value);
         const dIdx = parseInt(document.getElementById('demandColSelect').value);
-        prices = []; demands = [];
-        for(let i=1; i<rawData.length; i++) {
+        prices = [];
+        demands = [];
+        for (let i = 1; i < rawData.length; i++) {
             const p = parseFloat(rawData[i][pIdx]), d = parseFloat(rawData[i][dIdx]);
-            if(!isNaN(p) && !isNaN(d)) { prices.push(p); demands.push(d); }
+            if (!isNaN(p) && !isNaN(d)) {
+                prices.push(p);
+                demands.push(d);
+            }
         }
         AppState.data.sample_count = prices.length;
         if (window.ExperimentNotes && typeof window.ExperimentNotes.trackEvent === 'function') {
-            window.ExperimentNotes.trackEvent('apply_columns', { price_col: pIdx, demand_col: dIdx, sample_count: prices.length });
+            window.ExperimentNotes.trackEvent('apply_columns', {
+                price_col: pIdx,
+                demand_col: dIdx,
+                sample_count: prices.length
+            });
         }
         updateAll();
     }
@@ -1379,7 +1446,7 @@ class SecantMethod {
         let html = '';
         const n = prices.length;
         const maxDisplay = 100;
-        
+
         if (n <= maxDisplay) {
             prices.forEach((p, i) => {
                 html += `<tr><td>${p}</td><td>${demands[i]}</td></tr>`;
@@ -1396,7 +1463,7 @@ class SecantMethod {
                 html += `<tr><td>${prices[i]}</td><td>${demands[i]}</td></tr>`;
             }
         }
-        
+
         const dataTableBody = document.getElementById('dataTableBody');
         if (dataTableBody) {
             dataTableBody.innerHTML = html;
@@ -1409,7 +1476,7 @@ class SecantMethod {
         if (n < 2) return;
         x_mean = prices.reduce((a, b) => a + b, 0) / n;
         y_mean = demands.reduce((a, b) => a + b, 0) / n;
-        A_ls = prices.reduce((acc, p) => acc + (p - x_mean)**2, 0);
+        A_ls = prices.reduce((acc, p) => acc + (p - x_mean) ** 2, 0);
         B_ls = prices.reduce((acc, p, i) => acc + (demands[i] - y_mean) * (p - x_mean), 0);
         b_fit = B_ls / A_ls;
         a_fit = y_mean - b_fit * x_mean;
@@ -1432,38 +1499,38 @@ class SecantMethod {
         const optVal = (type === 'ls') ? b_fit : p_opt_val;
         const configs = {
             golden: [
-                { id: 'a', label: '左区间 a', min: optVal - 10, max: optVal, step: 0.1, val: optVal - 1 },
-                { id: 'b', label: '右区间 b', min: optVal, max: optVal + 10, step: 0.1, val: optVal + 1 },
-                { id: 'eps', label: '精度 ε', min: 0.001, max: 0.1, step: 0.001, val: 0.01 }
+                {id: 'a', label: '左区间 a', min: optVal - 10, max: optVal, step: 0.1, val: optVal - 1},
+                {id: 'b', label: '右区间 b', min: optVal, max: optVal + 10, step: 0.1, val: optVal + 1},
+                {id: 'eps', label: '精度 ε', min: 0.001, max: 0.1, step: 0.001, val: 0.01}
             ],
             fib: [
-                { id: 'a', label: '左区间 a', min: optVal - 10, max: optVal, step: 0.1, val: optVal - 1 },
-                { id: 'b', label: '右区间 b', min: optVal, max: optVal + 10, step: 0.1, val: optVal + 1 },
-                { id: 'eps', label: '修正系数 ε', min: 0.001, max: 0.1, step: 0.001, val: 0.01 },
-                { id: 'n', label: '迭代次数 N', min: 2, max: 50, step: 1, val: 15 }
+                {id: 'a', label: '左区间 a', min: optVal - 10, max: optVal, step: 0.1, val: optVal - 1},
+                {id: 'b', label: '右区间 b', min: optVal, max: optVal + 10, step: 0.1, val: optVal + 1},
+                {id: 'eps', label: '修正系数 ε', min: 0.001, max: 0.1, step: 0.001, val: 0.01},
+                {id: 'n', label: '迭代次数 N', min: 2, max: 50, step: 1, val: 15}
             ],
             bisect: [
-                { id: 'a', label: '左区间 a', min: optVal - 10, max: optVal, step: 0.1, val: optVal - 1 },
-                { id: 'b', label: '右区间 b', min: optVal, max: optVal + 10, step: 0.1, val: optVal + 1 },
-                { id: 'eps', label: '精度 ε', min: 0.001, max: 0.1, step: 0.001, val: 0.01 }
+                {id: 'a', label: '左区间 a', min: optVal - 10, max: optVal, step: 0.1, val: optVal - 1},
+                {id: 'b', label: '右区间 b', min: optVal, max: optVal + 10, step: 0.1, val: optVal + 1},
+                {id: 'eps', label: '精度 ε', min: 0.001, max: 0.1, step: 0.001, val: 0.01}
             ],
             gd: [
-                { id: 'x0', label: '初始值 x₀', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 1 },
-                { id: 'eta', label: '学习率 η', min: 0.001, max: 1.0, step: 0.001, val: 0.01 },
-                { id: 'n', label: '迭代次数 N', min: 2, max: 100, step: 1, val: 25 }
+                {id: 'x0', label: '初始值 x₀', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 1},
+                {id: 'eta', label: '学习率 η', min: 0.001, max: 1.0, step: 0.001, val: 0.01},
+                {id: 'n', label: '迭代次数 N', min: 2, max: 100, step: 1, val: 25}
             ],
             newton: [
-                { id: 'x0', label: '初始值 x₀', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 1 },
-                { id: 'n', label: '迭代次数 N', min: 2, max: 100, step: 1, val: 25 }
+                {id: 'x0', label: '初始值 x₀', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 1},
+                {id: 'n', label: '迭代次数 N', min: 2, max: 100, step: 1, val: 25}
             ],
             secant: [
-                { id: 'x0', label: '初始值 x₀', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 1 },
-                { id: 'x_prev', label: '初始值 x₋₁', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 2 },
-                { id: 'n', label: '迭代次数 N', min: 2, max: 100, step: 1, val: 25 }
+                {id: 'x0', label: '初始值 x₀', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 1},
+                {id: 'x_prev', label: '初始值 x₋₁', min: optVal - 10, max: optVal + 10, step: 0.1, val: optVal - 2},
+                {id: 'n', label: '迭代次数 N', min: 2, max: 100, step: 1, val: 25}
             ]
         };
         const currentConfigs = configs[method] || [];
-        
+
         // 根据是否有配置项显示或隐藏滑块面板
         if (currentConfigs.length > 0) {
             container.style.display = 'grid';
@@ -1475,7 +1542,8 @@ class SecantMethod {
             const group = document.createElement('div');
             group.className = 'control-group';
             if (type === 'profit' && (conf.id === 'a' || conf.id === 'b' || conf.id === 'x0' || conf.id === 'x_prev')) {
-                conf.min = Math.max(0, conf.min); conf.val = Math.max(0, conf.val);
+                conf.min = Math.max(0, conf.min);
+                conf.val = Math.max(0, conf.val);
             }
             group.innerHTML = `<label>${conf.label}: <span class="value-display" id="${type}-${conf.id}-val">${Number(conf.val).toFixed(3)}</span></label>
                 <input type="range" id="${type}-${conf.id}-slider" min="${conf.min}" max="${conf.max}" step="${conf.step}" value="${conf.val}">`;
@@ -1501,20 +1569,20 @@ class SecantMethod {
         state.status = "未开始";
         state.method = document.getElementById(`${type}MethodSelect`).value;
         state.iterationLog = [];
-        
+
         if (type === 'ls') {
             const ps = document.getElementById('profitSection');
             if (ps) ps.style.display = 'none';
         }
-        
+
         const viz = type === 'ls' ? lsViz : profitViz;
         viz.currentDomain = null; // 重置视角
-        
+
         const method = state.method;
         let func, df, ddf, domain;
         if (type === 'ls') {
             const scale = A_ls || 1;
-            func = (b) => (A_ls * b**2 - 2 * B_ls * b) / scale;
+            func = (b) => (A_ls * b ** 2 - 2 * B_ls * b) / scale;
             df = (b) => (2 * A_ls * b - 2 * B_ls) / scale;
             ddf = (b) => (2 * A_ls) / scale;
             domain = [b_fit - 10, b_fit + 10];
@@ -1607,13 +1675,19 @@ class SecantMethod {
     }
 
     function createAlgo(method, func, df, ddf, params) {
-        switch(method) {
-            case 'bisect': return new BisectionSearch(func, df, params.a, params.b, params.eps);
-            case 'golden': return new GoldenSectionSearch(func, params.a, params.b, params.eps);
-            case 'fib': return new FibonacciSearch(func, params.a, params.b, params.eps, params.n);
-            case 'gd': return new GradientDescent(func, df, params.x0, params.eta, params.n);
-            case 'newton': return new NewtonsMethod(func, df, ddf, params.x0, params.n);
-            case 'secant': return new SecantMethod(func, df, params.x0, params.x_prev, params.n);
+        switch (method) {
+            case 'bisect':
+                return new BisectionSearch(func, df, params.a, params.b, params.eps);
+            case 'golden':
+                return new GoldenSectionSearch(func, params.a, params.b, params.eps);
+            case 'fib':
+                return new FibonacciSearch(func, params.a, params.b, params.eps, params.n);
+            case 'gd':
+                return new GradientDescent(func, df, params.x0, params.eta, params.n);
+            case 'newton':
+                return new NewtonsMethod(func, df, ddf, params.x0, params.n);
+            case 'secant':
+                return new SecantMethod(func, df, params.x0, params.x_prev, params.n);
         }
     }
 
@@ -1634,7 +1708,10 @@ class SecantMethod {
     function pausePlay(type, silent = false) {
         const state = AppState[type];
         state.isPlaying = false;
-        if (state.timer) { clearInterval(state.timer); state.timer = null; }
+        if (state.timer) {
+            clearInterval(state.timer);
+            state.timer = null;
+        }
         if (!silent) {
             if (state.algo.isComplete && state.subStep === 0) {
                 state.status = "已完成";
@@ -1654,7 +1731,7 @@ class SecantMethod {
         state.subStep++;
         const method = document.getElementById(`${type}MethodSelect`).value;
         const isRange = ['bisect', 'golden', 'fib'].includes(method);
-        
+
         let completedCycle = false;
         if (isRange) {
             if (state.subStep === 4) {
@@ -1695,7 +1772,7 @@ class SecantMethod {
         const viz = type === 'ls' ? lsViz : profitViz;
         const method = document.getElementById(`${type}MethodSelect`).value;
         const isRange = ['bisect', 'golden', 'fib'].includes(method);
-        
+
         let domain;
         if (type === 'ls') domain = [b_fit - 10, b_fit + 10];
         else {
@@ -1718,19 +1795,19 @@ class SecantMethod {
         }
 
         viz.update(algo.func, domain, algo.history, isRange ? "range" : "point", algo, state.subStep);
-        
+
         const resSpan = document.getElementById(`${type}SearchRes`);
         const stepSpan = document.getElementById(`${type}StepInfo`);
         if (algo.history.length > 0 || state.subStep > 0) {
             const val = isRange ? (algo.a + algo.b) / 2 : algo.xk;
             resSpan.textContent = val.toFixed(4);
             stepSpan.textContent = `${state.status} (第 ${algo.currentIteration || algo.k || 0} 轮, 子步 ${state.subStep})`;
-            
+
             if (type === 'ls') {
                 const cur_a = y_mean - val * x_mean;
                 document.getElementById('lsInterceptRes').textContent = cur_a.toFixed(4);
-                document.getElementById('funcDisplay').textContent = `D(p) = ${cur_a.toFixed(2)} ${val>=0?'+':'-'} ${Math.abs(val).toFixed(2)}p`;
-                
+                document.getElementById('funcDisplay').textContent = `D(p) = ${cur_a.toFixed(2)} ${val >= 0 ? '+' : '-'} ${Math.abs(val).toFixed(2)}p`;
+
                 if (algo.isComplete && state.subStep === 0) {
                     b_search = val;
                     a_search = cur_a;
@@ -1738,7 +1815,7 @@ class SecantMethod {
                     document.getElementById('aDisplayForProfit').textContent = a_search.toFixed(2);
                     document.getElementById('signDisplayForProfit').textContent = b_search >= 0 ? '+' : '-';
                     document.getElementById('bDisplayForProfit').textContent = Math.abs(b_search).toFixed(2);
-                    
+
                     // 立即触发第二部分画布的有效重绘
                     if (profitViz) profitViz.resize();
                     updateViz('profit');

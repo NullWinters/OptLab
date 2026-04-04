@@ -3,7 +3,7 @@
 {% block title %}个人中心 - OptLab{% endblock %}
 
 {% block head %}
-    <link rel="stylesheet" href="/static/css/base/account.css">
+<link rel="stylesheet" href="/static/css/base/account.css">
 {% endblock %}
 
 {% block ai_sidebar %}{% endblock %}
@@ -18,7 +18,9 @@
         <section class="account-card">
             <h2 class="account-card-title">实验记录</h2>
             <div id="record-list-loading" class="account-placeholder">加载中…</div>
-            <div id="record-list-empty" class="account-placeholder is-hidden">暂无实验记录，在实验页运行算法后点击「保存至个人中心」即可保存。</div>
+            <div id="record-list-empty" class="account-placeholder is-hidden">
+                暂无实验记录，在实验页运行算法后点击「保存至个人中心」即可保存。
+            </div>
             <ul id="record-list" class="record-list"></ul>
         </section>
     </main>
@@ -40,6 +42,6 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/profile.js"></script>
+<script src="/static/js/main.js"></script>
+<script src="/static/js/profile.js"></script>
 {% endblock %}
