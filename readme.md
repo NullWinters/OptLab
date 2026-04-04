@@ -164,7 +164,7 @@ OptLab/
 #### 1. 克隆项目
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/NullWinters/OptLab.git
 cd OptLab
 ```
 
@@ -178,8 +178,14 @@ source .venv/bin/activate  # Linux/macOS
 
 # 3. 安装依赖
 
+- 使用pip
 ```bash
 pip install -e .
+```
+
+- 或使用uv
+```bash
+uv sync
 ```
 
 # 4. 配置环境变量
@@ -201,7 +207,7 @@ python scripts/init_db.py
 # 6. 运行服务器
 
 ```bash
-uvicorn main:app --reload --port 8001
+uvicorn main:app --host 0.0.0.0 --port 8001
 ```
 
 ## 许可证
