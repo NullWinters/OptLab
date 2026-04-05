@@ -147,95 +147,112 @@
         <div class="left-column">
             <!-- 全局控制面板 -->
             <div class="control-panel">
-                <h3>全局控制</h3>
-                <div class="control-group">
-                    <label for="function-select">测试函数:</label>
-                    <div style="display: flex; gap: 5px;">
-                        <select id="function-select" style="width: 180px;">
-                            <!-- 动态填充 -->
-                        </select>
-                        <button id="custom-func-btn" class="control-btn btn-primary"
-                                style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
-                        </button>
-                    </div>
+                <div class="panel-header">
+                    <h3>全局控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
                 </div>
+                <div class="panel-content">
+                    <div class="control-group">
+                        <label for="function-select">测试函数:</label>
+                        <div style="display: flex; gap: 5px;">
+                            <select id="function-select" style="width: 180px;">
+                                <!-- 动态填充 -->
+                            </select>
+                            <button id="custom-func-btn" class="control-btn btn-primary"
+                                    style="padding: 5px 10px; font-size: 14px; flex: 1;">自定义
+                            </button>
+                        </div>
+                    </div>
 
-                <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                    <div class="control-group" style="flex: 1; min-width: 150px;">
-                        <label for="initial-point0-slider">初始点 x<sub>0</sub>:</label>
-                        <input type="range" id="initial-point0-slider" min="-10" max="10" step="0.1" value="1"
-                               style="width: 100%;">
-                        <span id="initial-point0-value">1</span>
-                    </div>
-                    <div class="control-group" style="flex: 1; min-width: 150px;">
-                        <label for="initial-point-1-slider">初始点 x<sub>-1</sub>:</label>
-                        <input type="range" id="initial-point-1-slider" min="-10" max="10" step="0.1" value="2"
-                               style="width: 100%;">
-                        <span id="initial-point-1-value">2</span>
-                    </div>
-                    <div class="control-group" style="flex: 1; min-width: 150px;">
-                        <label for="iterations">迭代次数 N:</label>
-                        <input type="range" id="iterations" min="2" max="30" step="1" value="10" style="width: 100%;">
-                        <span id="iterations-value">10</span>
-                    </div>
-                    <div class="control-group" style="flex: 1; min-width: 150px;">
-                        <label for="learning-rate">学习率 α:</label>
-                        <input type="range" id="learning-rate" min="0.001" max="1" step="0.001" value="0.01"
-                               style="width: 100%;">
-                        <span id="learning-rate-value">0.01</span>
+                    <div class="slider-row" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                        <div class="control-group" style="flex: 1; min-width: 150px;">
+                            <label for="initial-point0-slider">初始点 x<sub>0</sub>:</label>
+                            <input type="range" id="initial-point0-slider" min="-10" max="10" step="0.1" value="1"
+                                   style="width: 100%;">
+                            <span id="initial-point0-value">1</span>
+                        </div>
+                        <div class="control-group" style="flex: 1; min-width: 150px;">
+                            <label for="initial-point-1-slider">初始点 x<sub>-1</sub>:</label>
+                            <input type="range" id="initial-point-1-slider" min="-10" max="10" step="0.1" value="2"
+                                   style="width: 100%;">
+                            <span id="initial-point-1-value">2</span>
+                        </div>
+                        <div class="control-group" style="flex: 1; min-width: 150px;">
+                            <label for="iterations">迭代次数 N:</label>
+                            <input type="range" id="iterations" min="2" max="30" step="1" value="10"
+                                   style="width: 100%;">
+                            <span id="iterations-value">10</span>
+                        </div>
+                        <div class="control-group" style="flex: 1; min-width: 150px;">
+                            <label for="learning-rate">学习率 α:</label>
+                            <input type="range" id="learning-rate" min="0.001" max="1" step="0.001" value="0.01"
+                                   style="width: 100%;">
+                            <span id="learning-rate-value">0.01</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- 算法控制面板 -->
             <div class="control-panel">
-                <h3>算法控制</h3>
-                <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
-                    <button class="control-btn btn-primary" id="play-btn">播放</button>
-                    <button class="control-btn btn-secondary" id="pause-btn">暂停</button>
-                    <button class="control-btn btn-primary" id="step-btn">单步</button>
-                    <button class="control-btn btn-accent" id="reset-btn">重置</button>
+                <div class="panel-header">
+                    <h3>算法控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
                 </div>
+                <div class="panel-content">
+                    <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
+                        <button class="control-btn btn-primary" id="play-btn">播放</button>
+                        <button class="control-btn btn-secondary" id="pause-btn">暂停</button>
+                        <button class="control-btn btn-primary" id="step-btn">单步</button>
+                        <button class="control-btn btn-accent" id="reset-btn">重置</button>
+                    </div>
 
-                <div class="control-group">
-                    <label for="speed-control">播放速度：</label>
-                    <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
-                           style="width: 100%;">
-                    <span id="speed-value">正常</span>
+                    <div class="control-group">
+                        <label for="speed-control">播放速度：</label>
+                        <input type="range" id="speed-control" min="100" max="2000" step="100" value="1000"
+                               style="width: 100%;">
+                        <span id="speed-value">正常</span>
+                    </div>
                 </div>
             </div>
 
             <!-- 实验数据面板 -->
             <div class="control-panel">
-                <h3>实验数据</h3>
-                <div class="iteration-log-toolbar">
-                    <button type="button" class="control-btn btn-primary"
-                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
-                        查看实验数据
-                    </button>
-                    <button type="button" class="control-btn btn-secondary"
-                            style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-export-csv-btn">
-                        导出实验数据
-                    </button>
-                    <div class="dropdown-wrap" style="width: 100%;">
-                        <button type="button" class="control-btn btn-accent"
-                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
-                                id="save-profile-dropdown-trigger">
-                            保存至个人中心 ▾
+                <div class="panel-header">
+                    <h3>实验数据</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="iteration-log-toolbar">
+                        <button type="button" class="control-btn btn-primary"
+                                style="padding: 10px 16px; font-size: 14px; width: 100%;" id="iteration-log-open-btn">
+                            查看实验数据
                         </button>
-                        <div id="save-profile-dropdown" class="dropdown-panel hidden">
-                            <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                    data-algo="梯度下降法">梯度下降法
+                        <button type="button" class="control-btn btn-secondary"
+                                style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                                id="iteration-log-export-csv-btn">
+                            导出实验数据
+                        </button>
+                        <div class="dropdown-wrap" style="width: 100%;">
+                            <button type="button" class="control-btn btn-accent"
+                                    style="padding: 10px 16px; font-size: 14px; width: 100%;"
+                                    id="save-profile-dropdown-trigger">
+                                保存至个人中心 ▾
                             </button>
-                            <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                    data-algo="牛顿法">牛顿法
-                            </button>
-                            <button type="button" class="dropdown-option save-profile-option" data-type="algo"
-                                    data-algo="割线法">割线法
-                            </button>
-                            <button type="button" class="dropdown-option save-profile-option" data-type="all">
-                                总体对比数据
-                            </button>
+                            <div id="save-profile-dropdown" class="dropdown-panel hidden">
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                        data-algo="梯度下降法">梯度下降法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                        data-algo="牛顿法">牛顿法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="algo"
+                                        data-algo="割线法">割线法
+                                </button>
+                                <button type="button" class="dropdown-option save-profile-option" data-type="all">
+                                    总体对比数据
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -243,16 +260,21 @@
 
             <!-- 画布控制面板 -->
             <div class="control-panel">
-                <h3>画布控制</h3>
-                <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
-                    <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
-                    </button>
-                    <button id="pan-right-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向右
-                    </button>
-                    <button id="zoom-in-btn" class="control-btn btn-primary" style="background-color: #795548;">放大
-                    </button>
-                    <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
-                    </button>
+                <div class="panel-header">
+                    <h3>画布控制</h3>
+                    <button class="collapse-btn" title="折叠/展开">▼</button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-buttons" style="grid-template-columns: repeat(2, 1fr);">
+                        <button id="pan-left-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向左
+                        </button>
+                        <button id="pan-right-btn" class="control-btn btn-primary" style="background-color: #6d4c41;">向右
+                        </button>
+                        <button id="zoom-in-btn" class="control-btn btn-primary" style="background-color: #795548;">放大
+                        </button>
+                        <button id="zoom-out-btn" class="control-btn btn-primary" style="background-color: #8d6e63;">缩小
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -462,7 +484,27 @@
         initVisualizers();
         setupEventListeners();
         resetApp();
+        initPanelCollapsible();
     });
+
+    function initPanelCollapsible() {
+        document.querySelectorAll('.collapse-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const panel = btn.closest('.control-panel');
+                panel.classList.toggle('collapsed');
+                // 面板折叠/展开会改变左侧高度，触发三个画布尺寸重算
+                if (AppState.visualizers) {
+                    setTimeout(() => {
+                        Object.values(AppState.visualizers).forEach(viz => {
+                            if (viz && typeof viz.resize === 'function') {
+                                viz.resize();
+                            }
+                        });
+                    }, 310); // 对应 CSS 中 0.3s 的 transition 动画时间
+                }
+            });
+        });
+    }
 
     function initFunctionSelect() {
         const select = document.getElementById('function-select');

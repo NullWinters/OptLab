@@ -74,7 +74,8 @@ canvas.viz-canvas {
     gap: 16px;
 }
 
-.pan-buttons, .zoom-buttons {
+.pan-buttons,
+.zoom-buttons {
     display: flex;
     gap: 8px;
 }
@@ -119,7 +120,8 @@ canvas.viz-canvas {
 .comparison-main-layout {
     display: flex;
     gap: 20px;
-    align-items: stretch; /* 使左右高度一致 */
+    align-items: stretch;
+    /* 使左右高度一致 */
     margin-bottom: 30px;
 }
 
@@ -147,6 +149,7 @@ canvas.viz-canvas {
     border-left: 4px solid var(--border-color);
     padding-left: 8px;
 }
+
 
 .canvas-column {
     flex: 1;

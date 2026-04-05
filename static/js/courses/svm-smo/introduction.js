@@ -1,5 +1,16 @@
 import * as THREE from 'three';
 
+// WebGL 支持检测
+function isWebGLAvailable() {
+    try {
+        const canvas = document.createElement('canvas');
+        return !!(window.WebGLRenderingContext &&
+            (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+    } catch (e) {
+        return false;
+    }
+}
+
 // 线性SVM可视化 (D3.js)
 function initLinearSVM() {
     const margin = {top: 20, right: 20, bottom: 20, left: 20};
@@ -174,56 +185,113 @@ function initKernelTrick() {
     // 右侧3D视图 (Three.js)
     const init3D = () => {
         const container = document.getElementById('kernel-3d');
-        const width = container.clientWidth;
-        const height = container.clientHeight;
 
-        const scene = new THREE.Scene();
-        window.scene = scene; // 暴露给全局，方便 AI 侧栏感知 3D 场景
-        scene.background = new THREE.Color(0xf9f9f9);
-        const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({antialias: true});
-        renderer.setSize(width, height);
-        container.appendChild(renderer.domElement);
-
-        // 映射函数 (多项式核模拟: z = x^2 + y^2)
-        data2d.forEach(d => {
-            const geometry = new THREE.SphereGeometry(0.05, 16, 16);
-            const material = new THREE.MeshBasicMaterial({color: d.label === 1 ? 0xef5350 : 0x42a5f5});
-            const sphere = new THREE.Mesh(geometry, material);
-            const nx = d.x * 4;
-            const ny = d.y * 4;
-            const nz = (nx * nx + ny * ny) * 0.5 - 1;
-            sphere.position.set(nx, ny, nz);
-            scene.add(sphere);
-        });
-
-        // 3D 坐标系
-        const axesHelper = new THREE.AxesHelper(3);
-        scene.add(axesHelper);
-
-        // 分割平面
-        const planeGeo = new THREE.PlaneGeometry(5, 5);
-        const planeMat = new THREE.MeshBasicMaterial({
-            color: 0xaaaaaa,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.3
-        });
-        const plane = new THREE.Mesh(planeGeo, planeMat);
-        plane.position.z = 0.5;
-        scene.add(plane);
-
-        camera.position.z = 5;
-        camera.position.y = 2;
-        camera.lookAt(0, 0, 0);
-
-        function animate() {
-            requestAnimationFrame(animate);
-            scene.rotation.y += 0.01;
-            renderer.render(scene, camera);
+        // 1. WebGL 检测 - 不支持则隐藏容器
+        if (!isWebGLAvailable()) {
+            container.classList.add('webgl-unavailable');
+            console.log('WebGL not available, hiding 3D visualization');
+            return;
         }
 
-        animate();
+        // 2. 等待容器有正确尺寸
+        const setupRenderer = () => {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // 检查尺寸有效性
+            if (width === 0 || height === 0) {
+                console.warn('Container has zero size, retrying...');
+                setTimeout(setupRenderer, 100);
+                return;
+            }
+
+            // 3. 创建场景
+            const scene = new THREE.Scene();
+            window.scene = scene; // 暴露给全局，方便 AI 侧栏感知 3D 场景
+            scene.background = new THREE.Color(0xf9f9f9);
+
+            const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+
+            // 4. 设置 Renderer，支持高 DPR
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: false
+            });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 限制最大 DPR 为 2
+            container.appendChild(renderer.domElement);
+
+            // 映射函数 (多项式核模拟: z = x^2 + y^2)
+            data2d.forEach(d => {
+                const geometry = new THREE.SphereGeometry(0.05, 16, 16);
+                const material = new THREE.MeshBasicMaterial({color: d.label === 1 ? 0xef5350 : 0x42a5f5});
+                const sphere = new THREE.Mesh(geometry, material);
+                const nx = d.x * 4;
+                const ny = d.y * 4;
+                const nz = (nx * nx + ny * ny) * 0.5 - 1;
+                sphere.position.set(nx, ny, nz);
+                scene.add(sphere);
+            });
+
+            // 3D 坐标系
+            const axesHelper = new THREE.AxesHelper(3);
+            scene.add(axesHelper);
+
+            // 分割平面
+            const planeGeo = new THREE.PlaneGeometry(5, 5);
+            const planeMat = new THREE.MeshBasicMaterial({
+                color: 0xaaaaaa,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.3
+            });
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.position.z = 0.5;
+            scene.add(plane);
+
+            camera.position.z = 5;
+            camera.position.y = 2;
+            camera.lookAt(0, 0, 0);
+
+            // 5. ResizeObserver 监听容器尺寸变化
+            const resizeObserver = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    const {width: newWidth, height: newHeight} = entry.contentRect;
+                    if (newWidth > 0 && newHeight > 0) {
+                        camera.aspect = newWidth / newHeight;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(newWidth, newHeight);
+                    }
+                }
+            });
+            resizeObserver.observe(container);
+
+            // 6. 窗口 resize 兜底（处理屏幕旋转等）
+            window.addEventListener('resize', () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                if (newWidth > 0 && newHeight > 0) {
+                    camera.aspect = newWidth / newHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(newWidth, newHeight);
+                }
+            });
+
+            function animate() {
+                requestAnimationFrame(animate);
+                scene.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        };
+
+        // 延迟初始化确保 DOM 渲染完成
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(setupRenderer, 0);
+        } else {
+            window.addEventListener('DOMContentLoaded', setupRenderer);
+        }
     };
 
     init3D();
