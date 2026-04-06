@@ -2,7 +2,7 @@
 # 局域网部署：监听 0.0.0.0，允许同网段设备访问
 # 用法: ./scripts/run_lan.sh  或  bash scripts/run_lan.sh
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit
 source .venv/bin/activate 2>/dev/null || true
 echo "启动 OptLab（局域网可访问）..."
 echo "本机访问: http://localhost:8001"
