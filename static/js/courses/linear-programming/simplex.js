@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
             m: 2,
             type: 'max',
             c: [1, 1],
-            a: [[1, 0], [0, 1]],
+            a: [[1, 1], [0, 2]],
             b: [3, 3]
         }
     };
