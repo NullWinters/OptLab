@@ -226,9 +226,9 @@ const LPCore = {
      * @returns {boolean}
      */
     detectCycle(steps, currentBasis) {
-        const basisKey = currentBasis.sort().join(',');
+        const basisKey = [...currentBasis].sort().join(',');
         for (let i = 0; i < steps.length; i++) {
-            const stepKey = steps[i].basis.sort().join(',');
+            const stepKey = [...steps[i].basis].sort().join(',');
             if (stepKey === basisKey) {
                 return true;
             }
@@ -414,9 +414,7 @@ const LPCore = {
             finalW: phase === 1
                 ? this.calculateObjectiveValue(currentCB, currentB)
                 : null,
-            finalObjectiveValue: phase === 2
-                ? this.calculateObjectiveValue(currentCB, currentB)
-                : null
+            finalObjectiveValue: this.calculateObjectiveValue(currentCB, currentB)
         };
     },
 
