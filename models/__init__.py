@@ -7,7 +7,7 @@ from settings import DB_URI
 
 url = make_url(DB_URI)
 engine_kwargs = {
-    "echo": True,
+    "echo": False,
     "pool_pre_ping": True,
 }
 

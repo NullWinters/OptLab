@@ -89,7 +89,7 @@ async def read_register_page(request: Request):
 
 @app.get("/courses/{experiment_name}/", response_class=HTMLResponse)
 async def read_experiment(request: Request, experiment_name: str):
-    template_path = f"courses/{experiment_name}/index.html"
+    template_path = os.path.join("courses", experiment_name, "index.html")
     file_path = os.path.join(TEMPLATES_DIR, template_path)
     if os.path.exists(file_path):
         return templates.TemplateResponse(request, template_path, headers=NO_CACHE)
