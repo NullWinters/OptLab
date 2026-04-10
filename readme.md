@@ -157,7 +157,7 @@ OptLab/
 ### 环境要求
 
 - Python 3.13+
-- PostgreSQL 14+（开发环境可用 SQLite）
+- Postgres 18 (生产环境)
 
 ### 安装
 
@@ -168,46 +168,19 @@ git clone https://github.com/NullWinters/OptLab.git
 cd OptLab
 ```
 
-#### 2. 创建虚拟环境
-
-```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-.venv\Scripts\activate   # Windows
-```
-
-#### 3. 安装依赖
-
-- 使用pip
-```bash
-pip install -e .
-```
-
-- 或使用uv
-```bash
-uv sync
-```
-
-#### 4. 配置环境变量
+#### 2. 配置环境变量
 
 前往 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 注册并创建 API Key。
 将项目根目录下的 `.env.template` 改名为 `.env`，并填写 DeepSeek API Key 和 数据库 URI
 
 ```env
 DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
-OPTLAB_DB_URI="postgresql+asyncpg://username:password@address/database"
 ```
 
-#### 5. 初始化数据库
+#### 3. 运行启动脚本
 
 ```bash
-python scripts/init_db.py
-```
-
-#### 6. 运行服务器
-
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8001
+python scripts/launch.py
 ```
 
 ## 许可证
