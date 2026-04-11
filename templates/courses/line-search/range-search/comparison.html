@@ -54,6 +54,49 @@
         border-top: 5px solid #6d4c41;
     }
 
+    #iteration-log-body tr.algo-golden {
+        background: rgba(216, 67, 21, 0.12);
+    }
+
+    #iteration-log-body tr.algo-fibonacci {
+        background: rgba(249, 168, 37, 0.16);
+    }
+
+    #iteration-log-body tr.algo-bisection {
+        background: rgba(109, 76, 65, 0.14);
+    }
+
+    #iteration-log-body tr.algo-final {
+        box-shadow: inset 0 0 0 2px rgba(66, 66, 66, 0.18);
+        font-weight: 600;
+    }
+
+    #iteration-log-body tr.algo-golden td,
+    #iteration-log-body tr.algo-fibonacci td,
+    #iteration-log-body tr.algo-bisection td {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 4px;
+    }
+
+    .comparison-final-summary-item {
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        line-height: 1.6;
+    }
+
+    .comparison-final-summary-item.golden {
+        background: rgba(216, 67, 21, 0.12);
+    }
+
+    .comparison-final-summary-item.fibonacci {
+        background: rgba(249, 168, 37, 0.16);
+    }
+
+    .comparison-final-summary-item.bisection {
+        background: rgba(109, 76, 65, 0.14);
+    }
+
     /* 性能可视化对比面板 */
     .comparison-visualization-section {
         flex: 1;
@@ -538,6 +581,10 @@
                 </div>
                 <div>总迭代记录条数：<span id="iteration-log-summary-count">--</span></div>
             </div>
+            <div id="iteration-log-final-summary"
+                 style="font-size: 13px; color: #6d4c41; background: #f7efe8; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; display: none;">
+                <!-- 各算法最终结果由脚本填充 -->
+            </div>
             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                 <thead>
                 <tr>
@@ -546,6 +593,7 @@
                     <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">左端点 aₖ</th>
                     <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">右端点 bₖ</th>
                     <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">区间长度</th>
+                    <th style="border-bottom: 1px solid #ddd; padding: 6px 4px; text-align: left;">状态</th>
                 </tr>
                 </thead>
                 <tbody id="iteration-log-body"></tbody>
@@ -560,7 +608,7 @@
 
 {% block scripts %}
 <script type="module">
-    import {FunctionLibrary, calculateFunction} from '/static/js/courses/line-search/range-search/function-utils.js';
+    import {calculateFunction, FunctionLibrary} from '/static/js/courses/line-search/range-search/function-utils.js';
     import {ComparisonController} from '/static/js/courses/line-search/range-search/comparison-controller.js';
     import {ComparisonVisualizer} from '/static/js/courses/line-search/range-search/comparison-visualizer.js';
     import {ComparisonSummary} from '/static/js/courses/line-search/range-search/comparison-summary.js';
@@ -760,8 +808,7 @@
                 AppState.speed = AppState.baseSpeed;
             }
 
-            const speedText = AppState.baseSpeed < 500 ? '快速' : AppState.baseSpeed < 1500 ? '正常' : '慢速';
-            document.getElementById('speed-value').textContent = speedText;
+            document.getElementById('speed-value').textContent = AppState.baseSpeed < 500 ? '快速' : AppState.baseSpeed < 1500 ? '正常' : '慢速';
 
             if (AppState.isPlaying) {
                 pause();
@@ -886,6 +933,7 @@
         const tbody = document.getElementById('iteration-log-body');
         const histories = AppState.controller.histories;
         const func = AppState.controller.expr || '当前测试函数';
+        const finalBox = document.getElementById('iteration-log-final-summary');
 
         document.getElementById('iteration-log-summary-func').textContent = func;
         document.getElementById('iteration-log-summary-a').textContent = AppState.a.toFixed(2);
@@ -897,39 +945,93 @@
             fibonacci: '斐波那契法',
             bisection: '二分法'
         };
+        const algoClassMap = {
+            '黄金分割法': 'algo-golden',
+            '斐波那契法': 'algo-fibonacci',
+            '二分法': 'algo-bisection'
+        };
+        const algoTerminationMap = {
+            golden: '达到区间精度阈值 ε',
+            fibonacci: '达到预设迭代次数 N',
+            bisection: '达到区间精度阈值 ε'
+        };
 
         ['golden', 'fibonacci', 'bisection'].forEach(key => {
             const history = histories[key] || [];
-            history.forEach(step => {
+            const algo = AppState.controller.algorithms[key];
+            history.forEach((step, idx) => {
+                const isFinal = idx === history.length - 1 && !!algo;
                 allLogs.push({
+                    algoKey: key,
                     algo: algoNames[key],
                     iter: step.iter,
                     a: step.a,
                     b: step.b,
-                    len: Math.abs(step.b - step.a)
+                    len: Math.abs(step.b - step.a),
+                    is_complete: isFinal ? !!algo.isComplete : false,
+                    has_converged: isFinal ? !!algo.hasConverged : false,
+                    termination_reason: isFinal && algo.isComplete ? (algo.terminationReason || 'converged') : null,
+                    result: isFinal && algo.isComplete ? (algo.result != null ? algo.result : ((step.a + step.b) / 2)) : null
                 });
             });
         });
 
-        // 按迭代次数和算法排序
         allLogs.sort((x, y) => x.iter - y.iter || x.algo.localeCompare(y.algo));
-
         document.getElementById('iteration-log-summary-count').textContent = allLogs.length;
 
         if (allLogs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">暂无实验数据，请先运行实验</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">暂无实验数据，请先运行实验</td></tr>';
+            if (finalBox) {
+                finalBox.style.display = 'none';
+                finalBox.innerHTML = '';
+            }
             return;
         }
 
-        tbody.innerHTML = allLogs.map(row => `
-            <tr>
+        const finalRowsByAlgo = {};
+        [...allLogs].reverse().forEach(row => {
+            if (!finalRowsByAlgo[row.algo] && row.is_complete) {
+                finalRowsByAlgo[row.algo] = row;
+            }
+        });
+
+        if (finalBox) {
+            const orderedAlgorithms = ['黄金分割法', '斐波那契法', '二分法'];
+            const summaryBlocks = orderedAlgorithms.map(algoName => {
+                const final = finalRowsByAlgo[algoName];
+                if (!final) return '';
+                const summaryClass = final.algoKey;
+                const xStar = final.result != null ? Number(final.result).toFixed(6) : Number((final.a + final.b) / 2).toFixed(6);
+                const lenStr = Number(final.len).toFixed(6);
+                const reasonText = algoTerminationMap[final.algoKey] || '达到终止条件';
+                return `<div class="comparison-final-summary-item ${summaryClass}"><strong>${algoName}</strong>：本次实验已完成；在第 ${final.iter} 次迭代后停止，最终区间为 [${Number(final.a).toFixed(6)}, ${Number(final.b).toFixed(6)}]，区间长度 ≈ ${lenStr}，近似极小值点 x* ≈ ${xStar}，终止原因：${reasonText}。</div>`;
+            }).filter(Boolean);
+            if (summaryBlocks.length) {
+                finalBox.style.display = 'block';
+                finalBox.innerHTML = summaryBlocks.join('');
+            } else {
+                finalBox.style.display = 'none';
+                finalBox.innerHTML = '';
+            }
+        }
+
+        tbody.innerHTML = allLogs.map(row => {
+            const algoClass = algoClassMap[row.algo] || '';
+            const final = finalRowsByAlgo[row.algo];
+            const isFinal = !!final && row.algo === final.algo && row.iter === final.iter;
+            const extraClass = isFinal ? ' algo-final' : '';
+            const statusLabel = row.is_complete ? '已完成（达到终止条件）' : '迭代进行中';
+            return `
+            <tr class="${algoClass}${extraClass}">
                 <td>${row.algo}</td>
                 <td>${row.iter}</td>
                 <td>${row.a.toFixed(6)}</td>
                 <td>${row.b.toFixed(6)}</td>
                 <td>${row.len.toFixed(6)}</td>
+                <td>${statusLabel}</td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
     }
 
     function exportIterationLog() {
@@ -1073,14 +1175,24 @@
     }
 
     function play() {
-        if (AppState.isPlaying || AppState.runStatus === '已完成') return;
+        const gAlgo = AppState.controller.algorithms.golden;
+        const fAlgo = AppState.controller.algorithms.fibonacci;
+        const bAlgo = AppState.controller.algorithms.bisection;
+        const allCompleteInit = gAlgo.isComplete && fAlgo.isComplete && bAlgo.isComplete;
+        if (AppState.isPlaying || allCompleteInit) return;
         AppState.isPlaying = true;
         AppState.runStatus = '播放中';
         updateUI();
 
         AppState.timer = setInterval(() => {
             if (!doStep()) {
-                pause();
+                AppState.isPlaying = false;
+                if (AppState.timer) {
+                    clearInterval(AppState.timer);
+                    AppState.timer = null;
+                }
+                AppState.runStatus = '已完成';
+                updateUI();
             }
         }, AppState.speed);
     }
@@ -1112,8 +1224,8 @@
 
         if (AppState.subStep === 1) {
             AppState.currentTrialPoints = {
-                golden: gAlgo.getTrialPoints(),
-                fibonacci: fAlgo.getTrialPoints()
+                golden: gAlgo.isComplete ? null : gAlgo.getTrialPoints(),
+                fibonacci: fAlgo.isComplete ? null : fAlgo.getTrialPoints()
             };
         }
 
@@ -1145,10 +1257,9 @@
 
         if (!gAlgo || !fAlgo || !bAlgo) return;
 
-        // 状态文字
-        const gStatusText = gAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
-        const fStatusText = fAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
-        const bStatusText = bAlgo.isComplete ? '已完成' : (AppState.runStatus === '未运行' ? '未运行' : '搜索中');
+        const gStatusText = gAlgo.isComplete ? '已完成（达到终止条件）' : (AppState.runStatus === '未运行' ? '未运行' : AppState.runStatus === '播放中' ? '搜索中' : '已暂停');
+        const fStatusText = fAlgo.isComplete ? '已完成（达到终止条件）' : (AppState.runStatus === '未运行' ? '未运行' : AppState.runStatus === '播放中' ? '搜索中' : '已暂停');
+        const bStatusText = bAlgo.isComplete ? '已完成（达到终止条件）' : (AppState.runStatus === '未运行' ? '未运行' : AppState.runStatus === '播放中' ? '搜索中' : '已暂停');
 
         // 更新黄金分割面板表格
         document.getElementById('golden-param-body').innerHTML = `
@@ -1227,8 +1338,7 @@
                 AppState.controller.histories.bisection,
                 AppState.yScaleType,
                 () => {
-                    const newType = AppState.visualizer.animateToggleConvergenceScale();
-                    AppState.yScaleType = newType;
+                    AppState.yScaleType = AppState.visualizer.animateToggleConvergenceScale();
                 },
                 AppState.visibleAlgorithms
             );

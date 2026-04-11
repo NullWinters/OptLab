@@ -22,6 +22,20 @@
         .simplex-log-modal {
             overscroll-behavior: contain;
         }
+
+        /* 全局滑动条进度填充样式 */
+        input[type="range"] {
+            --range-progress: 0%;
+            /* 默认背景，由 JS 动态更新 linear-gradient 实现填充 */
+            background: #e2e8f0;
+        }
+
+        /* Webkit 内核：支持 linear-gradient 填充时，将背景设为渐变 */
+        @supports (-webkit-appearance: none) {
+            input[type="range"].range-styled {
+                background: linear-gradient(to right, var(--range-fill, var(--primary-color, #d84315)) var(--range-progress), var(--range-track, #ead9c7) var(--range-progress));
+            }
+        }
     </style>
     {% block head %}{% endblock %}
 </head>
@@ -115,6 +129,51 @@
             window.addEventListener('touchmove', lockBackgroundScroll, {passive: false});
             window.addEventListener('keydown', lockBackgroundKeyboardScroll, {passive: false});
         });
+
+        /**
+         * 初始化所有滑动条的进度填充样式
+         */
+        function initRangeSliders() {
+            const updateFill = (slider) => {
+                const min = parseFloat(slider.min) || 0;
+                const max = parseFloat(slider.max) || 100;
+                const val = parseFloat(slider.value);
+                const percent = (val - min) / (max - min) * 100;
+                slider.style.setProperty('--range-progress', percent + '%');
+                slider.classList.add('range-styled');
+            };
+
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                updateFill(slider);
+                slider.addEventListener('input', () => updateFill(slider));
+            });
+
+            // 监听动态添加的滑块
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) {
+                            if (node.matches('input[type="range"]')) {
+                                updateFill(node);
+                                node.addEventListener('input', () => updateFill(node));
+                            }
+                            node.querySelectorAll('input[type="range"]').forEach(s => {
+                                updateFill(s);
+                                s.addEventListener('input', () => updateFill(s));
+                            });
+                        }
+                    });
+                });
+            });
+            observer.observe(document.body, {childList: true, subtree: true});
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initRangeSliders);
+        } else {
+            initRangeSliders();
+        }
     })();
 </script>
 {% block scripts %}{% endblock %}

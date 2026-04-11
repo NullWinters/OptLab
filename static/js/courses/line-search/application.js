@@ -873,6 +873,8 @@ class SecantMethod {
                         dL,
                         ddL,
                         is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        has_converged: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        termination_reason: null,
                         result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? beta) : null,
                         timestamp: ''
                     };
@@ -905,7 +907,7 @@ class SecantMethod {
                 const betaStar = Number(final.beta).toFixed(6);
                 finalBox.style.display = 'block';
                 finalBox.textContent =
-                    `根据记录的迭代数据，本次实验在第 ${final.iteration} 次迭代附近收敛到近似最优参数 β* ≈ ${betaStar}，对应 L(β*) ≈ ${Number(final.L).toFixed(6)}，梯度 ≈ ${final.dL != null ? Number(final.dL).toFixed(6) : '—'}。`;
+                    `根据记录的迭代数据，本次实验已完成：在第 ${final.iteration} 次迭代附近得到近似最优参数 β* ≈ ${betaStar}，对应 L(β*) ≈ ${Number(final.L).toFixed(6)}，梯度 ≈ ${final.dL != null ? Number(final.dL).toFixed(6) : '—'}。`;
             } else if (finalBox) {
                 finalBox.style.display = 'none';
                 finalBox.textContent = '';
@@ -915,9 +917,9 @@ class SecantMethod {
                 tbody.innerHTML = log.map(row => {
                     let statusLabel;
                     if (!row.is_complete) {
-                        statusLabel = '进行中';
+                        statusLabel = '迭代进行中';
                     } else if (row.has_converged) {
-                        statusLabel = '已收敛';
+                        statusLabel = '已完成（已收敛）';
                     } else {
                         statusLabel = '已终止（未收敛）';
                     }
@@ -978,6 +980,8 @@ class SecantMethod {
                             dL,
                             ddL,
                             is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                            has_converged: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                            termination_reason: null,
                             result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? beta) : null,
                             timestamp: ''
                         };
@@ -1063,6 +1067,8 @@ class SecantMethod {
                         dL: typeof h.df === 'number' ? h.df : (typeof algo.df === 'function' ? algo.df(typeof h.x === 'number' ? h.x : algo.xk) : null),
                         ddL: typeof h.ddf === 'number' ? h.ddf : null,
                         is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        has_converged: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        termination_reason: null,
                         result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? h.x) : null,
                         timestamp: ''
                     }));
@@ -1127,6 +1133,8 @@ class SecantMethod {
                         : (typeof algo.df === 'function' ? algo.df(typeof h.x === 'number' ? h.x : algo.xk) : null),
                     dd_neg_profit: typeof h.ddf === 'number' ? h.ddf : null,
                     is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                    has_converged: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                    termination_reason: null,
                     result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? h.x) : null,
                     timestamp: ''
                 }));
@@ -1162,7 +1170,7 @@ class SecantMethod {
                 const pStar = Number(final.p).toFixed(6);
                 finalBox.style.display = 'block';
                 finalBox.textContent =
-                    `根据记录的迭代数据，本次实验在第 ${final.iteration} 次迭代附近收敛到近似最优定价 p* ≈ ${pStar}，对应 -π(p*) ≈ ${Number(final.neg_profit).toFixed(6)}，一阶导 ≈ ${final.d_neg_profit != null ? Number(final.d_neg_profit).toFixed(6) : '—'}。`;
+                    `根据记录的迭代数据，本次实验已完成：在第 ${final.iteration} 次迭代附近得到近似最优定价 p* ≈ ${pStar}，对应 -π(p*) ≈ ${Number(final.neg_profit).toFixed(6)}，一阶导 ≈ ${final.d_neg_profit != null ? Number(final.d_neg_profit).toFixed(6) : '—'}。`;
             } else if (finalBox) {
                 finalBox.style.display = 'none';
                 finalBox.textContent = '';
@@ -1172,9 +1180,9 @@ class SecantMethod {
                 tbody.innerHTML = log.map(row => {
                     let statusLabel;
                     if (!row.is_complete) {
-                        statusLabel = '进行中';
+                        statusLabel = '迭代进行中';
                     } else if (row.has_converged) {
-                        statusLabel = '已收敛';
+                        statusLabel = '已完成（已收敛）';
                     } else {
                         statusLabel = '已终止（未收敛）';
                     }
@@ -1235,6 +1243,8 @@ class SecantMethod {
                             d_neg_profit: dNeg,
                             dd_neg_profit: ddNeg,
                             is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                            has_converged: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                            termination_reason: null,
                             result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? p) : null,
                             timestamp: ''
                         };
@@ -1318,6 +1328,8 @@ class SecantMethod {
                         d_neg_profit: typeof h.df === 'number' ? h.df : (typeof algo.df === 'function' ? algo.df(typeof h.x === 'number' ? h.x : algo.xk) : null),
                         dd_neg_profit: typeof h.ddf === 'number' ? h.ddf : null,
                         is_complete: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        has_converged: idx === algo.history.length - 1 ? !!algo.isComplete : false,
+                        termination_reason: null,
                         result: idx === algo.history.length - 1 && algo.isComplete ? (algo.xk ?? h.x) : null,
                         timestamp: ''
                     }));
@@ -1736,7 +1748,8 @@ class SecantMethod {
         if (isRange) {
             if (state.subStep === 4) {
                 const moved = algo.iterate();
-                if (moved) {
+                const justCompleted = !moved && algo.isComplete;
+                if (moved || justCompleted) {
                     recordIteration(type);
                 }
                 state.subStep = 0;
@@ -1745,7 +1758,8 @@ class SecantMethod {
         } else {
             if (state.subStep === 2) {
                 const moved = algo.iterate();
-                if (moved) {
+                const justCompleted = !moved && algo.isComplete;
+                if (moved || justCompleted) {
                     recordIteration(type);
                 }
                 state.subStep = 0;

@@ -21,7 +21,7 @@ export class PointSearchVisualizer {
         this.containerId = containerId;
         this.margin = options.margin || {top: 40, right: 40, bottom: 80, left: 60};
         this.width = options.width || container.clientWidth;
-        this.height = options.height || container.clientHeight || 340;
+        this.height = options.height || container.clientHeight || 380;
 
         this.updateDimensions();
 
@@ -81,7 +81,7 @@ export class PointSearchVisualizer {
         const container = document.getElementById(this.containerId);
         if (!container) return;
         this.width = container.clientWidth;
-        this.height = container.clientHeight || 340;
+        this.height = container.clientHeight || 380;
         this.updateDimensions();
 
         this.svg

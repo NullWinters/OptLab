@@ -13,9 +13,9 @@
 <style>
     /* range-slider.js：滑块渐变；保存至个人中心下拉 */
     :root {
-        --range-fill: #2563eb;
-        --range-fill-soft: #3b82f6;
-        --range-track: #e8edf3;
+        --range-fill: #d84315;
+        --range-fill-soft: #f4511e;
+        --range-track: #ead9c7;
     }
 
 
@@ -70,6 +70,49 @@
 
     .secant-panel {
         border-top: 5px solid #6d4c41;
+    }
+
+    #iteration-log-body tr.algo-gd {
+        background: rgba(216, 67, 21, 0.12);
+    }
+
+    #iteration-log-body tr.algo-newton {
+        background: rgba(249, 168, 37, 0.16);
+    }
+
+    #iteration-log-body tr.algo-secant {
+        background: rgba(109, 76, 65, 0.14);
+    }
+
+    #iteration-log-body tr.algo-final {
+        box-shadow: inset 0 0 0 2px rgba(66, 66, 66, 0.18);
+        font-weight: 600;
+    }
+
+    #iteration-log-body tr.algo-gd td,
+    #iteration-log-body tr.algo-newton td,
+    #iteration-log-body tr.algo-secant td {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 4px;
+    }
+
+    .comparison-final-summary-item {
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        line-height: 1.6;
+    }
+
+    .comparison-final-summary-item.gd {
+        background: rgba(216, 67, 21, 0.12);
+    }
+
+    .comparison-final-summary-item.newton {
+        background: rgba(249, 168, 37, 0.16);
+    }
+
+    .comparison-final-summary-item.secant {
+        background: rgba(109, 76, 65, 0.14);
     }
 
     /* 响应式适配 */
@@ -556,8 +599,7 @@
 
         document.getElementById('speed-control').addEventListener('input', (e) => {
             AppState.speed = Math.round(2100 - Number(e.target.value));
-            const speedText = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
-            document.getElementById('speed-value').textContent = speedText;
+            document.getElementById('speed-value').textContent = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
             if (AppState.isPlaying) {
                 pause();
                 play();
@@ -654,7 +696,7 @@
                 if (countSpan) countSpan.textContent = '0';
                 if (finalBox) {
                     finalBox.style.display = 'none';
-                    finalBox.textContent = '';
+                    finalBox.innerHTML = '';
                 }
                 return;
             }
@@ -671,26 +713,55 @@
             if (targetSpan) targetSpan.textContent = first.target || '--';
             if (countSpan) countSpan.textContent = String(log.length);
 
-            const final =
-                [...log].reverse().find(row => row.is_complete && row.result != null) || null;
-            if (final && finalBox) {
-                const xStar = Number(final.result).toFixed(6);
-                const gradStr = final.df_x != null ? Number(final.df_x).toFixed(6) : '—';
-                finalBox.style.display = 'block';
-                finalBox.textContent =
-                    `根据记录的迭代数据，"${final.algorithm}" 在第 ${final.iteration} 次迭代附近收敛到近似最优点 x* ≈ ${xStar}，对应 f(x*) ≈ ${Number(final.f_x).toFixed(6)}，导数/近似导数 ≈ ${gradStr}。`;
-            } else if (finalBox) {
-                finalBox.style.display = 'none';
-                finalBox.textContent = '';
+            const finalRowsByAlgo = {};
+            [...log].reverse().forEach(row => {
+                if (!finalRowsByAlgo[row.algorithm] && row.is_complete) {
+                    finalRowsByAlgo[row.algorithm] = row;
+                }
+            });
+
+            if (finalBox) {
+                const orderedAlgorithms = ['梯度下降法', '牛顿法', '割线法'];
+                const summaryBlocks = orderedAlgorithms
+                    .map(algoName => {
+                        const final = finalRowsByAlgo[algoName];
+                        if (!final) return '';
+                        const summaryClass = algoName === '梯度下降法'
+                            ? 'gd'
+                            : algoName === '牛顿法'
+                                ? 'newton'
+                                : 'secant';
+                        if (final.has_converged && final.result != null) {
+                            const xStar = Number(final.result).toFixed(6);
+                            const gradStr = final.df_x != null ? Number(final.df_x).toFixed(6) : '—';
+                            return `<div class="comparison-final-summary-item ${summaryClass}"><strong>${algoName}</strong>：本次实验已完成；在第 ${final.iteration} 次迭代时收敛到近似最优点 x* ≈ ${xStar}，对应 f(x*) ≈ ${Number(final.f_x).toFixed(6)}，导数/近似导数 ≈ ${gradStr}。</div>`;
+                        }
+                        const reasonMap = {
+                            max_iter: '达到最大迭代次数，未收敛',
+                            grad_zero: '梯度接近 0，但未达到收敛判据',
+                            hessian_zero: '二阶导接近 0，无法继续更新',
+                            secant_den_zero: '割线分母接近 0，无法继续更新'
+                        };
+                        const reasonText = reasonMap[final.termination_reason] || '未收敛终止';
+                        return `<div class="comparison-final-summary-item ${summaryClass}"><strong>${algoName}</strong>：本次实验已终止；在第 ${final.iteration} 次迭代时停止运行，原因：${reasonText}。</div>`;
+                    })
+                    .filter(Boolean);
+                if (summaryBlocks.length) {
+                    finalBox.style.display = 'block';
+                    finalBox.innerHTML = summaryBlocks.join('');
+                } else {
+                    finalBox.style.display = 'none';
+                    finalBox.innerHTML = '';
+                }
             }
 
             if (tbody) {
                 tbody.innerHTML = log.map(row => {
                     let statusLabel;
                     if (!row.is_complete) {
-                        statusLabel = '进行中';
+                        statusLabel = '迭代进行中';
                     } else if (row.has_converged) {
-                        statusLabel = '已收敛';
+                        statusLabel = '已完成（已收敛）';
                     } else {
                         switch (row.termination_reason) {
                             case 'max_iter':
@@ -718,9 +789,8 @@
                                 : algo.indexOf('割线') !== -1
                                     ? 'algo-secant'
                                     : '';
-                    const isFinal = final &&
-                        row.algorithm === final.algorithm &&
-                        row.iteration === final.iteration;
+                    const final = finalRowsByAlgo[algo];
+                    const isFinal = final && row.algorithm === final.algorithm && row.iteration === final.iteration;
                     const extraClass = isFinal ? ' algo-final' : '';
                     return `<tr class="${algoClass}${extraClass}">
     <td>${row.algorithm}</td>
@@ -946,27 +1016,25 @@
         // 设置各算法状态为播放中（仅对未完成者）
         ['gd', 'newton', 'secant'].forEach(key => {
             const s = AppState.solvers[key];
-            if (s && !s.isComplete) AppState.statuses[key] = '播放中';
+            if (!s || s.isComplete) return;
+            AppState.statuses[key] = '播放中';
         });
         document.getElementById('play-btn').disabled = true;
         document.getElementById('step-btn').disabled = true;
         document.getElementById('pause-btn').disabled = false;
         AppState.timer = setInterval(() => {
-            const cont = step();
-            if (!cont) {
-                const {gd, newton, secant} = AppState.solvers;
-                const allComplete = gd.isComplete && newton.isComplete && secant.isComplete;
-                if (allComplete) {
-                    AppState.isPlaying = false;
-                    clearInterval(AppState.timer);
-                    AppState.timer = null;
-                    ['gd', 'newton', 'secant'].forEach(key => {
-                        if (AppState.solvers[key].isComplete) AppState.statuses[key] = '已完成';
-                    });
-                    updateUI();
-                } else {
-                    pause();
-                }
+            step();
+            const {gd, newton, secant} = AppState.solvers;
+            const allComplete = gd.isComplete && newton.isComplete && secant.isComplete;
+            if (allComplete) {
+                AppState.isPlaying = false;
+                clearInterval(AppState.timer);
+                AppState.timer = null;
+                ['gd', 'newton', 'secant'].forEach(key => {
+                    const solver = AppState.solvers[key];
+                    AppState.statuses[key] = solver.hasConverged ? '已完成（已收敛）' : '已终止';
+                });
+                updateUI();
             }
         }, AppState.speed);
     }
@@ -988,62 +1056,68 @@
     function step() {
         const {gd, newton, secant} = AppState.solvers;
         let movedAny = false;
-        let moved = false;
+        let completedThisRound = false;
+
         if (gd && !gd.isComplete) {
-            moved = gd.iterate();
+            const moved = gd.iterate();
             const justCompleted = !moved && gd.isComplete;
-            movedAny = moved || movedAny;
             if (moved || justCompleted) {
                 recordIteration('gd', gd);
             }
+            movedAny = movedAny || moved;
+            completedThisRound = completedThisRound || justCompleted;
             if (gd.isComplete) {
-                AppState.statuses.gd = gd.hasConverged ? '已收敛' : '已终止';
+                AppState.statuses.gd = gd.hasConverged ? '已完成（已收敛）' : '已终止';
             } else if (moved) {
-                AppState.statuses.gd = '已暂停';
-            }
-        }
-        if (newton && !newton.isComplete) {
-            moved = newton.iterate();
-            const justCompleted = !moved && newton.isComplete;
-            movedAny = moved || movedAny;
-            if (moved || justCompleted) {
-                recordIteration('newton', newton);
-            }
-            if (newton.isComplete) {
-                AppState.statuses.newton = newton.hasConverged ? '已收敛' : '已终止';
-            } else if (moved) {
-                AppState.statuses.newton = '已暂停';
-            }
-        }
-        if (secant && !secant.isComplete) {
-            moved = secant.iterate();
-            const justCompleted = !moved && secant.isComplete;
-            movedAny = moved || movedAny;
-            if (moved || justCompleted) {
-                recordIteration('secant', secant);
-            }
-            if (secant.isComplete) {
-                AppState.statuses.secant = secant.hasConverged ? '已收敛' : '已终止';
-            } else if (moved) {
-                AppState.statuses.secant = '已暂停';
+                AppState.statuses.gd = AppState.isPlaying ? '播放中' : '已暂停';
             }
         }
 
-        if (movedAny) {
+        if (newton && !newton.isComplete) {
+            const moved = newton.iterate();
+            const justCompleted = !moved && newton.isComplete;
+            if (moved || justCompleted) {
+                recordIteration('newton', newton);
+            }
+            movedAny = movedAny || moved;
+            completedThisRound = completedThisRound || justCompleted;
+            if (newton.isComplete) {
+                AppState.statuses.newton = newton.hasConverged ? '已完成（已收敛）' : '已终止';
+            } else if (moved) {
+                AppState.statuses.newton = AppState.isPlaying ? '播放中' : '已暂停';
+            }
+        }
+
+        if (secant && !secant.isComplete) {
+            const moved = secant.iterate();
+            const justCompleted = !moved && secant.isComplete;
+            if (moved || justCompleted) {
+                recordIteration('secant', secant);
+            }
+            movedAny = movedAny || moved;
+            completedThisRound = completedThisRound || justCompleted;
+            if (secant.isComplete) {
+                AppState.statuses.secant = secant.hasConverged ? '已完成（已收敛）' : '已终止';
+            } else if (moved) {
+                AppState.statuses.secant = AppState.isPlaying ? '播放中' : '已暂停';
+            }
+        }
+
+        if (movedAny || completedThisRound) {
             AppState.visualizers.gd.autoZoom(gd.history);
             AppState.visualizers.newton.autoZoom(newton.history);
             AppState.visualizers.secant.autoZoom(secant.history);
         }
-        // 若未移动但已全部完成，确保状态为已完成
+
         const allComplete = gd.isComplete && newton.isComplete && secant.isComplete;
         if (allComplete) {
             ['gd', 'newton', 'secant'].forEach(key => {
                 const solver = AppState.solvers[key];
-                AppState.statuses[key] = solver.hasConverged ? '已收敛' : '已终止';
+                AppState.statuses[key] = solver.hasConverged ? '已完成（已收敛）' : '已终止';
             });
         }
         updateUI();
-        return movedAny && !allComplete;
+        return movedAny || completedThisRound;
     }
 
     function recordIteration(algoKey, solver) {
