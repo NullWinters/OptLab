@@ -4,7 +4,7 @@ export class OptimizationVisualizer {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
         const container = document.getElementById(containerId);
-        this.margin = options.margin || {top: 40, right: 40, bottom: 60, left: 60};
+        this.margin = options.margin || {top: 40, right: 30, bottom: 60, left: 50};
         this.width = options.width || (container ? container.clientWidth : 800);
         this.height = options.height || (container ? container.clientHeight : 500);
 
@@ -132,22 +132,25 @@ export class OptimizationVisualizer {
 
         const duration = 400;
 
+        const xTicks = this.width < 500 ? 5 : 10;
+        const yTicks = this.height < 300 ? 5 : 8;
+
         this.gridX.transition().duration(duration)
             .attr('stroke', '#e0e0e0')
             .attr('stroke-opacity', 0.5)
-            .call(d3.axisBottom(this.xScale).tickSize(this.plotHeight).tickFormat(''));
+            .call(d3.axisBottom(this.xScale).ticks(xTicks).tickSize(this.plotHeight).tickFormat(''));
 
         this.gridY.transition().duration(duration)
             .attr('stroke', '#e0e0e0')
             .attr('stroke-opacity', 0.5)
-            .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
+            .call(d3.axisLeft(this.yScale).ticks(yTicks).tickSize(-this.plotWidth).tickFormat(''));
 
         this.xAxisG.transition().duration(duration)
             .attr('transform', `translate(0,${this.plotHeight})`)
-            .call(d3.axisBottom(this.xScale))
+            .call(d3.axisBottom(this.xScale).ticks(xTicks))
             .selectAll('text').style('font-size', '12px');
         this.yAxisG.transition().duration(duration)
-            .call(d3.axisLeft(this.yScale))
+            .call(d3.axisLeft(this.yScale).ticks(yTicks))
             .selectAll('text').style('font-size', '12px');
 
         const line = d3.line()

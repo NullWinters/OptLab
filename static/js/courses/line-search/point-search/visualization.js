@@ -19,9 +19,9 @@ export class PointSearchVisualizer {
     constructor(containerId, options = {}) {
         const container = document.getElementById(containerId);
         this.containerId = containerId;
-        this.margin = options.margin || {top: 40, right: 40, bottom: 80, left: 60};
+        this.margin = options.margin || {top: 40, right: 30, bottom: 80, left: 50};
         this.width = options.width || container.clientWidth;
-        this.height = options.height || container.clientHeight || 380;
+        this.height = options.height || container.clientHeight || 320;
 
         this.updateDimensions();
 
@@ -81,7 +81,7 @@ export class PointSearchVisualizer {
         const container = document.getElementById(this.containerId);
         if (!container) return;
         this.width = container.clientWidth;
-        this.height = container.clientHeight || 380;
+        this.height = container.clientHeight || 320;
         this.updateDimensions();
 
         this.svg
@@ -133,16 +133,20 @@ export class PointSearchVisualizer {
     }
 
     updateAxes(duration = this.duration) {
+        const xTicks = this.width < 500 ? 5 : 10;
+        const yTicks = this.height < 300 ? 5 : 8;
+
         this.xAxisG.transition().duration(duration)
             .attr('transform', `translate(0,${this.plotHeight})`)
-            .call(d3.axisBottom(this.xScale));
-        this.yAxisG.transition().duration(duration).call(d3.axisLeft(this.yScale));
+            .call(d3.axisBottom(this.xScale).ticks(xTicks));
+        this.yAxisG.transition().duration(duration)
+            .call(d3.axisLeft(this.yScale).ticks(yTicks));
 
         this.gridX.transition().duration(duration)
             .attr('transform', `translate(0,${this.plotHeight})`)
-            .call(d3.axisBottom(this.xScale).tickSize(-this.plotHeight).tickFormat(''));
+            .call(d3.axisBottom(this.xScale).ticks(xTicks).tickSize(-this.plotHeight).tickFormat(''));
         this.gridY.transition().duration(duration)
-            .call(d3.axisLeft(this.yScale).tickSize(-this.plotWidth).tickFormat(''));
+            .call(d3.axisLeft(this.yScale).ticks(yTicks).tickSize(-this.plotWidth).tickFormat(''));
 
         this.gridLayer.selectAll(".tick line").attr("stroke", "#e0e0e0").attr("stroke-opacity", 0.7);
         this.gridLayer.selectAll(".domain").attr("stroke-width", 0);

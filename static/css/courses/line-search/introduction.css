@@ -1,23 +1,23 @@
 .section {
     background: white;
     border-radius: 20px;
-    padding: 40px;
-    margin-bottom: 40px;
+    padding: 25px 30px;
+    margin-bottom: 25px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 .section h2 {
-    margin-bottom: 25px;
-}
-
-.section h3 {
-    margin-top: 30px;
     margin-bottom: 15px;
 }
 
+.section h3 {
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
 .section p {
-    margin-bottom: 18px;
-    line-height: 1.8;
+    margin-bottom: 12px;
+    line-height: 1.6;
 }
 
 .section p:last-child {
@@ -33,10 +33,10 @@ h2 {
 
 .highlight {
     background-color: #fff8e1;
-    padding: 25px;
+    padding: 15px 20px;
     border-radius: 10px;
     border-left: 4px solid var(--secondary-color);
-    margin: 25px 0;
+    margin: 15px 0;
 }
 
 .highlight ol, .highlight ul {

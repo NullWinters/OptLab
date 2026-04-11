@@ -93,11 +93,6 @@
     cursor: pointer;
 }
 
-.svm-range-control input[type="range"]::-moz-range-progress {
-    background-color: var(--svm-range-primary);
-    height: 6px;
-    border-radius: 999px 0 0 999px;
-}
 
 .svm-range-toolbar {
     display: flex;
