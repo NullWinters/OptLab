@@ -10,11 +10,67 @@ from routers.experiments import router as experiments_router
 from routers.notes import router as notes_router
 from core.scheduler import init_scheduler, start_scheduler, shutdown_scheduler
 import os
+import logging
+from logging.handlers import TimedRotatingFileHandler
 
 # 获取项目根目录的绝对路径
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+
+# 确保必要的目录存在
+for directory in [STATIC_DIR, LOG_DIR]:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+def setup_logging():
+    """配置日志系统，支持按日期轮转和多 worker 模式"""
+    log_format = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    log_file = os.path.join(LOG_DIR, "optlab.log")
+
+    # 使用 TimedRotatingFileHandler 按天轮转，保留 30 天
+    file_handler = TimedRotatingFileHandler(
+        log_file, when="midnight", interval=1, backupCount=30, encoding="utf-8"
+    )
+    file_handler.setFormatter(log_format)
+    file_handler.setLevel(logging.INFO)
+
+    # 获取 root logger 并设置
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    if not any(isinstance(h, TimedRotatingFileHandler) for h in root_logger.handlers):
+        root_logger.addHandler(file_handler)
+
+    # 过滤终端输出的 INFO 信息，只保留 WARNING 及以上级别
+    for h in root_logger.handlers:
+        if not isinstance(h, TimedRotatingFileHandler):
+            h.setLevel(logging.WARNING)
+
+    # 配置相关 loggers
+    for logger_name in ["uvicorn", "uvicorn.error", "uvicorn.access", "watchfiles.main"]:
+        u_logger = logging.getLogger(logger_name)
+        if logger_name == "watchfiles.main":
+            # 过滤 watchfiles 的 INFO 级别 "1 change detected" 等日志
+            u_logger.setLevel(logging.WARNING)
+        
+        if not any(isinstance(h, TimedRotatingFileHandler) for h in u_logger.handlers):
+            u_logger.addHandler(file_handler)
+
+        # 确保这些 logger 自身的终端 handler 也被过滤
+        for h in u_logger.handlers:
+            if not isinstance(h, TimedRotatingFileHandler):
+                h.setLevel(logging.WARNING)
+
+        # 避免日志向上冒泡到 root logger 导致重复记录
+        u_logger.propagate = False
+
+
+# 初始化日志
+setup_logging()
 
 
 @asynccontextmanager
@@ -33,9 +89,6 @@ app.include_router(auth_router)
 app.include_router(experiments_router)
 app.include_router(notes_router)
 
-# 确保静态目录存在
-if not os.path.exists(STATIC_DIR):
-    os.makedirs(STATIC_DIR)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)

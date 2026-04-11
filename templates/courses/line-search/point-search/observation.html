@@ -591,8 +591,7 @@
         });
         document.getElementById('speed-control').addEventListener('input', (e) => {
             AppState.speed = Math.round(2100 - Number(e.target.value));
-            const speedText = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
-            document.getElementById('speed-value').textContent = speedText;
+            document.getElementById('speed-value').textContent = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
             if (AppState.isPlaying) {
                 pause();
                 play();
@@ -728,11 +727,11 @@
                     const xStar = Number(final.result).toFixed(6);
                     const gradStr = final.df_x != null ? Number(final.df_x).toFixed(6) : '—';
                     finalBox.textContent =
-                        `本次实验收敛结果：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 收敛到近似最优点 x* ≈ ${xStar}，对应函数值 f(x*) ≈ ${Number(final.f_x).toFixed(6)}，导数/近似导数 ≈ ${gradStr}。`;
+                        `本次实验已完成：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 收敛到近似最优点 x* ≈ ${xStar}，对应函数值 f(x*) ≈ ${Number(final.f_x).toFixed(6)}，导数/近似导数 ≈ ${gradStr}。`;
                 } else {
                     const reasonText = reasonMap[final.termination_reason] || '未收敛终止';
                     finalBox.textContent =
-                        `本次实验终止：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 已停止，原因：${reasonText}。`;
+                        `本次实验已终止：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 停止运行，原因：${reasonText}。`;
                 }
             } else if (finalBox) {
                 finalBox.style.display = 'none';
@@ -743,9 +742,9 @@
                 tbody.innerHTML = log.map(row => {
                     let statusLabel;
                     if (!row.is_complete) {
-                        statusLabel = '进行中';
+                        statusLabel = '迭代进行中';
                     } else if (row.has_converged) {
-                        statusLabel = '已收敛';
+                        statusLabel = '已完成（已收敛）';
                     } else {
                         switch (row.termination_reason) {
                             case 'max_iter':
@@ -1054,10 +1053,32 @@
         if (moved) {
             AppState.visualizer.autoZoom(AppState.solver.history);
             recordIteration();
+        } else if (AppState.solver.isComplete) {
+            ensureTerminalIterationRecorded();
         }
         AppState.status = AppState.solver.isComplete ? '已完成' : '已暂停';
         updateUI();
         return moved && !AppState.solver.isComplete;
+    }
+
+    function ensureTerminalIterationRecorded() {
+        const solver = AppState.solver;
+        if (!solver || !solver.isComplete) return;
+        const log = Array.isArray(AppState.iterationLog) ? AppState.iterationLog : [];
+        const lastRow = log.length ? log[log.length - 1] : null;
+        const expectedIteration = solver.currentIteration;
+        const expectedReason = solver.terminationReason || null;
+        const expectedX = typeof solver.xk === 'number' ? solver.xk : null;
+
+        const alreadyRecorded = !!lastRow
+            && lastRow.is_complete === true
+            && lastRow.iteration === expectedIteration
+            && lastRow.termination_reason === expectedReason
+            && (expectedX == null || Math.abs(Number(lastRow.x) - expectedX) < 1e-12);
+
+        if (!alreadyRecorded) {
+            recordIteration();
+        }
     }
 
     function updateUI(isDragging = false) {

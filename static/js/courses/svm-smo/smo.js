@@ -643,6 +643,7 @@ const App = {
             clearInterval(this.timer);
             this.timer = null;
         }
+        this.processLog = [];
         this.smo = new SMO(this.data, this.C, this.tol, this.maxIter);
         this.state = 'unstarted';
         this.pushProcessStep('reset_algorithm', {
@@ -737,6 +738,7 @@ const App = {
             .attr("fill", d => d.label === 1 ? "#e74c3c" : "#3498db")
             .attr("stroke", "#fff")
             .attr("stroke-width", 1)
+            .attr("data-ai-label", d => d.label === 1 ? "正类样本点(红色)" : "负类样本点(蓝色)")
             .on("mouseover", (event, d) => {
                 const alpha = this.smo ? this.smo.alphas[d.id] : 0;
                 const error = this.smo ? this.smo.errors[d.id] : 0;
@@ -777,7 +779,8 @@ const App = {
                 .attr("fill", "none")
                 .attr("stroke", "#f1c40f")
                 .attr("stroke-width", 3)
-                .attr("stroke-dasharray", "4 2");
+                .attr("stroke-dasharray", "4 2")
+                .attr("data-ai-label", "支持向量i高亮提示");
 
             const text_i = this.highlightLayer.append("text")
                 .attr("x", this.xScale(pi.x) + 12)
@@ -801,7 +804,8 @@ const App = {
                 .attr("fill", "none")
                 .attr("stroke", "#f39c12")
                 .attr("stroke-width", 3)
-                .attr("stroke-dasharray", "4 2");
+                .attr("stroke-dasharray", "4 2")
+                .attr("data-ai-label", "支持向量j高亮提示");
 
             const text_j = this.highlightLayer.append("text")
                 .attr("x", this.xScale(pj.x) + 12)
@@ -852,7 +856,8 @@ const App = {
             .attr("stroke", color)
             .attr("stroke-width", width)
             .attr("stroke-dasharray", dashed ? "5,5" : "none")
-            .attr("clip-path", "url(#clip)");
+            .attr("clip-path", "url(#clip)")
+            .attr("data-ai-label", title);
 
         // Wide invisible line for easier hovering
         group.append("line")
@@ -1034,17 +1039,17 @@ const App = {
             return;
         }
 
-        const final = [...logs].reverse().find((row) => row.is_finished) || logs[logs.length - 1];
+                const final = [...logs].reverse().find((row) => row.is_finished) || logs[logs.length - 1];
         if (finalBox && final) {
             finalBox.style.display = 'block';
-            finalBox.textContent = `当前记录显示，算法迭代至第 ${final.smo_iter} 步时，w ≈ [${Number(final.w[0]).toFixed(4)}, ${Number(final.w[1]).toFixed(4)}]，b ≈ ${Number(final.b).toFixed(4)}，准确率 ≈ ${(Number(final.accuracy) * 100).toFixed(2)}%。`;
+            finalBox.textContent = `本次实验已完成：算法迭代至第 ${final.smo_iter} 步时，w ≈ [${Number(final.w[0]).toFixed(4)}, ${Number(final.w[1]).toFixed(4)}]，b ≈ ${Number(final.b).toFixed(4)}，准确率 ≈ ${(Number(final.accuracy) * 100).toFixed(2)}%。`;
         }
 
         if (tbody) {
             tbody.innerHTML = logs.map((row) => {
                 const highlight = final && row.iteration === final.iteration;
                 const rowStyle = highlight ? 'background-color:#fff8e1;font-weight:600;' : '';
-                const status = row.is_finished ? '已结束' : '迭代中';
+                const status = row.is_finished ? '已完成' : '迭代进行中';
                 return `<tr style="${rowStyle}">
 <td>${row.iteration}</td>
 <td>${row.smo_iter ?? '-'}</td>

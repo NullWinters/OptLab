@@ -275,7 +275,7 @@
 
 {% block scripts %}
 <script type="module">
-    import {FunctionLibrary, calculateFunction} from '/static/js/courses/line-search/range-search/function-utils.js';
+    import {calculateFunction, FunctionLibrary} from '/static/js/courses/line-search/range-search/function-utils.js';
     import {GoldenSectionSearch} from '/static/js/courses/line-search/range-search/golden-section.js';
     import {FibonacciSearch} from '/static/js/courses/line-search/range-search/fibonacci-search.js';
     import {BisectionSearch} from '/static/js/courses/line-search/range-search/bisection-search.js';
@@ -549,8 +549,7 @@
         // 速度
         document.getElementById('speed-control').addEventListener('input', (e) => {
             AppState.speed = Math.round(2100 - Number(e.target.value));
-            const speedText = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
-            document.getElementById('speed-value').textContent = speedText;
+            document.getElementById('speed-value').textContent = AppState.speed < 500 ? '快速' : AppState.speed < 1500 ? '正常' : '慢速';
             if (AppState.isPlaying) {
                 pause();
                 play();
@@ -745,7 +744,7 @@
                 const lengthFinal = Number(final.length).toFixed(6);
                 const xStar = Number(final.result).toFixed(6);
                 finalBox.style.display = "block";
-                finalBox.textContent = `本次实验收敛结果：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 收敛到近似最优点 x* ≈ ${xStar}，对应区间 ${intervalFinal}，区间长度约为 ${lengthFinal}。`;
+                finalBox.textContent = `本次实验已完成：在第 ${final.iteration} 次迭代时，算法 "${final.algorithm}" 收敛到近似最优点 x* ≈ ${xStar}，对应区间 ${intervalFinal}，区间长度约为 ${lengthFinal}。`;
             } else if (finalBox) {
                 finalBox.style.display = "none";
                 finalBox.textContent = "";
@@ -753,7 +752,7 @@
 
             tbody.innerHTML = log
                 .map((row) => {
-                    const statusLabel = row.is_complete ? "已完成" : "进行中";
+                    const statusLabel = row.is_complete ? "已完成（达到终止条件）" : "迭代进行中";
                     const isFinal =
                         final && row.iteration === final.iteration && row.algorithm === final.algorithm;
                     const rowStyle = isFinal
@@ -930,6 +929,8 @@
             initial_epsilon: AppState.initialEpsilon,
             initial_n: AppState.initialN,
             is_complete: isComplete,
+            has_converged: !!isComplete,
+            termination_reason: isComplete ? 'converged' : null,
             result: isComplete ? result : null,
             timestamp: new Date().toISOString(),
         });

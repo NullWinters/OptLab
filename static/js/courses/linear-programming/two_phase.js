@@ -84,22 +84,22 @@ document.addEventListener('DOMContentLoaded', function () {
     function getTwoPhaseStatusLabel(phase, status, finalW, finalZ) {
         if (phase === 1) {
             if (status === 'optimal') {
-                if (typeof finalW === 'number' && Math.abs(finalW) <= 1e-10) return '可行解 (w=0)';
-                if (typeof finalW === 'number') return `无可行解 (w=${finalW.toFixed(4)})`;
-                return '达到最优';
+                if (typeof finalW === 'number' && Math.abs(finalW) <= 1e-10) return '已完成（找到可行解，w=0）';
+                if (typeof finalW === 'number') return `已终止（无可行解，w=${finalW.toFixed(4)}）`;
+                return '已完成（第一阶段达到最优）';
             }
-            if (status === 'unbounded') return '检测到无界';
-            if (status === 'cycle') return '检测到循环';
-            if (status === 'max_iter') return '达到最大迭代次数';
-            return '迭代中';
+            if (status === 'unbounded') return '已终止（辅助问题无界）';
+            if (status === 'cycle') return '已终止（检测到循环）';
+            if (status === 'max_iter') return '已终止（达到最大迭代次数）';
+            return '迭代进行中';
         }
 
         // phase === 2
-        if (status === 'optimal') return `达到最优 (Z=${typeof finalZ === 'number' ? finalZ.toFixed(4) : '--'})`;
-        if (status === 'unbounded') return '检测到无界';
-        if (status === 'cycle') return '检测到循环';
-        if (status === 'max_iter') return '达到最大迭代次数';
-        return '迭代中';
+        if (status === 'optimal') return `已完成（达到最优，Z=${typeof finalZ === 'number' ? finalZ.toFixed(4) : '--'}）`;
+        if (status === 'unbounded') return '已终止（原问题无界）';
+        if (status === 'cycle') return '已终止（检测到循环）';
+        if (status === 'max_iter') return '已终止（达到最大迭代次数）';
+        return '迭代进行中';
     }
 
     function createTwoPhaseRecordPayload() {
@@ -356,47 +356,73 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
+        const L = {
+            FILE_INFO: '文件说明',
+            NAME: '名称',
+            TIME: '导出时间',
+            PAGE: '页面',
+            REMARK: '备注',
+            OVERVIEW: '实验概览',
+            ALGO: '算法',
+            TYPE: '求解类型',
+            SCALE: '规模',
+            P1_STATUS: '第一阶段状态',
+            P2_STATUS: '第二阶段状态',
+            INPUT: '输入数据',
+            OBJ_COEFF: '目标函数系数',
+            CONSTRAINTS: '约束条件',
+            P1_SUMMARY: '第一阶段迭代摘要',
+            ITER: '迭代',
+            STATUS: '状态',
+            ENTERING: '入基变量',
+            LEAVING: '离基变量',
+            BASIS: '基变量',
+            W_VALUE: '当前辅助目标w',
+            P2_SUMMARY: '第二阶段迭代摘要',
+            Z_VALUE: '当前目标值Z'
+        };
+
         const pretty = {
-            文件说明: {
-                名称: '线性规划-两阶段法实验记录',
-                导出时间: new Date().toLocaleString('zh-CN', {hour12: false}),
-                页面: 'linear-programming.two_phase',
-                备注: '按“第一阶段-迭代摘要-逐步tableau(紧凑)-第二阶段-迭代摘要-逐步tableau(紧凑)”组织，便于阅读与复现实验。'
+            [L.FILE_INFO]: {
+                [L.NAME]: '线性规划-两阶段法实验记录',
+                [L.TIME]: new Date().toLocaleString('zh-CN', {hour12: false}),
+                [L.PAGE]: 'linear-programming.two_phase',
+                [L.REMARK]: '按“第一阶段-迭代摘要-逐步tableau(紧凑)-第二阶段-迭代摘要-逐步tableau(紧凑)”组织，便于阅读与复现实验。'
             },
-            实验概览: {
-                算法: payload.algorithm_name,
-                求解类型: payload.initial_state.solve_type === 'max' ? '最大化' : '最小化',
-                规模: 'n=' + payload.initial_state.n + ', m=' + payload.initial_state.m,
-                第一阶段状态: payload.phase1_result.status_label,
-                第二阶段状态: payload.phase2_result.status_label
+            [L.OVERVIEW]: {
+                [L.ALGO]: payload.algorithm_name,
+                [L.TYPE]: payload.initial_state.solve_type === 'max' ? '最大化' : '最小化',
+                [L.SCALE]: 'n=' + payload.initial_state.n + ', m=' + payload.initial_state.m,
+                [L.P1_STATUS]: payload.phase1_result.status_label,
+                [L.P2_STATUS]: payload.phase2_result.status_label
             },
-            输入数据: {
-                目标函数系数: '[' + compactNums(payload.initial_state.objective_coeffs) + ']',
-                约束条件: compactConstraints(payload.initial_state.constraints)
+            [L.INPUT]: {
+                [L.OBJ_COEFF]: '[' + compactNums(payload.initial_state.objective_coeffs) + ']',
+                [L.CONSTRAINTS]: compactConstraints(payload.initial_state.constraints)
             },
-            第一阶段迭代摘要: payload.phase1_iteration_data.map(function (it) {
+            [L.P1_SUMMARY]: payload.phase1_iteration_data.map(function (it) {
                 return {
-                    迭代: it.iteration,
-                    状态: it.status,
-                    入基变量: it.entering || '—',
-                    离基变量: it.leaving || '—',
-                    基变量: (it.basis || []).join(', '),
-                    当前辅助目标w: typeof it.wValue === 'number' ? it.wValue.toFixed(4) : '—'
+                    [L.ITER]: it.iteration,
+                    [L.STATUS]: it.status,
+                    [L.ENTERING]: it.entering || '—',
+                    [L.LEAVING]: it.leaving || '—',
+                    [L.BASIS]: (it.basis || []).join(', '),
+                    [L.W_VALUE]: typeof it.wValue === 'number' ? it.wValue.toFixed(4) : '—'
                 };
             }),
-            第二阶段迭代摘要: payload.phase2_iteration_data.map(function (it) {
+            [L.P2_SUMMARY]: payload.phase2_iteration_data.map(function (it) {
                 const z = (Array.isArray(it.cB) && Array.isArray(it.b))
                     ? it.cB.reduce(function (sum, cb, i) {
                         return sum + cb * it.b[i];
                     }, 0)
                     : null;
                 return {
-                    迭代: it.iteration,
-                    状态: it.status,
-                    入基变量: it.entering || '—',
-                    离基变量: it.leaving || '—',
-                    基变量: (it.basis || []).join(', '),
-                    当前目标值Z: typeof z === 'number' ? z.toFixed(4) : '—'
+                    [L.ITER]: it.iteration,
+                    [L.STATUS]: it.status,
+                    [L.ENTERING]: it.entering || '—',
+                    [L.LEAVING]: it.leaving || '—',
+                    [L.BASIS]: (it.basis || []).join(', '),
+                    [L.Z_VALUE]: typeof z === 'number' ? z.toFixed(4) : '—'
                 };
             })
         };

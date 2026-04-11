@@ -16,7 +16,7 @@
     display: grid;
     grid-template-columns: 1fr 360px;
     gap: 20px;
-    margin-top: 20px;
+    margin-top: 10px;
     align-items: stretch;
 }
 
@@ -49,7 +49,7 @@
 
 #smo-canvas {
     width: 100%;
-    min-height: 500px;
+    min-height: 400px;
     flex-grow: 1;
     background: #fff;
     position: relative;
@@ -57,7 +57,7 @@
 }
 
 .viz-controls {
-    padding: 20px;
+    padding: 15px 20px;
     background: var(--panel);
     border-top: 1px solid var(--border);
 }
@@ -78,8 +78,8 @@
 .slider-row label {
     display: flex;
     justify-content: space-between;
-    font-size: 0.9rem;
-    margin-bottom: 8px;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
     color: var(--text);
     font-weight: 500;
 }
@@ -160,7 +160,7 @@
     cursor: pointer;
     font-weight: 600;
     transition: all 0.2s;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
 }
 
 .btn-primary {

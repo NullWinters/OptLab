@@ -106,12 +106,18 @@
         });
 
         const svgSelector = 'svg circle, svg rect, svg path, svg line, svg polyline, svg polygon, svg ellipse, svg text, svg g';
-        const svgElements = Array.prototype.slice.call(document.querySelectorAll(svgSelector), 0, 60);
+        const svgElements = Array.prototype.slice.call(document.querySelectorAll(svgSelector), 0, 150);
         svgElements.forEach(function (el, idx) {
             const id = ensureElementId(el, 'svg-node');
             if (!id || map.has(id)) return;
             const desc = inferDescription(el);
             if (!desc) return; // 跳过描述为空（如坐标轴数值）的图元
+
+            const isFallback = desc === (el.tagName.toLowerCase() + ' 元素');
+            // 过滤无意义的图元：fallback描述且没有原始ID，或者是坐标轴组件
+            if (isFallback && !el.getAttribute('id')) return;
+            if (el.closest && (el.closest('.axis') || el.closest('.tick') || el.closest('.grid-layer') || el.closest('.axis-layer'))) return;
+
             map.set(id, {
                 id: id,
                 description: desc + ' (SVG图元 ' + el.tagName.toLowerCase() + ' #' + (idx + 1) + ')',
@@ -210,18 +216,24 @@
         // 增强感知能力：提取 SVG 内部图元的简要信息（ID 和 inferDescription）
         const svgElementsSummary = [];
         const svgSelector = 'svg circle, svg rect, svg path, svg line, svg polyline, svg polygon, svg ellipse, svg text, svg g';
-        const svgNodes = Array.prototype.slice.call(document.querySelectorAll(svgSelector), 0, 30);
+        const svgNodes = Array.prototype.slice.call(document.querySelectorAll(svgSelector), 0, 150);
         svgNodes.forEach(function (el) {
             const id = el.id;
             const desc = inferDescription(el);
+
             if (desc && desc.length > 2) {
+                const isFallback = desc === (el.tagName.toLowerCase() + ' 元素');
+                // 优先收集有意义的图元，跳过无ID的坐标轴/网格等背景图元
+                if (isFallback && !id) return;
+                if (el.closest && (el.closest('.axis') || el.closest('.tick') || el.closest('.grid-layer') || el.closest('.axis-layer'))) return;
+
                 svgElementsSummary.push({
                     id: id || el.tagName.toLowerCase(),
                     desc: desc
                 });
             }
         });
-        context.svgElementsSummary = svgElementsSummary;
+        context.svgElementsSummary = svgElementsSummary.slice(0, 50);
 
         // 增强感知能力：如果页面定义了特定数据提取函数，优先调用 AI 专用钩子
         const getPageData = window.AI_GET_PAGE_DATA || (window.EXPERIMENT_NOTES_CONFIG && window.EXPERIMENT_NOTES_CONFIG.getPageData);
@@ -424,8 +436,8 @@
                         el.tagName.toLowerCase() === "svg" ||
                         el.querySelector("svg") ||
                         el.tagName.toLowerCase() === "canvas";
-                    if (isSvg) return false;
-                    return true;
+                    return !isSvg;
+
                 });
                 currentHighlightIndex = 0;
                 if (highlightIds.length > 0) {
@@ -497,7 +509,7 @@
         chatMessages.innerHTML = '';
         const welcomeDiv = document.createElement('div');
         welcomeDiv.className = 'ai-message ai-bot';
-        welcomeDiv.innerHTML = '<p>你好！我是页面操作助手，可以帮助你了解如何使用这个页面的各项功能。请问有什么需要帮助的？</p>';
+        welcomeDiv.innerHTML = '<p>你好！我是AI助手，可以帮助你了解这个实验，指导你完成实验操作，分析实验结果，解释实验图像。请问有什么需要帮助的？</p>';
         chatMessages.appendChild(welcomeDiv);
     }
 

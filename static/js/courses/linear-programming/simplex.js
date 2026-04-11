@@ -314,10 +314,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function getSimplexStatusLabel(status) {
-        if (status === 'optimal') return '达到最优';
-        if (status === 'unbounded') return '检测到无界';
-        if (status === 'max_iter') return '达到最大迭代次数';
-        return '迭代中';
+        if (status === 'optimal') return '已完成（达到最优）';
+        if (status === 'unbounded') return '已终止（问题无界）';
+        if (status === 'max_iter') return '已终止（达到最大迭代次数）';
+        return '迭代进行中';
     }
 
     function createSimplexRecordPayload() {
@@ -499,39 +499,66 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
+        const L = {
+            FILE_INFO: '文件说明',
+            NAME: '名称',
+            TIME: '导出时间',
+            PAGE: '页面',
+            REMARK: '备注',
+            OVERVIEW: '实验概览',
+            ALGO: '算法',
+            TYPE: '求解类型',
+            SCALE: '问题规模',
+            STATUS: '终止状态',
+            OBJ_VAL: '最优目标值',
+            SOLUTION: '解向量',
+            INPUT: '输入数据',
+            OBJ_COEFF: '目标函数系数',
+            CONSTRAINTS: '约束条件',
+            ITER_SUMMARY: '迭代摘要',
+            ITER: '迭代',
+            STATE: '状态',
+            ENTERING: '入基变量',
+            LEAVING: '离基变量',
+            BASIS: '基变量',
+            B_SOL: '当前基解b',
+            TABLEAU: '逐步Tableau',
+            ROW_LABELS: '行标签'
+        };
+
         const pretty = {
-            文件说明: {
-                名称: '线性规划-单纯形法实验记录',
-                导出时间: new Date().toLocaleString('zh-CN', {hour12: false}),
-                页面: 'linear-programming.simplex',
-                备注: '按“概览-输入-结果-迭代摘要-逐步tableau(紧凑)”组织，便于阅读与复现实验。'
+            [L.FILE_INFO]: {
+                [L.NAME]: '线性规划-单纯形法实验记录',
+                [L.TIME]: new Date().toLocaleString('zh-CN', {hour12: false}),
+                [L.PAGE]: 'linear-programming.simplex',
+                [L.REMARK]: '按“概览-输入-结果-迭代摘要-逐步tableau(紧凑)”组织，便于阅读与复现实验。'
             },
-            实验概览: {
-                算法: payload.algorithm_name,
-                求解类型: payload.initial_state.solve_type === 'max' ? '最大化' : '最小化',
-                问题规模: 'n=' + payload.initial_state.n + ', m=' + payload.initial_state.m,
-                终止状态: payload.result.status_label,
-                最优目标值: payload.result.objective_value,
-                解向量: payload.result.solution
+            [L.OVERVIEW]: {
+                [L.ALGO]: payload.algorithm_name,
+                [L.TYPE]: payload.initial_state.solve_type === 'max' ? '最大化' : '最小化',
+                [L.SCALE]: 'n=' + payload.initial_state.n + ', m=' + payload.initial_state.m,
+                [L.STATUS]: payload.result.status_label,
+                [L.OBJ_VAL]: payload.result.objective_value,
+                [L.SOLUTION]: payload.result.solution
             },
-            输入数据: {
-                目标函数系数: '[' + compactNums(payload.initial_state.objective_coeffs) + ']',
-                约束条件: compactConstraints(payload.initial_state.constraints)
+            [L.INPUT]: {
+                [L.OBJ_COEFF]: '[' + compactNums(payload.initial_state.objective_coeffs) + ']',
+                [L.CONSTRAINTS]: compactConstraints(payload.initial_state.constraints)
             },
-            迭代摘要: payload.iteration_data.map(function (it) {
+            [L.ITER_SUMMARY]: payload.iteration_data.map(function (it) {
                 return {
-                    迭代: it.iteration,
-                    状态: getSimplexStatusLabel(it.status),
-                    入基变量: it.entering || '—',
-                    离基变量: it.leaving || '—',
-                    基变量: (it.basis || []).join(', '),
-                    当前基解b: '[' + compactNums(it.b) + ']'
+                    [L.ITER]: it.iteration,
+                    [L.STATE]: getSimplexStatusLabel(it.status),
+                    [L.ENTERING]: it.entering || '—',
+                    [L.LEAVING]: it.leaving || '—',
+                    [L.BASIS]: (it.basis || []).join(', '),
+                    [L.B_SOL]: '[' + compactNums(it.b) + ']'
                 };
             }),
-            逐步Tableau: payload.iteration_data.map(function (it) {
+            [L.TABLEAU]: payload.iteration_data.map(function (it) {
                 return {
-                    迭代: it.iteration,
-                    行标签: ['cB', 'Basis', 'b', 'x列...', 'θ', 'σj'],
+                    [L.ITER]: it.iteration,
+                    [L.ROW_LABELS]: ['cB', 'Basis', 'b', 'x列...', 'θ', 'σj'],
                     cj: '[' + compactNums(it.tableau.cj) + ']',
                     cB: '[' + compactNums(it.tableau.cB) + ']',
                     basis: (it.tableau.basis || []).join(', '),
@@ -1277,6 +1304,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .attr('stroke', '#666')
             .attr('stroke-width', 1.5)
             .attr('stroke-dasharray', '4')
+            .attr('data-ai-label', `约束线: ${a1}x₁ + ${a2}x₂ ≤ ${bi}`)
             .style('pointer-events', 'none'); // 让事件透传到交互线
 
         // 绘制单个约束的可行域填充
@@ -1288,7 +1316,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             svg.insert('path', ':first-child')
                 .attr('class', 'feasible-region-single')
-                .attr('d', pathData);
+                .attr('d', pathData)
+                .attr('data-ai-label', `约束 ${a1}x₁ + ${a2}x₂ ≤ ${bi} 对应的半平面可行区域`);
         }
 
         // 生成信息面板内容
@@ -1561,7 +1590,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 .attr('class', 'feasible-region-point')
                 .attr('cx', xScale(point.x))
                 .attr('cy', yScale(point.y))
-                .attr('r', 6);
+                .attr('r', 6)
+                .attr('data-ai-label', '可行域(单个点)');
             return;
         }
 
@@ -1574,7 +1604,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 .attr('x1', xScale(p1.x))
                 .attr('y1', yScale(p1.y))
                 .attr('x2', xScale(p2.x))
-                .attr('y2', yScale(p2.y));
+                .attr('y2', yScale(p2.y))
+                .attr('data-ai-label', '可行域(线段)');
             return;
         }
 
@@ -1592,7 +1623,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         svg.append('path')
             .attr('class', 'feasible-region-final')
-            .attr('d', pathData);
+            .attr('d', pathData)
+            .attr('data-ai-label', '多约束共同构成的可行域(凸多面体)');
     }
 
     /**
@@ -1649,6 +1681,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .attr('y1', yScale(points[0][1]))
             .attr('x2', xScale(points[1][0]))
             .attr('y2', yScale(points[1][1]))
+            .attr('data-ai-label', `目标函数等值线: Z = ${c1}x₁ + ${c2}x₂`)
             .style('pointer-events', 'none'); // 让事件透传到交互线
 
         // 生成信息面板内容
@@ -1697,7 +1730,8 @@ document.addEventListener('DOMContentLoaded', function () {
         svg.append('path')
             .datum(pathData)
             .attr('class', 'iteration-path')
-            .attr('d', line);
+            .attr('d', line)
+            .attr('data-ai-label', '单纯形法迭代轨迹线');
 
         const dots = svg.selectAll('.iteration-dot')
             .data(pathData)
@@ -1707,7 +1741,8 @@ document.addEventListener('DOMContentLoaded', function () {
             .attr('cx', d => xScale(d.x))
             .attr('cy', d => yScale(d.y))
             .attr('r', 5)
-            .attr('fill', 'var(--primary-color)');
+            .attr('fill', 'var(--primary-color)')
+            .attr('data-ai-label', d => `迭代点 ${d.iter}: (x₁, x₂) = (${d.x.toFixed(2)}, ${d.y.toFixed(2)})`);
 
         // 添加悬停事件
         dots.on('mouseover', function (event, d) {

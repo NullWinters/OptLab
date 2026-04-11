@@ -78,3 +78,4 @@ datasets/
 # =========================
 Dockerfile
 .dockerignore
+.gitdata/
