@@ -40,7 +40,7 @@
 /* 画布区域样式 (通用的，具体页面 ID 可能不同) */
 canvas.viz-canvas {
     width: 100%;
-    height: 380px;
+    height: 320px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: #fff;
@@ -52,7 +52,7 @@ canvas.viz-canvas {
 #function-canvas-newton,
 #function-canvas-secant {
     width: 100%;
-    height: 380px;
+    height: 320px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: #fff;
@@ -63,7 +63,7 @@ canvas.viz-canvas {
 #function-canvas-golden,
 #function-canvas-fibonacci {
     width: 100%;
-    height: 300px;
+    height: 260px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: #fff;
@@ -135,18 +135,18 @@ canvas.viz-canvas {
 
 /* 左侧多面板容器 */
 .left-column {
-    width: 320px;
+    width: 380px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 24px;
+    justify-content: flex-start;
+    gap: 16px;
 }
 
 .control-panel {
     background: var(--card-bg);
     border-radius: 12px;
-    padding: 24px 20px;
+    padding: 16px 20px;
     box-shadow: var(--shadow);
     box-sizing: border-box;
     overflow: visible;
@@ -188,8 +188,8 @@ canvas.viz-canvas {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -261,21 +261,21 @@ canvas.viz-canvas {
     #function-canvas-gd,
     #function-canvas-newton,
     #function-canvas-secant {
-        height: 320px;
+        height: 280px;
     }
 
     #function-canvas-bisection,
     #function-canvas-golden,
     #function-canvas-fibonacci {
-        height: 280px;
+        height: 240px;
     }
 }
 
 /* 实验笔记组件在性质对比页面的对齐调整 */
 .exp-notes-section {
     width: 100%;
-    margin-top: 20px;
-    margin-bottom: 40px;
+    margin-top: 16px;
+    margin-bottom: 20px;
     box-sizing: border-box;
 }
 

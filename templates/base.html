@@ -30,10 +30,17 @@
             background: #e2e8f0;
         }
 
+        /* Firefox 支持 */
+        input[type="range"]::-moz-range-progress {
+            background-color: var(--range-fill, var(--primary-color, var(--primary, #d84315)));
+            height: 6px;
+            border-radius: 999px 0 0 999px;
+        }
+
         /* Webkit 内核：支持 linear-gradient 填充时，将背景设为渐变 */
         @supports (-webkit-appearance: none) {
             input[type="range"].range-styled {
-                background: linear-gradient(to right, var(--range-fill, var(--primary-color, #d84315)) var(--range-progress), var(--range-track, #ead9c7) var(--range-progress));
+                background: linear-gradient(to right, var(--range-fill, var(--primary-color, var(--primary, #d84315))) var(--range-progress), var(--range-track, #ead9c7) var(--range-progress));
             }
         }
     </style>
@@ -135,8 +142,10 @@
          */
         function initRangeSliders() {
             const updateFill = (slider) => {
-                const min = parseFloat(slider.min) || 0;
-                const max = parseFloat(slider.max) || 100;
+                const minAttr = slider.getAttribute('min');
+                const maxAttr = slider.getAttribute('max');
+                const min = (minAttr !== null && minAttr !== '') ? parseFloat(minAttr) : 0;
+                const max = (maxAttr !== null && maxAttr !== '') ? parseFloat(maxAttr) : 100;
                 const val = parseFloat(slider.value);
                 const percent = (val - min) / (max - min) * 100;
                 slider.style.setProperty('--range-progress', percent + '%');
