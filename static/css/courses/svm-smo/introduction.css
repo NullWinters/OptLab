@@ -35,6 +35,7 @@ body {
 .header h1 {
     color: var(--primary-color);
     margin-bottom: 8px;
+    margin-top: 0;
     font-size: 2.2em;
 }
 
@@ -175,6 +176,30 @@ blockquote {
     align-items: center;
     gap: 15px;
     margin-top: 10px;
+    width: 100%;
+    max-width: 600px;
+}
+
+.controls label {
+    min-width: 120px;
+    white-space: nowrap;
+}
+
+.controls input[type="range"] {
+    flex: 1;
+}
+
+#btn-confirm-c {
+    min-width: 90px;
+    padding: 10px 15px;
+}
+
+#c-value {
+    min-width: 30px;
+    display: inline-block;
+    text-align: center;
+    font-weight: 600;
+    color: var(--primary-color);
 }
 
 .back-btn {
