@@ -131,7 +131,7 @@
             return storeTex(m);
         });
         // 行内 $ ... $
-        s = s.replace(/\$([^\$\n]+?)\$/g, function (m) {
+        s = s.replace(/\$([^$\n]+?)\$/g, function (m) {
             return storeTex(m);
         });
         // \( ... \)
@@ -139,7 +139,7 @@
             return storeTex(m);
         });
         // \[ ... \]
-        s = s.replace(/\\\[([\s\S]+?)\\\]/g, function (m) {
+        s = s.replace(/\\\[([\s\S]+?)\\]/g, function (m) {
             return storeTex(m);
         });
         // 将 【章节标题】 转为带样式的 div
@@ -178,7 +178,7 @@
         s = s.replace(/\$\$([\s\S]+?)\$\$/g, function (m) {
             return storeTex(m);
         });
-        s = s.replace(/\$([^\$\n]+?)\$/g, function (m) {
+        s = s.replace(/\$([^$\n]+?)\$/g, function (m) {
             return storeTex(m);
         });
         s = s.replace(/\\\(([\s\S]+?)\\\)/g, function (m) {
@@ -816,7 +816,7 @@
     }
 
     function _hasNonEmptyIterationLogValue(v) {
-        // `iteration_log` 在部分页面可能是数组，也可能是对象（对象的 value 为数组）。
+        // `iteration_log/iteration_data` 在部分页面可能是数组，也可能是对象（对象的 value 为数组）。
         if (Array.isArray(v)) return v.length > 0;
         if (!v || typeof v !== 'object') return false;
         return Object.values(v).some(function (item) {
@@ -856,7 +856,7 @@
                 var kLower = String(k).toLowerCase();
 
                 // 只处理关键命名：避免把初始参数当作“实验数据”
-                var isIterLogKey = kLower.includes('iteration') && kLower.includes('log');
+                var isIterLogKey = kLower.includes('iteration') && (kLower.includes('log') || kLower.includes('data'));
                 if (isIterLogKey) return _hasNonEmptyIterationLogValue(v);
 
                 return scan(v, depth - 1);
@@ -880,6 +880,23 @@
             if (pd && Array.isArray(pd.phase1_iteration_log) && pd.phase1_iteration_log.length > 0) return true;
             return pd && Array.isArray(pd.phase2_iteration_log) && pd.phase2_iteration_log.length > 0;
 
+        }
+
+        // 区间收缩法性质对比：初始化时每个算法会记录 iter=0 的初始状态，不能算“已运行实验”。
+        // 这里要求至少出现一次有效迭代推进（iter > 0），避免误判。
+        if (_cfg && _cfg.experimentKey === 'line-search.range_search.comparison') {
+            var logs = pd && pd.iteration_log;
+            if (!logs || typeof logs !== 'object') return false;
+            return Object.values(logs).some(function (arr) {
+                if (!Array.isArray(arr) || arr.length === 0) return false;
+                return arr.some(function (row) {
+                    if (!row || typeof row !== 'object') return false;
+                    var iterVal = row.iteration;
+                    if (!Number.isFinite(iterVal)) iterVal = row.iter;
+                    var iterNum = Number(iterVal);
+                    return Number.isFinite(iterNum) && iterNum > 0;
+                });
+            });
         }
 
         return _payloadHasExperimentData(pd);
@@ -1012,6 +1029,7 @@
         } catch (e) {
             console.error('[Notes] AI generation error:', e);
             var isAuthError = e && (e.status === 401 || /认证|登录|未认证|未登录|Not authenticated|Unauthorized|credentials/i.test(e.message || ''));
+            var isProviderAuthError = e && /authenticationerror|api\s*key|鉴权失败|密钥|unauthorized/i.test(String(e.message || ''));
             if (isAuthError) {
                 _pendingAiRetry = {
                     payload: _collectAiPayloadSnapshot(),
@@ -1021,6 +1039,8 @@
                 if (window.LoginModal && typeof window.LoginModal.open === 'function') {
                     window.LoginModal.open();
                 }
+            } else if (isProviderAuthError) {
+                setGSt(_gStEl, 'error', 'AI 服务鉴权失败：请联系管理员检查 DEEPSEEK_API_KEY 配置。');
             } else {
                 var detail = e && e.message ? String(e.message) : '未知错误';
                 // 这是“预期内”的失败（例如无实验数据导致后端 400），不要再额外提示“请检查浏览器控制台”

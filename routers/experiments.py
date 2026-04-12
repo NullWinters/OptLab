@@ -127,35 +127,60 @@ def _to_csv_cell(v: Any) -> str:
     return s if isinstance(s, str) else s.decode("utf-8", errors="replace")
 
 
-def _payload_to_iteration_table(payload: dict[str, Any]) -> tuple[list[str], list[list[str]]] | None:
-    """从 payload 提取迭代表头与行。若有迭代数据则返回 (headers, rows)，否则返回 None。"""
-    iteration_data = payload.get("iteration_data") or payload.get("iterationLog") or []
-    if not isinstance(iteration_data, list) or len(iteration_data) == 0:
-        return None
-    first = iteration_data[0]
-    if not isinstance(first, dict):
-        return None
-    key_list = list(first.keys())
-    headers = [_to_csv_cell(k) for k in key_list]
-    rows = []
-    for row in iteration_data:
-        if not isinstance(row, dict):
-            continue
-        rows.append([_to_csv_cell(row.get(h)) for h in key_list])
-    return headers, rows
+def _is_list_of_dicts(v: Any) -> bool:
+    return isinstance(v, list) and len(v) > 0 and all(isinstance(item, dict) for item in v)
 
 
-def _payload_to_fallback_rows(payload: dict[str, Any]) -> tuple[list[str], list[list[str]]]:
-    """无迭代数据时的 key/value 摘要行。"""
-    headers = ["key", "value"]
-    rows = []
-    for k, v in payload.items():
-        key_str = _to_csv_cell(k)
-        if k in ("iteration_data", "iterationLog") and isinstance(v, list):
-            rows.append([key_str, f"共 {len(v)} 条迭代记录"])
-        else:
-            rows.append([key_str, _format_summary_value(v)])
-    return headers, rows
+def _extract_iteration_tables(
+    obj: Any,
+    prefix: str = "payload",
+) -> list[tuple[str, list[str], list[list[str]]]]:
+    """递归提取可表格化的迭代/过程数据。"""
+    tables: list[tuple[str, list[str], list[list[str]]]] = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            key = str(k)
+            path = f"{prefix}.{key}"
+            k_lower = key.lower()
+            if _is_list_of_dicts(v) and (
+                "iteration" in k_lower
+                or "history" in k_lower
+                or "tableau" in k_lower
+                or "process" in k_lower
+            ):
+                first = v[0]
+                headers = [_to_csv_cell(col) for col in first.keys()]
+                rows = [[_to_csv_cell(item.get(col)) for col in first.keys()] for item in v]
+                tables.append((path, headers, rows))
+            elif isinstance(v, dict):
+                tables.extend(_extract_iteration_tables(v, path))
+    return tables
+
+
+def _flatten_payload_rows(
+    obj: Any,
+    prefix: str = "payload",
+    *,
+    rows: list[list[str]] | None = None,
+) -> list[list[str]]:
+    """将 payload 展平为 path/value 行，保证导出字段完整可追溯。"""
+    if rows is None:
+        rows = []
+
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            path = f"{prefix}.{k}"
+            if isinstance(v, dict):
+                _flatten_payload_rows(v, path, rows=rows)
+            elif _is_list_of_dicts(v):
+                rows.append([path, f"共 {len(v)} 条记录（详见下方迭代表）"])
+            elif isinstance(v, list):
+                rows.append([path, _format_summary_value(v)])
+            else:
+                rows.append([path, _format_summary_value(v)])
+    else:
+        rows.append([prefix, _format_summary_value(obj)])
+    return rows
 
 
 @router.get(
@@ -205,16 +230,19 @@ async def export_experiment_record_csv(
         writer.writerows(summary)
         writer.writerow([])  # 空行分隔
 
-        # 2. 迭代表或 key/value 兜底
-        iter_table = _payload_to_iteration_table(payload)
-        if iter_table is not None:
-            headers, rows = iter_table
-            writer.writerow(headers)
-            writer.writerows(rows)
-        else:
-            headers, rows = _payload_to_fallback_rows(payload)
-            writer.writerow(headers)
-            writer.writerows(rows)
+        # 2. 完整字段详情（不丢失参数、迭代函数、分算法配置等）
+        writer.writerow(["字段路径", "值"])
+        detail_rows = _flatten_payload_rows(payload)
+        writer.writerows(detail_rows)
+
+        # 3. 迭代/过程表（多段）
+        iter_tables = _extract_iteration_tables(payload)
+        if iter_tables:
+            for title, headers, rows in iter_tables:
+                writer.writerow([])
+                writer.writerow([f"迭代数据：{title}"])
+                writer.writerow(headers)
+                writer.writerows(rows)
 
         csv_content = buf.getvalue()
         filename = f"experiment-record-{record_id}-{safe_alias}.csv"
@@ -276,4 +304,3 @@ async def delete_experiment_record(
             detail="未找到该实验记录。",
         )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

@@ -16,6 +16,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notes", tags=["notes"])
 
 
+def _is_ai_provider_auth_error(exc: Exception) -> bool:
+    text = f"{type(exc).__name__}: {str(exc)}".lower()
+    markers = (
+        "authenticationerror",
+        "invalid api key",
+        "api key",
+        "unauthorized",
+        "401",
+        "incorrect api key",
+        "鉴权",
+        "密钥",
+    )
+    return any(marker in text for marker in markers)
+
+
 # ── 固定路径路由必须在通配路由之前注册，避免被 /{experiment_key} 误匹配 ──
 @router.put(
     "/item/{item_id}",
@@ -145,7 +160,7 @@ async def ai_generate_note(
         if isinstance(v, list):
             return len(v) > 0
         if isinstance(v, dict):
-            # comparison 页面可能是 {golden: [...], fibonacci: [...]}
+            # comparison 页面可能是 {golden: [...], fibonacci: [...]} 或其他分组结构
             for item in v.values():
                 if isinstance(item, list) and len(item) > 0:
                     return True
@@ -160,7 +175,7 @@ async def ai_generate_note(
         if isinstance(obj, dict):
             for k, v in obj.items():
                 k_lower = str(k).lower()
-                if "iteration" in k_lower and "log" in k_lower:
+                if "iteration" in k_lower and ("log" in k_lower or "data" in k_lower):
                     if _has_non_empty_iteration_log(v):
                         return True
                 # 限深递归，避免大 payload
@@ -200,6 +215,31 @@ async def ai_generate_note(
                 detail="当前尚无实验数据，请先运行一次两阶段法求解。",
             )
 
+    elif experiment_key == "line-search.range_search.comparison":
+        iteration_log = payload.get("iteration_log")
+        has_progress = False
+        if isinstance(iteration_log, dict):
+            for algo_rows in iteration_log.values():
+                if not isinstance(algo_rows, list):
+                    continue
+                for row in algo_rows:
+                    if not isinstance(row, dict):
+                        continue
+                    iter_val = row.get("iteration", row.get("iter"))
+                    try:
+                        iter_num = float(iter_val)
+                    except (TypeError, ValueError):
+                        iter_num = -1
+                    if iter_num > 0:
+                        has_progress = True
+                        break
+                if has_progress:
+                    break
+        if not has_progress:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="暂无实验数据，请先运行实验。",
+            )
     else:
         if experiment_key == "svm-smo.kernel_trick.visualization":
             # Kernel-trick 页面中可能会先 parse_csv，但尚未完成可视化。
@@ -251,6 +291,11 @@ async def ai_generate_note(
         )
     except Exception as e:
         logger.error(f"[Router] AI generate note failed: {type(e).__name__}: {str(e)[:200]}", exc_info=True)
+        if _is_ai_provider_auth_error(e):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="AI 服务鉴权失败：请检查服务器 DEEPSEEK_API_KEY 是否有效且未过期。",
+            )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI 生成笔记失败：{type(e).__name__}。请检查服务器日志。",

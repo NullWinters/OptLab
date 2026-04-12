@@ -639,6 +639,28 @@
         subStep: 0, // 0: 初始, 1: a_try, 2: b_try, 3: compare, 4: update
         currentTrialPoints: {golden: null, fibonacci: null, bisection: null}
     };
+    window.AppState = AppState;
+
+    const COMPARISON_ALGO_META = {
+        golden: {
+            key: 'golden',
+            label: '黄金分割法',
+            iteration_function: 'a_try = b - 0.618(b-a), b_try = a + 0.618(b-a)，比较 f(a_try), f(b_try) 后收缩区间',
+            termination_rule: '当 |b-a| <= golden_epsilon 时停止'
+        },
+        fibonacci: {
+            key: 'fibonacci',
+            label: '斐波那契法',
+            iteration_function: '按斐波那契比例确定 a_try, b_try，比较函数值后收缩区间',
+            termination_rule: '达到预设迭代次数 fibonacci_n（并结合修正系数 fibonacci_epsilon）后停止'
+        },
+        bisection: {
+            key: 'bisection',
+            label: '二分法',
+            iteration_function: 'm = (a+b)/2，比较区间中点附近函数值并收缩区间',
+            termination_rule: '当 |b-a| <= bisection_epsilon 时停止'
+        }
+    };
 
     // 初始化
     window.addEventListener('load', () => {
@@ -1033,6 +1055,132 @@
         }).join('');
     }
 
+    function buildInitialState() {
+        return {
+            initial_a: AppState.a,
+            initial_b: AppState.b,
+            golden_epsilon: AppState.goldenEps,
+            fibonacci_n: AppState.fibN,
+            fibonacci_epsilon: AppState.fibEps,
+            bisection_epsilon: AppState.bisEps
+        };
+    }
+
+    function buildIterationFunctionsPayload() {
+        return {
+            golden: COMPARISON_ALGO_META.golden.iteration_function,
+            fibonacci: COMPARISON_ALGO_META.fibonacci.iteration_function,
+            bisection: COMPARISON_ALGO_META.bisection.iteration_function
+        };
+    }
+
+    function buildConvergenceResult(histories) {
+        const result = {};
+        ['golden', 'fibonacci', 'bisection'].forEach(key => {
+            const history = Array.isArray(histories[key]) ? histories[key] : [];
+            const last = history.length ? history[history.length - 1] : null;
+            if (!last) {
+                result[key] = null;
+                return;
+            }
+            result[key] = {
+                iteration: last.iter,
+                a: last.a,
+                b: last.b,
+                interval_length: Math.abs(last.b - last.a),
+                x_star: (last.a + last.b) / 2
+            };
+        });
+        return result;
+    }
+
+    function buildRangeComparisonPayload(type, algoName) {
+        const histories = AppState.controller.histories || {};
+        const initialState = buildInitialState();
+        const toRows = (history, label) => (history || []).map(step => ({
+            algorithm: label,
+            iteration: step.iter,
+            a: step.a,
+            b: step.b,
+            interval_length: Math.abs(step.b - step.a),
+            timestamp: new Date().toISOString()
+        }));
+
+        if (type === 'all') {
+            const allRows = [
+                ...toRows(histories.golden, COMPARISON_ALGO_META.golden.label),
+                ...toRows(histories.fibonacci, COMPARISON_ALGO_META.fibonacci.label),
+                ...toRows(histories.bisection, COMPARISON_ALGO_META.bisection.label)
+            ];
+            if (!allRows.length) return null;
+            return {
+                algorithm_name: '区间收缩法性质对比（总体）',
+                test_function: AppState.controller.expr,
+                initial_state: initialState,
+                algorithm_parameters: {
+                    golden: {
+                        epsilon: AppState.goldenEps,
+                        termination_rule: COMPARISON_ALGO_META.golden.termination_rule
+                    },
+                    fibonacci: {
+                        n: AppState.fibN,
+                        epsilon: AppState.fibEps,
+                        termination_rule: COMPARISON_ALGO_META.fibonacci.termination_rule
+                    },
+                    bisection: {
+                        epsilon: AppState.bisEps,
+                        termination_rule: COMPARISON_ALGO_META.bisection.termination_rule
+                    }
+                },
+                iteration_functions: buildIterationFunctionsPayload(),
+                iteration_log: {
+                    golden: histories.golden || [],
+                    fibonacci: histories.fibonacci || [],
+                    bisection: histories.bisection || []
+                },
+                convergence_result: buildConvergenceResult(histories),
+                iteration_data: allRows
+            };
+        }
+
+        const keyMap = {'黄金分割法': 'golden', '斐波那契法': 'fibonacci', '二分法': 'bisection'};
+        const key = keyMap[algoName];
+        const rows = toRows(histories[key], algoName);
+        if (!rows.length) return null;
+        return {
+            algorithm_name: algoName,
+            test_function: AppState.controller.expr,
+            initial_state: initialState,
+            algorithm_parameters: {
+                [key]: key === 'golden'
+                    ? {
+                        epsilon: AppState.goldenEps,
+                        termination_rule: COMPARISON_ALGO_META.golden.termination_rule
+                    }
+                    : key === 'fibonacci'
+                        ? {
+                            n: AppState.fibN,
+                            epsilon: AppState.fibEps,
+                            termination_rule: COMPARISON_ALGO_META.fibonacci.termination_rule
+                        }
+                        : {
+                            epsilon: AppState.bisEps,
+                            termination_rule: COMPARISON_ALGO_META.bisection.termination_rule
+                        }
+            },
+            iteration_functions: {
+                [key]: COMPARISON_ALGO_META[key].iteration_function
+            },
+            iteration_log: {
+                [key]: histories[key] || []
+            },
+            convergence_result: {
+                [key]: buildConvergenceResult(histories)[key]
+            },
+            iteration_data: rows
+        };
+    }
+
     function exportIterationLog() {
         const histories = AppState.controller.histories;
         const algoNames = {
@@ -1040,15 +1188,39 @@
             fibonacci: '斐波那契法',
             bisection: '二分法'
         };
+        const esc = function (v) {
+            const s = String(v == null ? '' : v);
+            return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+        };
+        const initialState = buildInitialState();
+        const payload = buildRangeComparisonPayload('all', null);
+        if (!payload || !Array.isArray(payload.iteration_data) || payload.iteration_data.length === 0) {
+            alert('当前尚无迭代数据，请先运行一次实验。');
+            return;
+        }
 
         let csvContent = "\ufeff"; // UTF-8 BOM
+        const summaryRows = [
+            ['项目', '值'],
+            ['原函数/目标', AppState.controller.expr || ''],
+            ['算法', '区间收缩法性质对比（总体）'],
+            ['初始参数', JSON.stringify(initialState)],
+            ['迭代函数（黄金分割法）', COMPARISON_ALGO_META.golden.iteration_function],
+            ['迭代函数（斐波那契法）', COMPARISON_ALGO_META.fibonacci.iteration_function],
+            ['迭代函数（二分法）', COMPARISON_ALGO_META.bisection.iteration_function],
+            ['终止规则（黄金分割法）', COMPARISON_ALGO_META.golden.termination_rule],
+            ['终止规则（斐波那契法）', COMPARISON_ALGO_META.fibonacci.termination_rule],
+            ['终止规则（二分法）', COMPARISON_ALGO_META.bisection.termination_rule],
+            []
+        ];
+        csvContent += summaryRows.map(cols => cols.map(esc).join(',')).join('\n') + '\n';
         csvContent += "算法,迭代步数,a,b,区间长度\n";
 
         ['golden', 'fibonacci', 'bisection'].forEach(key => {
             const history = histories[key] || [];
             history.forEach(step => {
                 const len = Math.abs(step.b - step.a);
-                csvContent += `${algoNames[key]},${step.iter},${step.a},${step.b},${len}\n`;
+                csvContent += [algoNames[key], step.iter, step.a, step.b, len].map(esc).join(',') + '\n';
             });
         });
 
@@ -1069,60 +1241,12 @@
             return;
         }
 
-        const histories = AppState.controller.histories || {};
         const alias = window.prompt('请输入本次实验的别名（用于在个人中心识别）：', '');
         if (alias == null || String(alias).trim() === '') return;
-
-        const toRows = (history, label) => (history || []).map(step => ({
-            algorithm: label,
-            iteration: step.iter,
-            a: step.a,
-            b: step.b,
-            interval_length: Math.abs(step.b - step.a),
-            timestamp: new Date().toISOString()
-        }));
-
-        const initialState = {
-            initial_a: AppState.a,
-            initial_b: AppState.b,
-            golden_eps: AppState.goldenEps,
-            fib_n: AppState.fibN,
-            fib_eps: AppState.fibEps,
-            bis_eps: AppState.bisEps
-        };
-
-        let payload;
-
-        if (type === 'all') {
-            const allRows = [
-                ...toRows(histories.golden, '黄金分割法'),
-                ...toRows(histories.fibonacci, '斐波那契法'),
-                ...toRows(histories.bisection, '二分法')
-            ];
-            if (!allRows.length) {
-                alert('当前尚无迭代数据，请先运行一次实验。');
-                return;
-            }
-            payload = {
-                algorithm_name: '区间收缩法性质对比（总体）',
-                test_function: AppState.controller.expr,
-                initial_state: initialState,
-                iteration_data: allRows
-            };
-        } else {
-            const keyMap = {'黄金分割法': 'golden', '斐波那契法': 'fibonacci', '二分法': 'bisection'};
-            const key = keyMap[algoName];
-            const rows = toRows(histories[key], algoName);
-            if (!rows.length) {
-                alert('当前尚无该算法的迭代数据。');
-                return;
-            }
-            payload = {
-                algorithm_name: algoName,
-                test_function: AppState.controller.expr,
-                initial_state: initialState,
-                iteration_data: rows
-            };
+        const payload = buildRangeComparisonPayload(type, algoName);
+        if (!payload || !Array.isArray(payload.iteration_data) || payload.iteration_data.length === 0) {
+            alert(type === 'all' ? '当前尚无迭代数据，请先运行一次实验。' : '当前尚无该算法的迭代数据。');
+            return;
         }
 
         try {
@@ -1425,12 +1549,17 @@
 
             return {
                 function: st.controller.expr,
-                initial_range: [st.controller.a, st.controller.b],
+                initial_range: [st.a, st.b],
                 params: {
                     golden_epsilon: st.goldenEps,
                     fibonacci_n: st.fibN,
                     fibonacci_epsilon: st.fibEps,
                     bisection_epsilon: st.bisEps
+                },
+                iteration_functions: {
+                    golden: 'a_try = b - 0.618(b-a), b_try = a + 0.618(b-a)，比较 f(a_try), f(b_try) 后收缩区间',
+                    fibonacci: '按斐波那契比例确定 a_try, b_try，比较函数值后收缩区间',
+                    bisection: 'm = (a+b)/2，比较区间中点附近函数值并收缩区间'
                 },
                 histories: hs,
                 iteration_log: {

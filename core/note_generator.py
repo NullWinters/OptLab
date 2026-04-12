@@ -93,10 +93,14 @@ async def generate_experiment_note(
 
     # 初始化 LLM
     try:
+        api_key = (settings.DEEPSEEK_API_KEY or "").strip()
+        if not api_key or api_key == "CHANGE_ME_DEEPSEEK_KEY":
+            raise ValueError("DEEPSEEK_API_KEY 未配置或仍为占位符，请在 .env 中设置有效密钥。")
+
         llm = ChatDeepSeek(
             model=settings.DEEPSEEK_MODEL,
             temperature=0.28,
-            api_key=settings.DEEPSEEK_API_KEY,
+            api_key=api_key,
             max_tokens=4096,
         )
         logger.info(f"[NoteGen] LLM initialized: {settings.DEEPSEEK_MODEL}")
