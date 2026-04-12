@@ -195,7 +195,7 @@ export class ComparisonVisualizer extends OptimizationVisualizer {
             this.convYLabel = this.convRoot.append('text')
                 .attr('transform', 'rotate(-90)')
                 .attr('x', -this.plotHeight / 2)
-                .attr('y', -45)
+                .attr('y', -55)
                 .attr('text-anchor', 'middle')
                 .attr('fill', '#5d4037')
                 .style('cursor', 'pointer')
