@@ -14,7 +14,11 @@
 {% block content %}
 <div class="container">
     <a href="index.html" class="back-btn">返回</a>
-    <h1>一维搜索方法应用实践</h1>
+    <!-- 页面头部 -->
+    <header class="header">
+        <h1>一维搜索方法应用实践</h1>
+        <p class="subtitle">将一维搜索方法应用于简单定价问题</p>
+    </header>
 
     <div class="description">
         <p><strong>实验目标</strong>：通过一维搜索方法求解两个最小化问题——最小二乘损失函数 \( L(\beta) \) 与负利润函数 \(
@@ -34,8 +38,6 @@
         <p><strong>教学要点</strong>：本实验所有优化问题均通过一维搜索算法数值求解，而非直接使用解析公式，旨在帮助理解搜索过程的迭代逻辑、收敛行为及参数影响。右侧面板可实时观察迭代步长、函数值变化，并支持导出实验数据。
         </p>
     </div>
-
-    <hr>
 
     <section class="experiment-section">
         <div class="card" style="grid-column: 1 / -1;">
