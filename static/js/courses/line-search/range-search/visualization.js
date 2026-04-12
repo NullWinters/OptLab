@@ -4,7 +4,7 @@ export class OptimizationVisualizer {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
         const container = document.getElementById(containerId);
-        this.margin = options.margin || {top: 40, right: 30, bottom: 60, left: 50};
+        this.margin = options.margin || {top: 40, right: 30, bottom: 60, left: 70};
         this.width = options.width || (container ? container.clientWidth : 800);
         this.height = options.height || (container ? container.clientHeight : 500);
 
@@ -67,7 +67,7 @@ export class OptimizationVisualizer {
             .attr('class', 'y-label')
             .attr('transform', 'rotate(-90)')
             .attr('x', -this.plotHeight / 2)
-            .attr('y', -45)
+            .attr('y', -55)
             .attr('text-anchor', 'middle')
             .attr('fill', '#5d4037')
             .attr('font-size', '16px')

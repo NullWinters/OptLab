@@ -19,7 +19,7 @@ export class PointSearchVisualizer {
     constructor(containerId, options = {}) {
         const container = document.getElementById(containerId);
         this.containerId = containerId;
-        this.margin = options.margin || {top: 40, right: 30, bottom: 80, left: 50};
+        this.margin = options.margin || {top: 40, right: 30, bottom: 80, left: 70};
         this.width = options.width || container.clientWidth;
         this.height = options.height || container.clientHeight || 320;
 
