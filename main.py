@@ -142,15 +142,17 @@ async def read_register_page(request: Request):
 
 @app.get("/courses/{experiment_name}/", response_class=HTMLResponse)
 async def read_experiment(request: Request, experiment_name: str):
-    template_path = os.path.join("courses", experiment_name, "index.html")
-    file_path = os.path.join(TEMPLATES_DIR, template_path)
+    # 操作系统兼容性修复：Jinja2 模板路径应始终使用正斜杠 "/"
+    template_path = f"courses/{experiment_name}/index.html"
+    file_path = os.path.join(TEMPLATES_DIR, "courses", experiment_name, "index.html")
     if os.path.exists(file_path):
         return templates.TemplateResponse(request, template_path, headers=NO_CACHE)
     placeholder_path = os.path.join(TEMPLATES_DIR, "courses", "placeholder.html")
     if os.path.exists(placeholder_path):
+        # 修正 TemplateResponse 调用参数签名 (Starlette 0.27.0+)
         return templates.TemplateResponse(
+            request,
             "courses/placeholder.html",
-            {"request": request},
             status_code=404,
         )
     return {"error": "Not Found"}, 404
@@ -176,7 +178,8 @@ async def read_course_subpage(request: Request, course_name: str, subpath: str):
         ext = os.path.splitext(file_path)[1].lower()
         if ext == ".html":
             # 使用 TemplateResponse 渲染 Jinja 模板
-            template_path = os.path.join("courses", course_name, subpath)
+            # 操作系统兼容性修复：Jinja2 模板路径应始终使用正斜杠 "/"
+            template_path = f"courses/{course_name}/{subpath}"
             return templates.TemplateResponse(request, template_path, headers=NO_CACHE)
         elif ext == ".css":
             return FileResponse(
