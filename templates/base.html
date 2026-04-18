@@ -59,23 +59,6 @@
 <script src="/static/js/api.js"></script>
 <script src="/static/js/common/login-modal.js"></script>
 <script src="/static/js/vendors/marked/marked.min.js"></script>
-<script>
-    window.MathJax = {
-        tex: {
-            inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['$$', '$$'], ['\\[', '\\]']],
-            packages: {'[+]': ['boldsymbol']}
-        },
-        loader: {
-            paths: {mathjax: '/static/js/vendors/mathjax'},
-            load: ['[tex]/boldsymbol']
-        },
-        chtml: {
-            fontURL: '/static/js/vendors/mathjax/output/chtml/fonts/tex'
-        }
-    };
-</script>
-<script id="MathJax-script" async src="/static/js/vendors/mathjax/es5/tex-mml-chtml.js"></script>
 <script src="/static/js/common/ai-sidebar.js"></script>
 <script src="/static/js/common/experiment-notes.js"></script>
 <script>
