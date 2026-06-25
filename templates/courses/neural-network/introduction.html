@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神经网络优化 - OptLab</title>
+    <link rel="stylesheet" href="/static/css/courses/neural-network/introduction.css">
+    <script src="/static/js/vendors/d3/d3.min.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['boldsymbol']}
+            },
+            loader: {
+                paths: {mathjax: '/static/js/vendors/mathjax'},
+                load: ['[tex]/boldsymbol']
+            },
+            chtml: {
+                fontURL: '/static/js/vendors/mathjax/output/chtml/fonts/tex'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="/static/js/vendors/mathjax/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+<div class="container">
+<!--    <a href="index.html" class="back-btn">返回</a>-->
+
+    <header class="header">
+        <h1>神经网络优化</h1>
+        <p class="subtitle">前向传播、反向传播与梯度下降优化详解</p>
+    </header>
+
+    <nav class="navigation">
+        <button class="nav-btn active">算法介绍</button>
+    </nav>
+
+    <!-- 引言 -->
+    <div class="section intro">
+        <blockquote>
+            全连接神经网络是深度学习的基础模型，由多层神经元通过加权连接组成。其训练过程本质上是一个<strong>优化问题</strong>：给定训练数据，通过梯度下降法不断调整网络的权重和偏置，使损失函数最小化。前向传播完成从输入到输出的映射，反向传播利用链式法则高效计算梯度，各种优化器和学习率调度器则决定了参数更新的效率与稳定性。本页将系统介绍这些核心概念。
+        </blockquote>
+    </div>
+
+
+    <!-- 1. 全连接神经网络结构 -->
+    <div class="section">
+        <h2>全连接神经网络结构</h2>
+        <p>
+            全连接神经网络（Fully Connected Network，也称多层感知机 MLP）由输入层、若干隐藏层和输出层组成。第 \(l\) 层的每个神经元与第 \(l+1\) 层的所有神经元相连。记第 \(l\) 层的输出向量为 \(\mathbf{a}^{[l]}\)，则相邻层之间的变换为：
+        </p>
+        <div class="math-block">
+            \[
+            \mathbf{z}^{[l]} = \mathbf{W}^{[l]} \mathbf{a}^{[l-1]} + \mathbf{b}^{[l]},
+            \quad \mathbf{a}^{[l]} = g^{[l]}(\mathbf{z}^{[l]})
+            \]
+        </div>
+        <p>
+            其中 \(\mathbf{W}^{[l]}\) 为权值矩阵（形状为 \(n_l \times n_{l-1}\)），\(\mathbf{b}^{[l]}\) 为偏置向量，\(g^{[l]}\) 为第 \(l\) 层的激活函数。\((n_0, n_1, \ldots, n_L)\) 称为网络结构。
+        </p>
+        <div class="network-diagram">
+            <div id="network-viz"></div>
+        </div>
+        <p>
+            上图展示了一个 4-5-5-2 结构：输入层 4 个神经元，两个隐藏层各 5 个神经元，输出层 2 个神经元。每两个相邻层之间的全部连接对应一个权值矩阵和偏置向量。
+        </p>
+    </div>
+
+
+    <!-- 2. 前向传播 -->
+    <div class="section">
+        <h2>前向传播</h2>
+        <p>
+            前向传播（Forward Propagation）将输入数据逐层向前传递，最终输出预测值。以三层网络（输入 → 隐藏 → 输出）为例：
+        </p>
+        <div class="math-block">
+            \[
+            \mathbf{z}^{[1]} = \mathbf{W}^{[1]} \mathbf{x} + \mathbf{b}^{[1]},
+            \quad \mathbf{a}^{[1]} = g(\mathbf{z}^{[1]})
+            \]
+            \[
+            \mathbf{z}^{[2]} = \mathbf{W}^{[2]} \mathbf{a}^{[1]} + \mathbf{b}^{[2]},
+            \quad \hat{\mathbf{y}} = \sigma(\mathbf{z}^{[2]})
+            \]
+        </div>
+        <p>
+            最终，预测值 \(\hat{\mathbf{y}}\) 与真实标签 \(\mathbf{y}\) 之间的差异由<strong>损失函数</strong>衡量：
+        </p>
+        <div class="math-block">
+            \[
+            \text{MSE: } J = \frac{1}{2m} \sum_{i=1}^{m} \|\hat{\mathbf{y}}^{(i)} - \mathbf{y}^{(i)}\|^2,
+            \qquad
+            \text{交叉熵: } J = -\frac{1}{m} \sum_{i=1}^{m} \mathbf{y}^{(i)\top} \log\hat{\mathbf{y}}^{(i)}
+            \]
+        </div>
+        <div class="highlight">
+            <strong>关键思想</strong>：前向传播将网络的每一层视为一次矩阵乘法和非线性变换的复合。整个网络就是这些层叠函数拼接而成的一个大型参数化函数 \(f_\theta(\mathbf{x})\)，其中 \(\theta = \{\mathbf{W}^{[1]}, \mathbf{b}^{[1]}, \ldots\}\) 为全部可学习参数。
+        </div>
+    </div>
+
+
+    <!-- 3. 反向传播 -->
+    <div class="section">
+        <h2>反向传播</h2>
+        <p>
+            反向传播（Back-Propagation）是计算损失函数对各层参数梯度的算法。其核心是<strong>链式法则</strong>：从输出层开始，误差信号逐层向前传递，依次计算每层参数对损失的影响。
+        </p>
+        <p>
+            定义输出层误差：\(\boldsymbol{\delta}^{[L]} = \frac{\partial J}{\partial \mathbf{z}^{[L]}} = \hat{\mathbf{y}} - \mathbf{y}\)（对于 MSE + Sigmoid 输出层），然后逐层向前递推：
+        </p>
+        <div class="math-block">
+            \[
+            \boldsymbol{\delta}^{[l]} = \left( \mathbf{W}^{[l+1]\top} \boldsymbol{\delta}^{[l+1]} \right) \odot g'(\mathbf{z}^{[l]})
+            \]
+        </div>
+        <p>由 \(\boldsymbol{\delta}^{[l]}\) 得到各层参数的梯度：</p>
+        <div class="math-block">
+            \[
+            \frac{\partial J}{\partial \mathbf{W}^{[l]}} = \frac{1}{m} \boldsymbol{\delta}^{[l]} \mathbf{a}^{[l-1]\top},
+            \qquad
+            \frac{\partial J}{\partial \mathbf{b}^{[l]}} = \frac{1}{m} \sum \boldsymbol{\delta}^{[l]}
+            \]
+        </div>
+        <p>
+            得到梯度后，利用<strong>梯度下降法</strong>更新参数：
+        </p>
+        <div class="math-block">
+            \[
+            \mathbf{W}^{[l]} := \mathbf{W}^{[l]} - \eta \frac{\partial J}{\partial \mathbf{W}^{[l]}},
+            \qquad
+            \mathbf{b}^{[l]} := \mathbf{b}^{[l]} - \eta \frac{\partial J}{\partial \mathbf{b}^{[l]}}
+            \]
+        </div>
+        <p>
+            其中 \(\eta\) 为学习率，控制每次更新的步长。整个过程反复迭代（前向 → 反向 → 更新），直至损失收敛。
+        </p>
+        <div class="highlight">
+            <strong>算法步骤</strong>
+            <ol>
+                <li>前向传播：逐层计算 \(\mathbf{z}^{[l]}, \mathbf{a}^{[l]}\)，最终得到损失 \(J\)。</li>
+                <li>逐层反向：从输出层开始，计算 \(\boldsymbol{\delta}^{[L]}\)，然后递推 \(\boldsymbol{\delta}^{[l-1]}, \ldots, \boldsymbol{\delta}^{[1]}\)。</li>
+                <li>计算梯度：利用 \(\boldsymbol{\delta}^{[l]}\) 和缓存的前向激活值 \(\mathbf{a}^{[l-1]}\) 计算 \(\nabla_{\mathbf{W}^{[l]}}J\) 和 \(\nabla_{\mathbf{b}^{[l]}}J\)。</li>
+                <li>参数更新：利用优化器（如下文所述）更新所有权值和偏置。</li>
+                <li>重复迭代直至收敛。</li>
+            </ol>
+        </div>
+    </div>
+
+
+    <!-- 4. 激活函数 -->
+    <div class="section">
+        <h2>激活函数</h2>
+        <p>
+            激活函数为神经网络引入<strong>非线性</strong>表达能力。没有激活函数（或使用线性激活），无论多少层网络本质上都等价于一个线性变换。以下是四种常用激活函数，点击按钮切换查看。
+        </p>
+
+        <div class="tab-bar" id="activation-tabs">
+            <button class="tab-btn active" id="btn-sigmoid">Sigmoid</button>
+            <button class="tab-btn" id="btn-tanh">tanh</button>
+            <button class="tab-btn" id="btn-relu">ReLU</button>
+            <button class="tab-btn" id="btn-leakyrelu">Leaky ReLU</button>
+        </div>
+
+        <div class="switch-canvas" id="activation-canvas"></div>
+
+        <div class="switch-desc" id="activation-desc">
+            <div class="formula">
+                \( \sigma(x) = \dfrac{1}{1 + e^{-x}} \)<br>
+                \( \sigma\,'(x) = \sigma(x)(1 - \sigma(x)) \)
+            </div>
+            <div class="notes">
+                <strong>优点：</strong>输出范围 (0, 1)，平滑可导，适合二分类输出层。<br><strong>缺点：</strong>输入绝对值较大时导数值趋近于 0，易导致<strong>梯度消失</strong>。
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 5. 优化器 -->
+    <div class="section">
+        <h2>优化器</h2>
+        <p>
+            优化器决定了如何使用梯度来更新参数。普通 SGD 只沿当前梯度方向下降，而更先进的优化器引入动量、自适应学习率等机制，显著提升收敛速度和稳定性。
+        </p>
+
+        <div class="tab-bar" id="optimizer-tabs">
+            <button class="tab-btn active" id="btn-momentum">Momentum</button>
+            <button class="tab-btn" id="btn-rmsprop">RMSprop</button>
+            <button class="tab-btn" id="btn-adam">Adam</button>
+        </div>
+
+        <div id="optimizer-switch">
+            <div class="formula-card" id="optimizer-formula">
+                \[ v_t = \beta v_{t-1} + (1 - \beta) \nabla J(\theta_t) \]
+                \[ \theta_{t+1} = \theta_t - \eta \, v_t \]
+            </div>
+
+            <div class="switch-desc" id="optimizer-desc">
+            在 SGD 基础上引入<strong>动量项</strong> \(v_t\)（通常 \(\beta = 0.9\)），累积历史梯度方向，加速收敛并减少震荡。
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 6. 学习率调度器 -->
+    <div class="section">
+        <h2>学习率调度器</h2>
+        <p>
+            固定的学习率往往难以兼顾初期的快速收敛与后期的精细调优。学习率调度器在训练过程中<strong>动态调整学习率</strong>，通常随着训练推进逐步衰减。点击按钮切换查看不同调度策略。
+        </p>
+
+        <div class="tab-bar" id="scheduler-tabs">
+            <button class="tab-btn active" id="btn-steplr">StepLR</button>
+            <button class="tab-btn" id="btn-exponentiallr">ExponentialLR</button>
+            <button class="tab-btn" id="btn-cosine">CosineAnnealingLR</button>
+        </div>
+
+        <div class="switch-canvas" id="scheduler-canvas"></div>
+
+        <div class="switch-desc" id="scheduler-desc">
+            <div class="formula">
+                \( \eta_t = \eta_0 \cdot \gamma^{\lfloor t / \text{step} \rfloor} \)
+            </div>
+            <div class="notes">
+                每间隔 <strong>step</strong> 个 epoch，学习率乘以衰减因子 \(\gamma\)（图上 \(\gamma = 0.5\)，step = 30）。
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/courses/neural-network/introduction.js"></script>
+</body>
+<footer class="footer">
+    神经网络优化 · OptLab 教学资源
+</footer>
+
+</html>
