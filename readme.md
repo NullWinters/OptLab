@@ -23,6 +23,7 @@ AI 助教辅助功能。
 - **线性规划（单纯形法）**：提供表格输入界面，支持单纯形法、两阶段法流程演示、二维变量问题几何解释及结果文字说明 (已完成)
 - **有约束非线性优化（支持向量机与SMO）**
   ：支持上传自定义数据集，提供核技巧三维可视化、分离超平面与间隔边界可视化及SMO迭代流程动画 (已完成)
+- **神经网络优化**：探索全连接神经网络结构、前向/反向传播原理，交互式对比 SGD / Momentum / RMSprop / Adam 等优化器的训练过程 (已完成)
 
 ### 2. 用户系统与实验记录
 
@@ -111,7 +112,8 @@ OptLab/
 │   │   ├── courses/            # 各业务模块专用样式
 │   │   │   ├── line-search/    # 一维搜索
 │   │   │   ├── linear-programming/ # 线性规划
-│   │   │   └── svm-smo/        # SVM
+│   │   │   ├── svm-smo/        # SVM
+│   │   │   └── neural-network/  # 神经网络优化
 │   │   └── vendors/            # 第三方样式库
 │   ├── js/
 │   │   ├── common/             # 公共逻辑组件
@@ -121,7 +123,8 @@ OptLab/
 │   │   ├── courses/            # 实验业务逻辑
 │   │   │   ├── line-search/    # 一维搜索 (含 range-search/, point-search/)
 │   │   │   ├── linear-programming/
-│   │   │   └── svm-smo/
+│   │   │   ├── svm-smo/
+│   │   │   └── neural-network/  # 神经网络优化
 │   │   ├── vendors/            # 第三方库 (D3.js, Three.js, MathJax 等)
 │   │   ├── api.js              # API 封装
 │   │   ├── auth.js             # 认证逻辑
@@ -139,7 +142,8 @@ OptLab/
 │   └── courses/                # 业务页面
 │       ├── line-search/        # 一维搜索 (含 range-search/, point-search/)
 │       ├── linear-programming/
-│       └── svm-smo/
+│       ├── svm-smo/
+│       └── neural-network/      # 神经网络优化
 ├── datasets/                   # 数据集存储
 ├── logs/                       # 日志文件
 ├── tests/                      # 测试文件
