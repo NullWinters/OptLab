@@ -1,9 +1,8 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.gzip import GZipMiddleware
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from routers.agent import router as agent_router
 from routers.auth import router as auth_router
@@ -85,33 +84,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-
-# GZip 压缩：响应 >500 字节时自动压缩（JS/CSS/HTML 等文本文件）
-app.add_middleware(GZipMiddleware, minimum_size=500)
-
 app.include_router(agent_router)
 app.include_router(auth_router)
 app.include_router(experiments_router)
 app.include_router(notes_router)
 
-# 静态文件：添加长期缓存头（浏览器缓存一年，无需用户手动清理）
-# 注意：修改静态文件后需要重启服务使新缓存生效
-STATIC_CACHE = {
-    "Cache-Control": "public, max-age=31536000, immutable",
-}
-
-
-class CachedStaticFiles(StaticFiles):
-    """StaticFiles 的包装类，给所有响应添加长期缓存头"""
-
-    async def get_response(self, path: str, scope) -> Response:
-        response = await super().get_response(path, scope)
-        for key, value in STATIC_CACHE.items():
-            response.headers[key] = value
-        return response
-
-
-app.mount("/static", CachedStaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
@@ -199,9 +177,20 @@ async def read_course_subpage(request: Request, course_name: str, subpath: str):
     if os.path.isfile(file_path):
         ext = os.path.splitext(file_path)[1].lower()
         if ext == ".html":
-            # Jinja2 模板：使用正斜杠路径
+            # 使用 TemplateResponse 渲染 Jinja 模板
+            # 操作系统兼容性修复：Jinja2 模板路径应始终使用正斜杠 "/"
             template_path = f"courses/{course_name}/{subpath}"
             return templates.TemplateResponse(request, template_path, headers=NO_CACHE)
+        elif ext == ".css":
+            return FileResponse(
+                file_path, headers=NO_CACHE, media_type="text/css; charset=utf-8"
+            )
+        elif ext == ".js":
+            return FileResponse(
+                file_path,
+                headers=NO_CACHE,
+                media_type="application/javascript; charset=utf-8",
+            )
     placeholder_path = os.path.join(TEMPLATES_DIR, "courses", "placeholder.html")
     if subpath.endswith(".html") and os.path.exists(placeholder_path):
         return FileResponse(placeholder_path, status_code=404)
