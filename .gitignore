@@ -43,6 +43,7 @@ ENV/
 .vscode/
 .idea/
 .vs/
+.junie/
 *.suo
 *.user
 *.userosscache

@@ -239,6 +239,14 @@ body {
     color: var(--red-200);
 }
 
+.theme-brown .course-image-container {
+    background-color: #fdf2ec;
+}
+
+.theme-brown .course-placeholder-img {
+    color: #e8c4b8;
+}
+
 .course-content {
     padding: 2rem;
 }
