@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.agent import ask_assistant
+from core.agent import ask_assistant, get_llm
 from core.auth import get_current_user
 from core.chat_service import ChatService
 from dependencies import get_session
@@ -23,8 +23,6 @@ from schemas.chat import (
     ChatSessionQueryOut,
     ChatSessionReset,
 )
-import settings
-from langchain_deepseek import ChatDeepSeek
 
 router = APIRouter(prefix="/api/assistant", tags=["assistant"])
 
@@ -193,11 +191,7 @@ async def _ask_with_context(
     """
     带上下文调用AI助手
     """
-    llm = ChatDeepSeek(
-        model=settings.DEEPSEEK_MODEL,
-        temperature=settings.DEEPSEEK_TEMPERATURE,
-        api_key=settings.DEEPSEEK_API_KEY,
-    )
+    llm = get_llm()
 
     # 构建带上下文的系统提示
     lines = []
@@ -236,6 +230,6 @@ async def _ask_with_context(
     messages.append({"role": "user", "content": message})
 
     # 调用模型
-    structured_llm = llm.with_structured_output(AssistantSchema)
+    structured_llm = llm.with_structured_output(AssistantSchema, method="function_calling")
     result = await structured_llm.ainvoke(messages)
     return result
