@@ -1040,7 +1040,7 @@
                     window.LoginModal.open();
                 }
             } else if (isProviderAuthError) {
-                setGSt(_gStEl, 'error', 'AI 服务鉴权失败：请联系管理员检查 DEEPSEEK_API_KEY 配置。');
+                setGSt(_gStEl, 'error', 'AI 服务鉴权失败：请联系管理员检查 LLM_API_KEY 配置。');
             } else {
                 var detail = e && e.message ? String(e.message) : '未知错误';
                 // 这是“预期内”的失败（例如无实验数据导致后端 400），不要再额外提示“请检查浏览器控制台”
