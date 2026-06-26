@@ -1,23 +1,18 @@
-from langchain_deepseek import ChatDeepSeek
-from langchain.agents import create_agent
-from schemas.agent import SimpleSchema, AssistantSchema
+from langchain_openai import ChatOpenAI
+from schemas.agent import AssistantSchema
 import settings
-import os
 
-llm = ChatDeepSeek(
-    model=settings.DEEPSEEK_MODEL,
-    temperature=settings.DEEPSEEK_TEMPERATURE,
-    api_key=settings.DEEPSEEK_API_KEY
-)
 
-agent = create_agent(
-    model=llm,
-    system_prompt="你是一个友好的智能助手",
-    response_format=SimpleSchema
-)
-
-# 项目根目录
-_project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+def get_llm(**overrides):
+    """创建 LLM 实例的工厂函数，所有 AI 调用统一入口。"""
+    kwargs = {
+        "model": settings.LLM_MODEL_ID,
+        "temperature": settings.LLM_TEMPERATURE,
+        "api_key": settings.LLM_API_KEY,
+        "base_url": settings.LLM_BASE_URL or None,
+    }
+    kwargs.update(overrides)
+    return ChatOpenAI(**kwargs)
 
 
 def _to_button_desc(buttons):
@@ -33,14 +28,12 @@ def _to_button_desc(buttons):
 async def ask_assistant(message: str, page_id: str, guidebook: str, buttons: list, graph_context: dict | None = None) -> AssistantSchema:
     buttons_desc = _to_button_desc(buttons)
 
-
     system_prompt = (
         "你是一个流程观察页面的操作助手，帮助用户理解和使用该页面的各项功能。\n\n"
         f"以下是页面指导书：\n{guidebook}\n\n"
         f"以下是页面上所有可用的UI元素（按钮、输入框、弹窗相关控件、SVG图元）及其信息：\n{buttons_desc}\n\n"
         f"以下是页面图形上下文（二维/三维场景摘要，可能为空）：\n{graph_context or {}}\n\n"
     )
-
 
     system_prompt += (
         "用户会向你提问关于如何使用该页面的问题，也可能询问算法原理。"
@@ -57,7 +50,8 @@ async def ask_assistant(message: str, page_id: str, guidebook: str, buttons: lis
         "- 如果用户的问题与页面操作和算法均无关，text 中礼貌回应，highlight_ids 返回空数组"
     )
 
-    structured_llm = llm.with_structured_output(AssistantSchema)
+    llm = get_llm()
+    structured_llm = llm.with_structured_output(AssistantSchema, method="function_calling")
     result = await structured_llm.ainvoke([
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": message},
