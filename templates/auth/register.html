@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}注册 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/base/auth.css">
+{% endblock %}
+
+{% block ai_sidebar %}{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    {% include 'components/_top_nav.html' %}
+
+    <main class="auth-main">
+        <div class="auth-card">
+            <h1 class="auth-title">注册新账号</h1>
+            <p class="auth-subtitle">使用邮箱、用户名和密码完成注册</p>
+
+            <div id="auth-error" class="auth-alert"></div>
+            <div id="auth-success" class="auth-alert"></div>
+
+            <form id="register-form" class="auth-form">
+                <div class="auth-field">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="auth-field">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="auth-field">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required>
+                    <p class="auth-field-hint">密码长度需在 8-50 个字符之间。</p>
+                </div>
+                <div class="auth-field">
+                    <label for="confirm_password">确认密码</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+                <button type="submit" class="auth-submit">注册</button>
+            </form>
+
+            <p class="auth-footer-tip">
+                已有账号？
+                <a href="/auth/login">前往登录</a>
+            </p>
+        </div>
+    </main>
+
+    <footer class="auth-site-footer">
+        <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+<script src="/static/js/auth.js"></script>
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% block title %}SVM 核技巧可视化 - OptLab{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="/static/css/courses/svm-smo/introduction.css">
+<link rel="stylesheet" href="/static/css/courses/svm-smo/kernel-trick.css">
+<script src="/static/js/vendors/mathjs/math.min.js"></script>
+{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 1400px;">
+    <a href="index.html" class="back-btn">返回</a>
+
+    <!-- 页面头部 -->
+    <header class="header">
+        <h1>支持向量机与SMO算法</h1>
+        <p class="subtitle">核技巧三维可视化实验</p>
+    </header>
+
+    <!-- 导航栏 -->
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">算法介绍</button>
+        <button class="nav-btn active" onclick="window.location.href='kernel-trick.html'">核技巧</button>
+        <button class="nav-btn" onclick="window.location.href='smo.html'">SMO 算法</button>
+    </nav>
+
+    <div class="page" style="max-width: none; padding: 0;">
+        <aside class="panel">
+            <h1>核技巧</h1>
+            <p class="hint">输入数据集，应用核技巧，观察数据集在三维空间是否线性可分</p>
+
+            <div class="group">
+                <h2>1) 上传数据集</h2>
+                <label for="csv-file">CSV格式数据集</label>
+                <input id="csv-file" type="file" accept=".csv"/>
+                <label for="preset-dataset">预设数据集</label>
+                <select id="preset-dataset">
+                    <option value="xor">XOR 交叉分布</option>
+                    <option value="rings">双环分布</option>
+                </select>
+                <button id="load-preset-btn" type="button">加载数据集</button>
+                <label for="x-col">x 列</label>
+                <select id="x-col"></select>
+                <label for="y-col">y 列</label>
+                <select id="y-col"></select>
+                <label for="label-col">标签列</label>
+                <select id="label-col"></select>
+                <button id="load-btn">更新属性列</button>
+                <p id="dataset-status" class="hint" style="margin-top:8px; margin-bottom:0;"></p>
+            </div>
+
+            <div class="group">
+                <h2>2) 核技巧</h2>
+                <p id="current-map-text" class="hint" style="margin-top:0;">当前映射：\(\phi(x, y) = (x^2, y^2,
+                    \sqrt{2}xy)\)</p>
+                <p id="current-kernel-text" class="hint" style="margin-top:4px; color:#1a237e;">当前核函数：\(K(u,v) =
+                    (u_x v_x + u_y v_y)^2\)</p>
+                <button id="custom-map-btn" type="button">自定义映射</button>
+
+                <button id="animate-btn">升维动画</button>
+                <button id="default-mode-btn" type="button">重置为默认参数</button>
+            </div>
+
+            <div id="custom-map-modal" class="modal" style="display:none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>自定义映射解析器 (math.js)</h3>
+                        <span id="close-map-modal" class="close-modal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group">
+                            <label for="map-preset-select">预设映射</label>
+                            <select id="map-preset-select">
+                                <option value="quadratic_monomial">二次多项式 φ=(x^2, x*y, y^2)</option>
+                                <option value="linear_combo">线性组合 φ=(x, y, x+y)</option>
+                                <option value="mixed_order">混合阶 φ=(x, y, x*y)</option>
+                                <option value="polar_like">极坐标型 φ=(x, y, sqrt(x^2+y^2))</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="map-x-input">x_new(x, y)</label>
+                            <input id="map-x-input" type="text" value="x^2" placeholder="例如: x^2"/>
+                        </div>
+                        <div class="input-group">
+                            <label for="map-y-input">y_new(x, y)</label>
+                            <input id="map-y-input" type="text" value="y^2" placeholder="例如: y^2"/>
+                        </div>
+                        <div class="input-group">
+                            <label for="map-z-input">z_new(x, y)</label>
+                            <input id="map-z-input" type="text" value="sqrt(2)*x*y" placeholder="例如: sqrt(2)*x*y"/>
+                        </div>
+                        <p id="map-expr-error" class="hint" style="margin-top:8px; margin-bottom:0; color:#c62828;"></p>
+                        <div class="examples-section" style="margin-top: 10px;">
+                            <h4 style="margin: 0 0 6px; color:#8f6a4f;">示例表达式</h4>
+                            <ul>
+                                <li><code>x^2</code>、<code>y^2</code>、<code>sqrt(2)*x*y</code></li>
+                                <li><code>sin(x)</code>、<code>cos(y)</code>、<code>x*y</code></li>
+                                <li><code>x</code>、<code>y</code>、<code>x^2+y^2</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="apply-map-btn" type="button">确定</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group">
+                <h2>3) 设置超平面</h2>
+                <label for="plane-z">沿 Z 轴平移</label>
+                <div class="inline">
+                    <input id="plane-z" type="range" min="-8" max="8" step="0.05" value="0"/>
+                    <span class="value" id="plane-z-val">0.00</span>
+                </div>
+
+                <label for="plane-yaw">绕 Y 轴旋转 (Yaw)</label>
+                <div class="inline">
+                    <input id="plane-yaw" type="range" min="-180" max="180" step="1" value="0"/>
+                    <span class="value" id="plane-yaw-val">0°</span>
+                </div>
+
+                <label for="plane-pitch">绕 X 轴旋转 (Pitch)</label>
+                <div class="inline">
+                    <input id="plane-pitch" type="range" min="-180" max="180" step="1" value="0"/>
+                    <span class="value" id="plane-pitch-val">0°</span>
+                </div>
+
+                <p id="split-acc" class="hint" style="margin-top:10px; margin-bottom:0;">划分准确率：--</p>
+            </div>
+        </aside>
+
+        <section class="scene-wrap">
+            <div class="scene-head">
+                <span>3D可视化画布</span>
+                <span style="color:#8f6a4f;">左键拖动旋转 · 滚轮缩放</span>
+            </div>
+            <div id="scene"></div>
+        </section>
+    </div>
+
+    <div style="margin-top: 20px;">
+        {% include 'components/_experiment_notes.html' %}
+    </div>
+</div>
+<footer class="footer">
+    支持向量机与 SMO · OptLab 教学资源
+</footer>
+{% endblock %}
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'svm_smo_kernel_trick',
+        BUTTON_REGISTRY: [
+            {id: 'csv-file', description: '上传CSV文件输入框', type: 'optional'},
+            {id: 'preset-dataset', description: '预设数据集下拉框', type: 'optional'},
+            {id: 'load-preset-btn', description: '加载预设数据集按钮', type: 'optional'},
+            {id: 'x-col', description: 'x坐标列选择框', type: 'optional'},
+            {id: 'y-col', description: 'y坐标列选择框', type: 'optional'},
+            {id: 'label-col', description: '标签列选择框', type: 'optional'},
+            {id: 'load-btn', description: '加载并可视化按钮', type: 'optional'},
+            {id: 'current-map-text', description: '当前映射公式文本', type: 'normal'},
+            {id: 'custom-map-btn', description: '打开自定义映射弹窗按钮', type: 'normal'},
+            {id: 'map-preset-select', description: '预设映射下拉框', type: 'normal'},
+            {id: 'map-x-input', description: '自定义映射x_new表达式输入框', type: 'normal'},
+            {id: 'map-y-input', description: '自定义映射y_new表达式输入框', type: 'normal'},
+            {id: 'map-z-input', description: '自定义映射z_new表达式输入框', type: 'normal'},
+            {id: 'apply-map-btn', description: '应用自定义映射按钮', type: 'normal'},
+            {id: 'animate-btn', description: '升维动画按钮', type: 'normal'},
+            {id: 'default-mode-btn', description: '默认参数模式按钮', type: 'normal'},
+            {id: 'plane-z', description: '超平面沿Z轴平移滑块', type: 'normal'},
+            {id: 'plane-yaw', description: '超平面Yaw旋转滑块', type: 'normal'},
+            {id: 'plane-pitch', description: '超平面Pitch旋转滑块', type: 'normal'},
+            {id: 'scene', description: '三维场景容器', type: 'optional'},
+            {id: 'kernel-trick-webgl-canvas', description: '三维可视化WebGL画布', type: 'optional'}
+        ],
+        GUIDEBOOK: `
+这是支持向量机核技巧三维可视化页面。
+页面左侧是参数面板，右侧是Three.js三维场景。
+用户先上传CSV或加载预设数据，再选择x/y/标签列并可视化。
+可使用默认二次多项式映射，也可自定义输入 φ(x, y)=(x_new, y_new, z_new) 表达式并应用，再播放升维动画观察可分性变化。
+超平面可平移和旋转，并实时显示按颜色标签计算的划分准确率。
+三维场景中，红蓝方形点表示正类和负类样本，红蓝绿射线表示坐标系，蓝色对应x轴，红色对应y轴，绿色对应z轴，半透明平面为分离超平面。
+`
+    };
+</script>
+<script type="module" src="/static/js/courses/svm-smo/kernel-trick.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        ExperimentNotes.init({
+            experimentKey: 'svm-smo.kernel_trick.visualization',
+            mountSelector: '#exp-notes-mount',
+            getPageData: function () {
+                if (typeof window.getKernelTrickPageData === 'function') {
+                    return window.getKernelTrickPageData();
+                }
+                return {};
+            }
+        });
+    });
+</script>
+{% endblock %}

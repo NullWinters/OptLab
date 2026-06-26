@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+
+{% block title %}OptLab - 最优化实验室{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/base/index.css">
+{% endblock %}
+
+{% block content %}
+<!-- 导航栏 -->
+{% include 'components/_top_nav.html' %}
+
+<!-- 主视觉区 -->
+<header class="hero container">
+    <div class="hero-content max-w-4xl">
+        <h1 class="hero-title">
+            最优化实验室
+        </h1>
+        <p class="hero-subtitle">
+            最优化理论是运筹学与机器学习的核心，旨在从众多可行方案中寻找最优解。从工程控制到金融决策，最优化方法无处不在。本平台通过可视化交互，帮助学习者直观理解算法本质，降低数学门槛。
+        </p>
+        <div class="hero-buttons">
+            <a href="/courses/" class="btn btn-primary">
+                浏览课程
+            </a>
+            <a href="/profile" class="btn btn-secondary" id="hero-profile-btn">
+                个人中心
+            </a>
+        </div>
+        <div id="hero-auth-actions" class="hero-auth-actions"></div>
+    </div>
+</header>
+
+<!-- 教学难点区 - 垂直时间线 -->
+<section class="pain-points-section">
+    <div class="container max-w-4xl">
+        <h2 class="section-title section-title-dark">当前最优化教学的三大难点</h2>
+        <div class="timeline">
+            <div class="timeline-line"></div>
+            <div class="timeline-item">
+                <div class="timeline-marker">
+                    <span class="timeline-number">1</span>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-icon">
+                        <i class="fas fa-square-root-variable"></i>
+                    </div>
+                    <h3>公式抽象</h3>
+                    <p>数学推导复杂，缺乏直观感受</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-marker">
+                    <span class="timeline-number">2</span>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h3>过程难追踪</h3>
+                    <p>算法迭代过程难以观察，理解不深</p>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-marker">
+                    <span class="timeline-number">3</span>
+                </div>
+                <div class="timeline-content">
+                    <div class="timeline-icon">
+                        <i class="fas fa-sliders-h"></i>
+                    </div>
+                    <h3>参数影响不明</h3>
+                    <p>无法直观感受参数变化对收敛行为的影响</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 平台核心功能区 -->
+<section class="core-features-section">
+    <div class="container max-w-4xl">
+        <h2 class="section-title section-title-accent">核心功能</h2>
+        <p class="core-features-description">
+            通过可视化技术，将算法的每一步迭代过程动态呈现，帮助学习者看见算法如何逼近最优解。结合可调节的实验参数与测试函数，支持单算法与多算法对比实验，直观展现不同策略的收敛特性。
+        </p>
+    </div>
+</section>
+
+<!-- 平台主要优势区 -->
+<section class="advantages-section">
+    <div class="container max-w-7xl">
+        <h2 class="section-title section-title-dark">平台主要优势</h2>
+        <div class="advantages-grid">
+            <div class="advantage-card">
+                <div class="advantage-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <h3>可调节的实验环境</h3>
+                <p>
+                    提供多种测试函数与算法参数调节功能，动态生成图表，支持单个算法运行观察与多算法横向对比，深入理解算法性能。</p>
+            </div>
+            <div class="advantage-card">
+                <div class="advantage-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>AI 助手全程辅助</h3>
+                <p>内置智能助手，帮助快速熟悉平台操作，一键生成实验报告，提升学习效率。</p>
+            </div>
+            <div class="advantage-card">
+                <div class="advantage-icon">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <h3>实验数据与笔记一键导出</h3>
+                <p>支持实验数据与学习笔记的导出，提供多种格式选择，便于整理与复现。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 实验内容一览区 - 居中卡片轮播 -->
+<section class="experiments-section">
+    <div class="container max-w-7xl">
+        <h2 class="section-title section-title-accent">实验内容一览</h2>
+        <p class="experiments-intro">平台已上线四大最优化板块，每个板块均提供一个完整实验：</p>
+
+        <div class="carousel-container">
+            <!-- 左箭头 -->
+            <button class="carousel-arrow carousel-prev" aria-label="上一个实验">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+
+            <!-- 单卡片视口 -->
+            <div class="carousel-viewport">
+                <div class="carousel-card current"></div>
+            </div>
+
+            <!-- 右箭头 -->
+            <button class="carousel-arrow carousel-next" aria-label="下一个实验">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
+            <!-- 指示器 -->
+            <div class="carousel-dots">
+                <button class="dot active" data-index="0" aria-label="第1个实验"></button>
+                <button class="dot" data-index="1" aria-label="第2个实验"></button>
+                <button class="dot" data-index="2" aria-label="第3个实验"></button>
+                <button class="dot" data-index="3" aria-label="第4个实验"></button>
+            </div>
+        </div>
+
+        <!-- 隐藏数据存储 -->
+        <div class="carousel-data" style="display: none;">
+            <div class="experiment-item" data-index="0">
+                <a href="/courses/line-search/" class="experiment-card">
+                    <div class="experiment-category">无约束优化</div>
+                    <h3 class="experiment-name">一维搜索方法实验</h3>
+                    <p class="experiment-desc">观察不同搜索算法如何求解极小值点</p>
+                    <span class="badge badge-primary">已上线</span>
+                </a>
+            </div>
+            <div class="experiment-item" data-index="1">
+                <a href="/courses/linear-programming/" class="experiment-card">
+                    <div class="experiment-category">线性规划</div>
+                    <h3 class="experiment-name">单纯形法实验</h3>
+                    <p class="experiment-desc">可视化可行域与最优解的几何意义</p>
+                    <span class="badge badge-primary">已上线</span>
+                </a>
+            </div>
+            <div class="experiment-item" data-index="2">
+                <a href="/courses/svm-smo/" class="experiment-card">
+                    <div class="experiment-category">非线性有约束优化</div>
+                    <h3 class="experiment-name">SMO 算法实验</h3>
+                    <p class="experiment-desc">SMO 算法优化支持向量机</p>
+                    <span class="badge badge-primary">已上线</span>
+                </a>
+            </div>
+            <div class="experiment-item" data-index="3">
+                <a href="/courses/neural-network/" class="experiment-card">
+                    <div class="experiment-category">无约束优化</div>
+                    <h3 class="experiment-name">神经网络优化实验</h3>
+                    <p class="experiment-desc">对比不同的神经网络优化技巧</p>
+                    <span class="badge badge-primary">已上线</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 页脚 -->
+<footer class="footer">
+    <div class="container max-w-7xl">
+        <p class="footer-text">&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+    </div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+<script src="/static/js/home-carousel.js"></script>
+{% endblock %}
+{% block ai_sidebar %}{% endblock %}

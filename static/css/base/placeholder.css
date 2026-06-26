@@ -1,0 +1,108 @@
+* {
+    box-sizing: border-box;
+}
+
+::before, ::after {
+    box-sizing: border-box;
+}
+
+:root {
+    --amber-50: #fffbeb;
+    --amber-100: #fef3c7;
+    --amber-500: #f59e0b;
+    --amber-700: #b45309;
+    --amber-900: #78350f;
+    --amber-primary: #d84315;
+    --bg-color: #fffaf0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: #5d4037;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.placeholder-card {
+    max-width: 28rem;
+    width: 100%;
+    background-color: white;
+    padding: 3rem;
+    border-radius: 1.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--amber-100);
+}
+
+.icon-box {
+    font-size: 3.75rem;
+    color: var(--amber-500);
+    margin-bottom: 2rem;
+}
+
+h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--amber-900);
+}
+
+p {
+    color: #4b5563;
+    margin-bottom: 2.5rem;
+    line-height: 1.625;
+}
+
+.btn-placeholder {
+    display: inline-block;
+    padding: 0.75rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background-color: var(--amber-primary);
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:hover {
+    background-color: var(--amber-700);
+}
+
+.btn-outline {
+    border: 2px solid var(--amber-primary);
+    color: var(--amber-primary);
+}
+
+.btn-outline:hover {
+    background-color: var(--amber-50);
+}
+
+.placeholder-card-neutral {
+    border-color: #f3f4f6;
+}
+
+.placeholder-title-strong {
+    color: #111827;
+}
+
+.btn-neutral {
+    background-color: #4b5563;
+}
+
+.btn-neutral:hover {
+    background-color: #374151;
+}
+
+.icon-gray {
+    color: #9ca3af;
+}

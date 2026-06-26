@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}梯度下降优化 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/courses/neural-network/gd.css">
+<!--<link rel="stylesheet" href="/static/css/courses/neural-network/introduction.css">-->
+<script src="/static/js/vendors/d3/d3.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container gd-page-wrapper">
+    <a href="index.html" class="back-btn">返回</a>
+
+    <header class="header">
+        <h1>梯度下降法优化</h1>
+        <p class="subtitle">观察全连接神经网络在不同优化器和学习率调度策略下的训练过程</p>
+    </header>
+
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">
+            算法介绍
+        </button>
+        <button class="nav-btn active" onclick="window.location.href='gd.html'">
+            梯度下降法优化
+        </button>
+    </nav>
+
+    <div class="gd-container">
+        <!-- 左侧参数设置面板 -->
+        <aside class="gd-left-panel" id="left-panel">
+            <!-- ① 网络结构设置 -->
+            <div class="gd-panel-section">
+                <h3>网络结构设置</h3>
+                <div class="gd-layer-list" id="layer-list">
+                    <!-- 动态填充 -->
+                </div>
+                <button class="gd-btn-add" id="add-layer-btn">+ 添加隐藏层</button>
+            </div>
+
+            <!-- ② 优化器选择 -->
+            <div class="gd-panel-section">
+                <h3>优化器设置</h3>
+                <div class="gd-param-row">
+                    <label>优化器</label>
+                    <label for="optimizer-select"></label><select id="optimizer-select">
+                        <option value="momentum">Momentum</option>
+                        <option value="rmsprop">RMSprop</option>
+                        <option value="adam" selected>Adam</option>
+                    </select>
+                </div>
+                <div class="gd-dynamic-params" id="optimizer-params">
+                    <!-- 动态追加 -->
+                </div>
+            </div>
+
+            <!-- ③ 学习率 + 调度器 -->
+            <div class="gd-panel-section">
+                <h3>学习率设置</h3>
+                <div class="gd-param-row">
+                    <label>初始学习率</label>
+                    <label for="lr-slider"></label><input type="range" id="lr-slider" min="0.0001" max="1" step="0.0001" value="0.01">
+                    <span class="gd-param-value" id="lr-value">0.0100</span>
+                </div>
+                <hr class="gd-divider">
+                <div class="gd-param-row">
+                    <label>调度器</label>
+                    <label for="scheduler-select"></label><select id="scheduler-select">
+                        <option value="step" selected>StepLR</option>
+                        <option value="exponential">ExponentialLR</option>
+                        <option value="cosine">CosineAnnealingLR</option>
+                    </select>
+                </div>
+                <div class="gd-dynamic-params" id="scheduler-params">
+                    <!-- 动态追加 -->
+                </div>
+            </div>
+
+            <!-- ④ 损失函数 -->
+            <div class="gd-panel-section">
+                <h3>损失函数</h3>
+                <div class="gd-param-row" style="gap: 20px;">
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="loss-fn" value="mse" checked> MSE
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="loss-fn" value="mae"> MAE
+                    </label>
+                </div>
+            </div>
+
+            <!-- ⑤ 训练总Epoch -->
+            <div class="gd-panel-section">
+                <h3>训练轮数</h3>
+                <div class="gd-param-row">
+                    <label>总 Epoch</label>
+                    <label for="total-epochs"></label><input type="number" id="total-epochs" value="1000" min="10" max="50000" step="10">
+                </div>
+            </div>
+
+            <!-- ⑥ 数据集 -->
+            <div class="gd-panel-section">
+                <h3>数据集</h3>
+                <div class="gd-preset-btns" id="preset-btns">
+                    <button class="gd-preset-btn active" data-preset="sin">sin(x) + noise</button>
+                    <button class="gd-preset-btn" data-preset="quad">x&#178; + noise</button>
+                    <button class="gd-preset-btn" data-preset="abs">|x| + noise</button>
+                    <button class="gd-preset-btn" data-preset="xsine">x&#183;sin(x) + noise</button>
+                    <button class="gd-preset-btn" data-preset="sigmoid">sigmoid(x) + noise</button>
+                </div>
+                <div class="gd-upload-area" id="upload-area">
+                    <span id="upload-text">点击上传 CSV 文件</span>
+                    <input type="file" id="file-input" accept=".csv,.txt">
+                </div>
+                <div class="gd-column-select" id="column-select" style="display: none;">
+                    <label for="x-col-select"></label><select id="x-col-select">
+                        <option value="">选择 X 列</option>
+                    </select>
+                    <label for="y-col-select"></label><select id="y-col-select">
+                        <option value="">选择 Y 列</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 确定按钮 -->
+            <button class="gd-btn-apply" id="apply-btn">应用参数</button>
+        </aside>
+
+        <!-- 右侧画布 + 控制区 -->
+        <div class="gd-right-area">
+            <!-- 网络结构画布 -->
+            <div class="gd-network-panel" id="network-panel">
+                <span class="gd-panel-title">网络结构</span>
+                <div class="gd-network-canvas" id="network-canvas"></div>
+                <button class="gd-reset-btn" id="network-reset-btn">&#x21ba; 复位</button>
+            </div>
+
+            <!-- 拟合情况画布 -->
+            <div class="gd-fit-panel" id="fit-panel">
+                <div class="gd-fit-tabs" id="fit-tabs">
+                    <button class="gd-fit-tab active" data-view="fit">坐标系视图</button>
+                    <button class="gd-fit-tab" data-view="loss">损失值视图</button>
+                    <button class="gd-fit-tab" data-view="lr">学习率视图</button>
+                </div>
+                <div class="gd-fit-canvas" id="fit-canvas"></div>
+                <button class="gd-reset-btn" id="fit-reset-btn">&#x21ba; 复位</button>
+            </div>
+
+            <!-- 算法控制条 -->
+            <div class="gd-control-bar">
+                <div class="gd-ctrl-btns">
+                    <button class="gd-ctrl-btn btn-play" id="play-btn">播放</button>
+                    <button class="gd-ctrl-btn btn-pause" id="pause-btn" disabled>暂停</button>
+                    <button class="gd-ctrl-btn btn-step" id="step-btn">单步</button>
+                    <button class="gd-ctrl-btn btn-reset" id="reset-btn">重置</button>
+                </div>
+                <div class="gd-speed-group">
+                    <label>速度</label>
+                    <label for="speed-slider"></label><input type="range" id="speed-slider" min="50" max="2000" step="50" value="200">
+                    <span class="gd-speed-label" id="speed-label">快</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="gd-tooltip" id="gd-tooltip"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/courses/neural-network/gd.js"></script>
+{% endblock %}

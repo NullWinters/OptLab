@@ -1,0 +1,82 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+*.pyo
+*.so
+
+# Packaging / build
+build/
+dist/
+site/
+.eggs/
+*.egg
+*.egg-info/
+pip-wheel-metadata/
+
+# Test / coverage / type check
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+tests/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# =========================
+# Virtual environments
+# =========================
+.venv/
+venv/
+env/
+ENV/
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+.vs/
+.junie/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+optlab.db
+
+# =========================
+# Project local / temp
+# =========================
+temp/
+tmp/
+logs/
+*.log
+.ai/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+
+# dataset
+datasets/
+
+# =========================
+# Docker
+# =========================
+Dockerfile
+.dockerignore
+.gitdata/

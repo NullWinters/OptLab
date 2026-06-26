@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支持向量机与SMO算法 - OptLab</title>
+    <link rel="stylesheet" href="/static/css/courses/svm-smo/introduction.css">
+    <script src="/static/js/vendors/d3/d3.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "/static/js/vendors/three/three.module.js"
+            }
+        }
+    </script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['boldsymbol']}
+            },
+            loader: {
+                paths: {mathjax: '/static/js/vendors/mathjax'},
+                load: ['[tex]/boldsymbol']
+            },
+            chtml: {
+                fontURL: '/static/js/vendors/mathjax/output/chtml/fonts/tex'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="/static/js/vendors/mathjax/es5/tex-mml-chtml.js"></script>
+</head>
+
+<body>
+
+
+<div class="container">
+    <a href="index.html" class="back-btn">返回</a>
+
+    <!-- 页面头部 -->
+    <header class="header">
+        <h1>支持向量机与SMO算法</h1>
+        <p class="subtitle">线性支持向量机、核技巧与SMO概述</p>
+    </header>
+
+    <!-- 导航栏 -->
+    <nav class="navigation">
+        <button class="nav-btn active" onclick="window.location.href='introduction.html'">算法介绍</button>
+        <button class="nav-btn" onclick="window.location.href='kernel-trick.html'">核技巧</button>
+        <button class="nav-btn" onclick="window.location.href='smo.html'">SMO 算法</button>
+    </nav>
+
+    <!-- 引言 -->
+    <div class="section intro">
+        <blockquote>
+            支持向量机（Support Vector Machine,
+            SVM）是一种经典的监督学习模型，其核心思想是寻找一个能够最大化分类间隔的超平面。相比于其他分类器，SVM具有良好的泛化能力和理论基础。然而，求解SVM的对偶问题是一个凸二次规划，当样本量较大时传统优化方法效率低下。序列最小优化（Sequential
+            Minimal Optimization, SMO）算法通过将大问题分解为一系列最小的子问题，实现了高效求解，成为SVM训练的事实标准。本页将依次介绍线性SVM、核技巧和SMO算法。
+        </blockquote>
+    </div>
+
+    <!-- 1. 线性支持向量机 -->
+    <div class="section">
+        <h2>1. 线性支持向量机</h2>
+
+        <h3>1.1 最大间隔超平面</h3>
+        <p>
+            给定训练数据集 $\{(\mathbf{x}_i, y_i)\}_{i=1}^N$，其中 $\mathbf{x}_i \in \mathbb{R}^d$，$y_i \in \{-1,
+            +1\}$。线性SVM的目标是找到一个超平面 $\mathbf{w}^\top \mathbf{x} + b = 0$
+            能将两类正确分开，并且使距离超平面最近的样本点（即支持向量）到超平面的距离之和最大，即间隔最大化。间隔定义为 $2 /
+            \|\mathbf{w}\|$，因此最大化间隔等价于最小化 $\frac{1}{2}\|\mathbf{w}\|^2$，同时要求所有样本满足
+            $y_i(\mathbf{w}^\top \mathbf{x}_i + b) \ge 1$。
+        </p>
+
+        <h3>1.2 软间隔与松弛变量</h3>
+        <p>当数据线性不可分时，引入松弛变量 $\xi_i \ge 0$ 允许部分样本点违反硬间隔约束。优化问题变为：</p>
+        <div class="math-block">
+            $$
+            \min_{\mathbf{w}, b, \boldsymbol{\xi}} \frac{1}{2}\|\mathbf{w}\|^2 + C \sum_{i=1}^N \xi_i,
+            \quad \text{s.t. } y_i(\mathbf{w}^\top \mathbf{x}_i + b) \ge 1 - \xi_i,\; \xi_i \ge 0,
+            $$
+        </div>
+        <p>其中 $C>0$ 是惩罚参数，平衡间隔大小与分类误差。</p>
+
+        <h3>1.3 对偶形式</h3>
+        <p>构造拉格朗日函数，导出对偶问题：</p>
+        <div class="math-block">
+            $$
+            \max_{\boldsymbol{\alpha}} \sum_{i=1}^N \alpha_i - \frac{1}{2}\sum_{i=1}^N\sum_{j=1}^N \alpha_i\alpha_j
+            y_i
+            y_j \mathbf{x}_i^\top \mathbf{x}_j,
+            \quad \text{s.t. } 0 \le \alpha_i \le C,\; \sum_{i=1}^N \alpha_i y_i = 0.
+            $$
+        </div>
+        <p>其中 $\alpha_i$ 为拉格朗日乘子。最终分类决策函数为 $f(\mathbf{x}) = \text{sign}\left(\sum_{i=1}^N \alpha_i y_i
+            \mathbf{x}_i^\top \mathbf{x} + b\right)$。只有支持向量（$\alpha_i > 0$）对决策起作用。</p>
+
+        <div class="highlight">
+            你可以通过调整下方滑块改变惩罚参数 $C$ 的值，观察线性SVM在二维数据集上的决策边界和支持向量的变化。<br>当 $C$
+            较小时，模型允许更多的误分类，间隔较大；当 $C$
+            较大时，模型趋向于正确分类所有训练样本，间隔较小。
+        </div>
+
+        <div class="visualization-container">
+            <div id="linear-svm-canvas" class="canvas-container"></div>
+            <div class="controls">
+                <label for="c-slider">惩罚参数 C: </label>
+                <input type="range" id="c-slider" min="1" max="100" value="50">
+                <span id="c-value">50</span>
+                <button id="btn-confirm-c" class="nav-btn active">更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 核技巧 -->
+    <div class="section">
+        <h2>2. 核技巧</h2>
+
+        <h3>2.1 从线性到非线性</h3>
+        <p>
+            对于非线性问题，可将原始输入空间映射到高维特征空间 $\phi(\mathbf{x})$，使得数据在特征空间中线性可分。但直接计算
+            $\phi(\mathbf{x})$ 可能维度极高甚至无穷维，导致计算困难。核技巧通过定义核函数 $K(\mathbf{x}_i, \mathbf{x}_j) =
+            \phi(\mathbf{x}_i)^\top \phi(\mathbf{x}_j)$，隐式地在特征空间中进行内积运算，避免显式映射。
+        </p>
+
+        <h3>2.2 常用核函数</h3>
+        <ul>
+            <li><strong>线性核</strong>：$K(\mathbf{x}_i, \mathbf{x}_j) = \mathbf{x}_i^\top \mathbf{x}_j$。</li>
+            <li><strong>多项式核</strong>：$K(\mathbf{x}_i, \mathbf{x}_j) = (\gamma \mathbf{x}_i^\top \mathbf{x}_j +
+                r)^p$。
+            </li>
+            <li><strong>高斯径向基核（RBF）</strong>：$K(\mathbf{x}_i, \mathbf{x}_j) = \exp(-\gamma \|\mathbf{x}_i -
+                \mathbf{x}_j\|^2)$。
+            </li>
+            <li><strong>Sigmoid核</strong>：$K(\mathbf{x}_i, \mathbf{x}_j) = \tanh(\gamma \mathbf{x}_i^\top
+                \mathbf{x}_j
+                + r)$。
+            </li>
+        </ul>
+
+        <h3>2.3 核SVM的对偶形式</h3>
+        <p>将对偶问题中的内积替换为核函数：</p>
+        <div class="math-block">
+            $$
+            \max_{\boldsymbol{\alpha}} \sum_{i=1}^N \alpha_i - \frac{1}{2}\sum_{i=1}^N\sum_{j=1}^N \alpha_i\alpha_j
+            y_i
+            y_j K(\mathbf{x}_i, \mathbf{x}_j),
+            \quad \text{s.t. } 0 \le \alpha_i \le C,\; \sum_{i=1}^N \alpha_i y_i = 0.
+            $$
+        </div>
+        <p>决策函数变为 $f(\mathbf{x}) = \text{sign}\left(\sum_{i=1}^N \alpha_i y_i K(\mathbf{x}_i, \mathbf{x}) +
+            b\right)$。</p>
+
+        <div class="highlight">
+            对于二维同心圆环数据集，线性SVM无法找到有效的分割超平面，但可以使用多项式核将数据映射至三维空间，从而实现线性可分。<br>你可以在<strong>核技巧实验</strong>中选择不同的核函数，观察它们在二维和三维空间中的决策边界变化。
+        </div>
+
+        <div id="kernel-viz">
+            <div id="kernel-2d" class="viz-box"></div>
+            <div id="kernel-3d" class="viz-box"></div>
+        </div>
+    </div>
+
+    <!-- 3. SMO算法 -->
+    <div class="section">
+        <h2>3. SMO算法</h2>
+
+        <h3>3.1 算法动机</h3>
+        <p>
+            核SVM的对偶问题是一个凸二次规划，约束条件为框式约束和一个线性等式。当样本数 $N$
+            很大时，传统二次规划求解器（如内点法）计算代价过高。SMO算法将原问题分解为一系列最小的子问题——每次只优化两个变量，其余固定，从而获得解析解，极大提高效率。
+        </p>
+
+        <h3>3.2 两个变量的子问题</h3>
+        <p>固定除 $\alpha_1, \alpha_2$ 外的所有变量，利用等式约束 $\sum_{i=1}^N \alpha_i y_i = 0$ 可得：</p>
+        <div class="math-block">
+            $$
+            \alpha_1 y_1 + \alpha_2 y_2 = \zeta, \quad \zeta = -\sum_{i=3}^N \alpha_i y_i.
+            $$
+        </div>
+        <p>通过代入目标函数并剪辑，可得解析解 $\alpha_2^{\text{new}}$，进而求出 $\alpha_1^{\text{new}}$。</p>
+
+        <h3>3.3 算法流程</h3>
+        <p style="margin-top: 0;">SMO 算法每次优化两个拉格朗日乘子，具体步骤如下：</p>
+        <ol style="margin-left: 1.5rem; list-style-type: decimal; line-height: 1.8; padding-left: 0.5rem;">
+            <li>
+                <strong>初始化</strong>：设拉格朗日乘子向量 \(\boldsymbol{\alpha} = \mathbf{0}\)，阈值 \(b =
+                0\)。计算初始误差
+                \(E_i = g(\mathbf{x}_i) - y_i\)，其中
+                \(g(\mathbf{x}_i) = \sum_{j=1}^{N} \alpha_j y_j K(\mathbf{x}_j, \mathbf{x}_i) + b\)。
+            </li>
+            <li>
+                <strong>外层循环</strong>：寻找违反 KKT 条件的第一个变量 \(\alpha_i\)。违反条件包括：
+                <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                    <li>\(0 < \alpha_i < C\) 且 \(y_i E_i \neq 0\)</li>
+                    <li>\(\alpha_i = 0\) 且 \(y_i E_i < 0\)</li>
+                    <li>\(\alpha_i = C\) 且 \(y_i E_i > 0\)</li>
+                </ul>
+                优先扫描间隔边界上的样本（\(0 < \alpha_i < C\)），再遍历整个训练集。找到后进入内层循环。若仍无违反者，算法终止。
+            </li>
+            <li>
+                <strong>内层循环：选择第二个乘子 \(\alpha_j\)</strong><br>
+                <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                    <li><strong>阶段一</strong>：在非边界样本中，按 \(|E_i - E_j|\) 降序生成候选列表</li>
+                    <li><strong>阶段二</strong>：若阶段一未找到有效配对，则从剩余样本中随机打乱顺序依次尝试</li>
+                    <li>若所有候选均失败，则返回外层循环选择下一个 \(i\)</li>
+                </ul>
+            </li>
+            <li>
+                <strong>更新 \(\alpha_i, \alpha_j\)</strong>：
+                <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                    <li>
+                        根据类别异同计算边界 \(L\) 和 \(H\)：<br>
+                        若 \(y_i = y_j\)：\(L = \max(0, \alpha_i + \alpha_j - C)\)，\(H = \min(C, \alpha_i +
+                        \alpha_j)\)<br>
+                        若 \(y_i \neq y_j\)：\(L = \max(0, \alpha_j - \alpha_i)\)，\(H = \min(C, C + \alpha_j -
+                        \alpha_i)\)
+                    </li>
+                    <li>计算 \(\eta = 2K_{i,j} - K_{i,i} - K_{j,j}\)，其中 \(K_{i,j} = K(\mathbf{x}_i,
+                        \mathbf{x}_j)\)。
+                    </li>
+                    <li>
+                        未剪辑的 \(\alpha_j\) 更新量为 \(\alpha_j - \frac{y_j(E_i - E_j)}{\eta}\)，剪辑后得到
+                        \(\alpha_j^{\text{new}}\)：
+                        \[
+                        \alpha_j^{\text{new}} =
+                        \begin{cases}
+                        L, & \alpha_j - \dfrac{y_j(E_i - E_j)}{\eta} < L \\[2ex] \alpha_j - \dfrac{y_j(E_i -
+                        E_j)}{\eta}, & L \leq \alpha_j - \dfrac{y_j(E_i - E_j)}{\eta} \leq H \\[2ex] H, &
+                        \alpha_j - \dfrac{y_j(E_i - E_j)}{\eta}> H
+                        \end{cases}
+                        \]
+                    </li>
+                    <li>更新 \(\alpha_i^{\text{new}} = \alpha_i + y_i y_j (\alpha_j - \alpha_j^{\text{new}})\)。
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <strong>更新阈值 \(b\) 和误差 \(E\)</strong>：
+                <ul style="margin: 0.3rem 0 0.3rem 1.2rem; list-style-type: circle;">
+                    <li>
+                        计算中间变量：
+                        \[
+                        b_i = b - E_i - y_i(\alpha_i^{\text{new}} - \alpha_i)K_{i,i} - y_j(\alpha_j^{\text{new}}
+                        -
+                        \alpha_j)K_{i,j}
+                        \]
+                        \[
+                        b_j = b - E_j - y_i(\alpha_i^{\text{new}} - \alpha_i)K_{i,j} - y_j(\alpha_j^{\text{new}}
+                        -
+                        \alpha_j)K_{j,j}
+                        \]
+                    </li>
+                    <li>
+                        新阈值 \(b^{\text{new}}\) 由以下规则确定：<br>
+                        若 \(0 < \alpha_i^{\text{new}} < C\)，则 \(b^{\text{new}}=b_i\)<br>
+                        若 \(0 < \alpha_j^{\text{new}} < C\)，则 \(b^{\text{new}}=b_j\)<br>
+                        否则 \(b^{\text{new}} = (b_i + b_j)/2\)
+                    </li>
+                    <li>
+                        更新所有样本的误差：
+                        \[
+                        E_k^{\text{new}} = E_k + y_i(\alpha_i^{\text{new}} - \alpha_i)K_{i,k} +
+                        y_j(\alpha_j^{\text{new}} - \alpha_j)K_{j,k} + b^{\text{new}} - b
+                        \]
+                    </li>
+                </ul>
+            </li>
+            <li>
+                <strong>终止条件检查</strong>：若所有样本满足 \(|y_i g(\mathbf{x}_i) - 1| < tol\) 或迭代次数达到
+                \(max\_iter\)，则停止。
+            </li>
+            <li>
+                <strong>输出模型</strong>：得到 \(\boldsymbol{\omega} = \sum_{i=1}^{N} \alpha_i y_i K(\cdot,
+                \mathbf{x}_i)\)，决策函数
+                \(f(\mathbf{x}) = \operatorname{sign}\big(\boldsymbol{\omega} \cdot \mathbf{x} + b\big)\)。
+            </li>
+        </ol>
+        <div class="highlight">
+            SMO每次优化两个变量，极大降低了每次迭代的计算复杂度，使得SVM能够高效处理大规模数据集。<br>你可以点击下方按钮，观察SMO挑选变量，优化分离超平面，并最终收敛的过程。<br>在<strong>SMO算法实验</strong>中，你还可以调整容忍度和最大迭代次数，观察它们对收敛速度和最终模型的影响。
+        </div>
+        <!-- 注意：下方可视化容器保持不变 -->
+        <div class="visualization-container">
+            <div id="smo-canvas" class="canvas-container"></div>
+            <button id="play-smo" class="nav-btn active">播放</button>
+        </div>
+    </div>
+</div>
+<script type="module" src="/static/js/courses/svm-smo/introduction.js"></script>
+</body>
+<footer>
+    支持向量机与SMO · OptLab 教学资源
+</footer>
+
+</html>

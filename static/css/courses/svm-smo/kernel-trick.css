@@ -1,0 +1,289 @@
+:root {
+    --panel: #fffdf8;
+    --border: #e9d4bf;
+    --primary: #d96a2b;
+    --primary-dark: #b9531d;
+    --text: #5f3a1f;
+    --muted: #8f6a4f;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+.page {
+    max-width: 1000px; /* 原为 1400px，这里设置 max-width 为 none 在 content 中覆盖 */
+    margin: 10px auto 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 20px;
+    min-height: calc(100vh - 200px);
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(217, 106, 43, 0.12);
+    padding: 16px;
+    height: fit-content;
+    position: sticky;
+    top: 16px;
+}
+
+.panel h1 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+}
+
+.hint {
+    margin: 0 0 14px;
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+#current-kernel-text {
+    background: #e8eaf6;
+    border-left: 3px solid #1a237e;
+    padding: 8px 10px;
+    border-radius: 0 8px 8px 0;
+    white-space: nowrap;
+    overflow-x: auto;
+    max-width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: #1a237e #c5cae9;
+}
+
+#current-kernel-text::-webkit-scrollbar {
+    height: 6px;
+}
+
+#current-kernel-text::-webkit-scrollbar-track {
+    background: #c5cae9;
+    border-radius: 3px;
+}
+
+#current-kernel-text::-webkit-scrollbar-thumb {
+    background: #1a237e;
+    border-radius: 3px;
+}
+
+.group {
+    border-top: 1px dashed var(--border);
+    padding-top: 12px;
+    margin-top: 12px;
+}
+
+.group h2 {
+    margin: 0 0 8px;
+    font-size: 0.96rem;
+    color: var(--primary-dark);
+}
+
+label {
+    font-size: 0.86rem;
+    display: block;
+    margin: 8px 0 4px;
+}
+
+.panel input[type="file"],
+.panel input[type="text"],
+.panel select,
+.panel input[type="range"],
+.panel button {
+    width: 100%;
+}
+
+.panel select, .panel input[type="file"], .panel input[type="text"] {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px;
+    background: #fff;
+    color: var(--text);
+}
+
+/* 进度条（参照 SMO 页面色系，并修复两端可达） */
+.panel input[type="range"] {
+    --range-progress: 50%;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 22px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.panel input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(
+            90deg,
+            var(--primary) 0%,
+            var(--primary) var(--range-progress),
+            #ead9c7 var(--range-progress),
+            #ead9c7 100%
+    );
+}
+
+.panel input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    margin-top: -5px;
+    border: 2px solid #fff7ee;
+    background: var(--primary-dark);
+    box-shadow: 0 2px 7px rgba(217, 106, 43, 0.34);
+}
+
+.panel input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: #ead9c7;
+}
+
+.panel input[type="range"]::-moz-range-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--primary);
+}
+
+.panel input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #fff7ee;
+    background: var(--primary-dark);
+    box-shadow: 0 2px 7px rgba(217, 106, 43, 0.34);
+}
+
+.panel button {
+    border: none;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    cursor: pointer;
+    background: var(--primary);
+    color: white;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.panel button:hover {
+    background: var(--primary-dark);
+}
+
+.scene-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(217, 106, 43, 0.12);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 80vh;
+}
+
+.scene-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    background: #fff9f2;
+    font-size: 0.9rem;
+}
+
+#scene {
+    width: 100%;
+    flex: 1;
+}
+
+.inline {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.value {
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-width: 42px;
+    text-align: right;
+}
+
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: #fffdf8;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: min(640px, 92vw);
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 8px;
+}
+
+.close-modal {
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--muted);
+}
+
+.close-modal:hover {
+    color: var(--primary-dark);
+}
+
+.modal-body .input-group {
+    margin-top: 10px;
+}
+
+.modal-footer {
+    margin-top: 12px;
+}
+
+.examples-section ul {
+    margin: 6px 0 0 18px;
+    color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+    .page {
+        grid-template-columns: 1fr;
+    }
+
+    .panel {
+        position: static;
+    }
+
+    .scene-wrap {
+        min-height: 65vh;
+    }
+}

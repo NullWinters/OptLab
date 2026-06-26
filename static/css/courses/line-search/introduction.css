@@ -1,0 +1,73 @@
+.section {
+    background: white;
+    border-radius: 20px;
+    padding: 25px 30px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.section h2 {
+    margin-bottom: 15px;
+}
+
+.section h3 {
+    margin-top: 20px;
+    margin-bottom: 12px;
+}
+
+.section p {
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.section p:last-child {
+    margin-bottom: 0;
+}
+
+h2 {
+    color: var(--primary-color);
+    border-left: 5px solid var(--secondary-color);
+    padding-left: 15px;
+    margin-top: 0;
+}
+
+.highlight {
+    background-color: #fff8e1;
+    padding: 15px 20px;
+    border-radius: 10px;
+    border-left: 4px solid var(--secondary-color);
+    margin: 15px 0;
+}
+
+.highlight ol, .highlight ul {
+    padding-left: 30px;
+    margin-top: 15px;
+}
+
+.highlight li {
+    margin-bottom: 10px;
+}
+
+.highlight li:last-child {
+    margin-bottom: 0;
+}
+
+.no-link-style {
+    text-decoration: none;
+    color: inherit;
+}
+
+.no-link-style:visited {
+    text-decoration: none;
+    color: inherit;
+}
+
+@media (max-width: 768px) {
+    .section {
+        padding: 25px;
+    }
+
+    .comparison-table {
+        font-size: 0.9em;
+    }
+}

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点搜索 - OptLab</title>
+    <link rel="stylesheet" href="/static/css/courses/line-search/common.css">
+    <link rel="stylesheet" href="/static/css/courses/line-search/introduction.css">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                packages: {'[+]': ['boldsymbol']}
+            },
+            loader: {
+                paths: {mathjax: '/static/js/vendors/mathjax'},
+                load: ['[tex]/boldsymbol']
+            },
+            chtml: {
+                fontURL: '/static/js/vendors/mathjax/output/chtml/fonts/tex'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="/static/js/vendors/mathjax/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <a href="../index.html" class="back-btn">返回</a>
+
+    <!-- 页面首部-->
+    <header class="header">
+        <h1>点搜索教学实验</h1>
+        <p class="subtitle">算法原理详解与迭代步骤说明</p>
+    </header>
+
+    <!-- 实验导航栏 -->
+    <nav class="navigation">
+        <button class="nav-btn active" onclick="window.location.href='introduction.html'">
+            算法介绍
+        </button>
+        <button class="nav-btn" onclick="window.location.href='observation.html'">
+            流程观察
+        </button>
+        <button class="nav-btn" onclick="window.location.href='comparison.html'">
+            性质对比
+        </button>
+    </nav>
+
+    <!-- 综述 -->
+    <div class="section">
+        <h2>一维搜索算法：点搜索</h2>
+        <p>
+            点搜索算法是一类利用目标函数导数信息在一维空间中寻找函数极小值点的高效数值方法。
+            这类方法通过迭代更新当前点，逐步逼近最优解，广泛应用于优化问题、机器学习、工程计算等领域。
+            常见的点搜索算法包括<strong>梯度下降法</strong>、<strong>牛顿法</strong>和<strong>割线法</strong>，它们分别基于一阶导数、二阶导数或差分近似来构造迭代公式。
+        </p>
+    </div>
+    <!-- 梯度下降法 -->
+    <div class="section">
+        <h2>
+            <a href="https://en.wikipedia.org/wiki/Gradient_descent"
+               class="no-link-style" target="_blank">梯度下降法</a>
+        </h2>
+        <p>
+            梯度下降法是最基础的一阶优化方法，通过沿目标函数负梯度方向更新当前点，逐步逼近极小值点。其步长由学习率 α
+            控制，适用于大规模优化问题。
+        </p>
+        <h3>计算过程</h3>
+        <p><strong>输入</strong>：目标函数 \( f \)，初始点 \( x_0 \)，学习率 \( \alpha \)，最大迭代次数 \( N \)</p>
+        <p><strong>输出</strong>：近似极小值点 \( x \)</p>
+        <div class="highlight">
+            <strong>算法步骤：</strong>
+            <ol>
+                <li>令 \( k = 0 \)</li>
+                <li>计算当前点的导数 \( f'(x_k) \)
+                    <ul>
+                        <li>若 \( k = N \)，输出 \( x = x_k \)，算法结束</li>
+                    </ul>
+                </li>
+                <li>更新迭代点：
+                    <ul>
+                        <li>\( x_{k+1} = x_k - \alpha \cdot f'(x_k) \)</li>
+                    </ul>
+                </li>
+                <li>令 \( k = k + 1 \)，转步骤 2</li>
+            </ol>
+        </div>
+    </div>
+    <!-- 牛顿法 -->
+    <div class="section">
+        <h2>
+            <a href="https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization"
+               class="no-link-style" target="_blank">牛顿法</a>
+        </h2>
+        <p>
+            牛顿法是一种二阶优化方法，利用目标函数的一阶和二阶导数信息构造迭代公式，收敛速度较快，但需计算二阶导数，且对初始点选择敏感。
+        </p>
+        <h3>计算过程</h3>
+        <p><strong>输入</strong>：目标函数 \( f \)，初始点 \( x_0 \)，最大迭代次数 \( N \)</p>
+        <p><strong>输出</strong>：近似极小值点 \( x \)</p>
+        <div class="highlight"><strong>算法步骤：</strong>
+            <ol>
+                <li>令 \( k = 0 \)</li>
+                <li>计算当前点的一阶导数 \( f'(x_k) \) 和二阶导数 \( f''(x_k) \)
+                    <ul>
+                        <li>若 \( k = N \)，输出 \( x = x_k \)，算法结束</li>
+                    </ul>
+                </li>
+                <li>更新迭代点：
+                    <ul>
+                        <li>\( x_{k+1} = x_k - \frac{f'(x_k)}{f''(x_k)} \)</li>
+                    </ul>
+                </li>
+                <li>令 \( k = k + 1 \)，转步骤 2</li>
+            </ol>
+        </div>
+    </div>
+    <!-- 割线法 -->
+    <div class="section">
+        <h2>
+            <a href="https://en.wikipedia.org/wiki/Secant_method"
+               class="no-link-style" target="_blank">割线法</a>
+        </h2>
+        <p>
+            割线法是一种拟牛顿方法，通过差分近似替代二阶导数，避免直接计算二阶导，适用于二阶导数难以获取的情况。
+            其迭代公式由相邻点的导数差分构造。
+        </p>
+        <h3>计算过程</h3>
+        <p><strong>输入</strong>：目标函数 \( f \)，初始点 \( x_0 \)、\( x_{-1} \)，最大迭代次数 \( N \)</p>
+        <p><strong>输出</strong>：近似极小值点 \( x \)</p>
+        <div class="highlight"><strong>算法步骤：</strong>
+            <ol>
+                <li>令 \( k = 0 \)</li>
+                <li>计算当前点及前一点的导数 \( f'(x_k) \) 和 \( f'(x_{k-1}) \)
+                    <ul>
+                        <li>若 \( k = N \)，输出 \( x = x_k \)，算法结束</li>
+                    </ul>
+                </li>
+                <li>更新迭代点：
+                    <ul>
+                        <li>\( x_{k+1} = x_k - \frac{(x_k - x_{k-1}) \cdot f'(x_k)}{f'(x_k) - f'(x_{k-1})} \)</li>
+                    </ul>
+                </li>
+                <li>令 \( k = k + 1 \)，转步骤 2</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+</body>
+<footer>
+    一维搜索方法 · OptLab 教学资源
+</footer>
+</html>
