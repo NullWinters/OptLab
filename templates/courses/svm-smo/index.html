@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支持向量机与SMO - OptLab</title>
+    <link rel="stylesheet" href="/static/css/base/sub-courses.css">
+    <link rel="stylesheet" href="/static/css/vendors/font-awesome/all.min.css">
+</head>
+<body>
+<div class="container max-w-6xl">
+    <a href="/courses/" class="btn-back">
+        返回课程页
+    </a>
+
+    <header class="header">
+        <h1>支持向量机与 SMO</h1>
+        <p>理解分类超平面、核技巧与序列最小优化（SMO）求解流程，构建从原理到可视化实验的完整认知。</p>
+    </header>
+
+    <div class="card-grid cols-3">
+        <div class="card">
+            <div>
+                <div class="card-icon bg-amber-100">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <h2>SVM 基础概念</h2>
+                <p>介绍最大间隔分类、支持向量、软间隔与惩罚参数的作用，建立 SVM 的几何直觉。</p>
+            </div>
+            <a href="introduction.html" class="btn-start">开始学习</a>
+        </div>
+
+        <div class="card">
+            <div>
+                <div class="card-icon bg-orange-100">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <h2>核技巧三维可视化</h2>
+                <p>上传 CSV 后观察多项式核与高斯核如何将二维不可分数据映射到三维空间并趋向线性可分。</p>
+            </div>
+            <a id="enter-kernel-trick-btn" href="kernel-trick.html" class="btn-start">进入实验</a>
+        </div>
+
+        <div class="card">
+            <div>
+                <div class="card-icon bg-amber-100">
+                    <i class="fas fa-sliders-h"></i>
+                </div>
+                <h2>SMO 迭代过程</h2>
+                <p>可视化拉格朗日乘子成对更新过程，理解 KKT 条件驱动 SVM 二次规划逐步收敛，实时展示优化路径。</p>
+            </div>
+            <a href="smo.html" class="btn-start">进入实验</a>
+        </div>
+    </div>
+</div>
+<footer class="footer">
+    支持向量机与 SMO · OptLab 教学资源
+</footer>
+</body>
+</html>

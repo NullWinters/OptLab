@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}个人设置 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/base/account.css">
+{% endblock %}
+
+{% block ai_sidebar %}{% endblock %}
+
+{% block content %}
+<div class="account-page">
+    {% include 'components/_top_nav.html' %}
+
+    <main class="account-main">
+        <h1 class="account-title">个人设置</h1>
+
+        <div class="account-stack">
+            <section class="account-card">
+                <h2 class="account-card-title">修改用户名</h2>
+                <div id="username-error" class="account-alert"></div>
+                <div id="username-success" class="account-alert"></div>
+                <form id="username-form" class="account-form">
+                    <div class="account-field">
+                        <label for="new-username">新用户名</label>
+                        <input id="new-username" name="username" type="text" required>
+                        <p class="account-field-hint">用户名长度需在 3-50 个字符之间，且不能与已有用户名重复。</p>
+                    </div>
+                    <button type="submit" class="account-button">保存用户名</button>
+                </form>
+            </section>
+
+            <section class="account-card">
+                <h2 class="account-card-title">修改密码</h2>
+                <div id="password-error" class="account-alert"></div>
+                <div id="password-success" class="account-alert"></div>
+                <form id="password-form" class="account-form">
+                    <div class="account-field">
+                        <label for="current-password">当前密码</label>
+                        <input id="current-password" name="current_password" type="password" required>
+                    </div>
+                    <div class="account-field">
+                        <label for="new-password">新密码</label>
+                        <input id="new-password" name="new_password" type="password" required>
+                    </div>
+                    <div class="account-field">
+                        <label for="confirm-password">确认新密码</label>
+                        <input id="confirm-password" name="confirm_password" type="password" required>
+                        <p class="account-field-hint">密码长度需在 8-50 个字符之间，且两次输入必须一致。</p>
+                    </div>
+                    <button type="submit" class="account-button">保存密码</button>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <footer class="account-footer">
+        <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/main.js"></script>
+<script src="/static/js/settings.js"></script>
+{% endblock %}

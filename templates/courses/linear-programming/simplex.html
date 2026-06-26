@@ -1,0 +1,289 @@
+{% extends 'base.html' %}
+
+{% block title %}单纯形法 - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/courses/linear-programming/simplex.css">
+<!-- D3.js -->
+<script src="/static/js/vendors/d3/d3.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="index.html" class="back-btn">返回</a>
+
+    <header class="header">
+        <h1>单纯形法教学实验</h1>
+        <p class="subtitle">单纯形表迭代步骤与可视化观察</p>
+    </header>
+
+    <nav class="navigation">
+        <button class="nav-btn" onclick="window.location.href='introduction.html'">
+            算法介绍
+        </button>
+        <button class="nav-btn active">
+            单纯形法
+        </button>
+        <button class="nav-btn" onclick="window.location.href='two_phase.html'">
+            两阶段法
+        </button>
+    </nav>
+
+    <div class="main-layout">
+        <div class="left-column">
+            <!-- 左侧输入与控制面板 -->
+            <aside class="input-panel">
+                <div class="panel-section">
+                    <h3>示例数据加载</h3>
+                    <div class="input-inline">
+                        <div class="input-group" style="flex: 2;">
+                            <label for="example-select"></label><select id="example-select">
+                            <option value="max">最大化示例</option>
+                            <option value="min">最小化示例</option>
+                            <option value="unbounded">无界解示例</option>
+                            <option value="degenerate">退化解示例</option>
+                            <option value="multiple">多重最优解示例</option>
+                        </select>
+                        </div>
+                        <button id="load-example-btn" class="action-btn primary" style="flex: 1;">加载</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>问题规模设定</h3>
+                    <div class="input-inline">
+                        <div class="input-group">
+                            <label for="num-vars">变量数 (n):</label>
+                            <input type="number" id="num-vars" min="1" max="15" value="2" step="1">
+                        </div>
+                        <div class="input-group">
+                            <label for="num-constraints">约束数 (m):</label>
+                            <input type="number" id="num-constraints" min="1" max="15" value="3" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>求解类型</h3>
+                    <div class="radio-group">
+                        <label><input type="radio" name="solve-type" value="max" checked> 最大化 (Maximize)</label>
+                        <label><input type="radio" name="solve-type" value="min"> 最小化 (Minimize)</label>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3>系数输入表格</h3>
+                    <p class="hint-text">所有约束均为等式 Ax <= b，且右端项 b &ge; 0</p>
+                    <p class="hint-text">系统会自动添加松弛变量构造初始基</p>
+                    <div id="coeff-table-container">
+                        <!-- 动态生成系数表格 -->
+                    </div>
+                </div>
+
+                <div class="panel-actions">
+                    <button id="reset-btn" class="action-btn secondary">重置</button>
+                    <button id="check-btn" class="action-btn secondary">检查输入</button>
+                    <button id="solve-btn" class="action-btn primary">求解</button>
+                </div>
+            </aside>
+
+            <section class="experiment-data-panel">
+                <div class="experiment-data-header">
+                    <h3>实验数据</h3>
+                    <p>查看、导出与保存本次单纯形法迭代记录</p>
+                </div>
+                <div class="experiment-data-actions">
+                    <button id="simplex-log-open-btn" class="action-btn primary">查看实验数据</button>
+                    <button id="simplex-log-export-json-btn" class="action-btn secondary">导出实验数据(JSON)</button>
+                    <button id="simplex-log-save-to-profile-btn" class="action-btn primary">保存至个人中心</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- 右侧结果展示区 -->
+        <main class="result-area">
+            <div id="iteration-results" class="results-container">
+                <div id="simplex-iteration-cards" class="is-empty">
+                    <div class="placeholder-text">
+                        请在左侧输入参数并点击“求解”开始实验。
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 二维可视化 (n=2) -->
+    <div id="visualization-2d" class="viz-container hidden">
+        <h3>二维可视化 (n=2)</h3>
+        <div id="lp-viz"></div>
+        <p class="viz-caption">展示可行域与当前基解位置</p>
+    </div>
+
+    <div id="simplex-log-modal" class="simplex-log-modal modal hidden" aria-hidden="true">
+        <div class="simplex-log-card" role="dialog" aria-modal="true" aria-labelledby="simplex-log-title">
+            <div class="simplex-log-head">
+                <h3 id="simplex-log-title">单纯形法实验迭代数据</h3>
+                <button id="simplex-log-close" class="simplex-log-close" type="button" aria-label="关闭">×</button>
+            </div>
+            <div class="simplex-log-summary" id="simplex-log-summary"></div>
+            <div class="simplex-log-table-wrap">
+                <table class="simplex-log-table">
+                    <thead>
+                    <tr>
+                        <th>迭代</th>
+                        <th>入基变量</th>
+                        <th>离基变量</th>
+                        <th>状态</th>
+                        <th>基变量</th>
+                        <th>当前基解 b</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody id="simplex-log-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% block experiment_notes %}
+    {% include 'components/_experiment_notes.html' %}
+    {% endblock %}
+</div>
+
+<footer class="footer">
+    线性规划 · OptLab 教学资源
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.AI_CONFIG = {
+        PAGE_ID: 'simplex_method',
+        BUTTON_REGISTRY: [
+            {id: "example-select", description: "预设场景选择下拉框", type: "optional"},
+            {id: "load-example-btn", description: "加载示例数据按钮", type: "optional"},
+            {id: "num-vars", description: "设置变量数量输入框", type: "normal"},
+            {id: "num-constraints", description: "设置约束数量输入框", type: "normal"},
+            {id: "reset-btn", description: "重置输入数据按钮", type: "normal"},
+            {id: "check-btn", description: "校验输入数据准确性按钮", type: "normal"},
+            {id: "solve-btn", description: "执行单纯形法求解按钮", type: "normal"},
+            {id: "simplex-log-open-btn", description: "查看实验数据按钮", type: "normal"},
+            {id: "simplex-log-export-json-btn", description: "导出实验数据按钮", type: "normal"},
+            {id: "simplex-log-save-to-profile-btn", description: "保存实验数据至个人中心按钮", type: "normal"}
+        ],
+        GUIDEBOOK: `
+这是线性规划单纯形法交互实验，支持求解最大化或最小化线性规划问题。
+采用的约束条件为：Ax<=b且x>=0，系统自动追加松弛变量，构造初始基本可行解。
+用户可在下拉栏选择示例线性规划问题，加载并点击求解按钮查看迭代过程。
+`
+    };
+
+    window.EXPERIMENT_NOTES_CONFIG = {
+        experimentKey: 'linear-programming.simplex',
+        mountSelector: '#exp-notes-mount',
+        getPageData: function () {
+            var numVars = document.getElementById('num-vars');
+            var numConstraints = document.getElementById('num-constraints');
+            var solveType = document.querySelector('input[name="solve-type"]:checked');
+
+            var n = numVars ? parseInt(numVars.value) : null;
+            var m = numConstraints ? parseInt(numConstraints.value) : null;
+
+            function safeNum(v) {
+                var x = parseFloat(v);
+                return Number.isFinite(x) ? x : null;
+            }
+
+            var objective = [];
+            var constraints = [];
+            if (Number.isInteger(n) && Number.isInteger(m)) {
+                for (var j = 1; j <= n; j++) {
+                    var cEl = document.getElementById('c-' + j);
+                    objective.push(cEl ? safeNum(cEl.value) : null);
+                }
+                for (var i = 1; i <= m; i++) {
+                    var row = [];
+                    for (var k = 1; k <= n; k++) {
+                        var aEl = document.getElementById('a-' + i + '-' + k);
+                        row.push(aEl ? safeNum(aEl.value) : null);
+                    }
+                    var bEl = document.getElementById('b-' + i);
+                    constraints.push({coeffs: row, b: bEl ? safeNum(bEl.value) : null});
+                }
+            }
+
+            var cards = document.querySelectorAll('#iteration-results .iteration-card');
+            var finalAlert = document.querySelector('#iteration-results .alert:last-child');
+            var simplexData = window.SimplexExperimentData || null;
+            var behavior = (window.ExperimentNotes && typeof window.ExperimentNotes.getBehavior === 'function')
+                ? window.ExperimentNotes.getBehavior()
+                : null;
+
+            return {
+                num_vars: n,
+                num_constraints: m,
+                solve_type: solveType ? solveType.value : null,
+                objective_coeffs: objective,
+                constraints: constraints,
+                iteration_card_count: cards ? cards.length : 0,
+                result_text: finalAlert ? finalAlert.textContent : '',
+                user_result_summary: {
+                    has_2d_viz: document.getElementById('visualization-2d')
+                        ? !document.getElementById('visualization-2d').classList.contains('hidden')
+                        : false
+                },
+                simplex_run_record: simplexData && simplexData.lastRunRecord ? simplexData.lastRunRecord : null,
+                simplex_log_payload: simplexData && simplexData.latestPayload ? simplexData.latestPayload : null,
+                simplex_tableau_steps: simplexData && Array.isArray(simplexData.tableauSteps)
+                    ? simplexData.tableauSteps
+                    : [],
+                operation_history: behavior && Array.isArray(behavior.events) ? behavior.events : []
+            };
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var btnMap = {
+            "solve-btn": "求解",
+            "check-btn": "检查输入",
+            "reset-btn": "重置",
+            "load-example-btn": "加载示例",
+            "simplex-log-open-btn": "查看实验数据",
+            "simplex-log-export-json-btn": "导出实验数据",
+            "simplex-log-save-to-profile-btn": "保存至个人中心"
+        };
+        Object.keys(btnMap).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', function () {
+                ExperimentNotes.trackEvent('control', {action: btnMap[id]});
+            }, {capture: true});
+        });
+
+        var exampleSelect = document.getElementById('example-select');
+        if (exampleSelect) {
+            exampleSelect.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'example_select', value: exampleSelect.value});
+            }, {capture: true});
+        }
+        var numVars = document.getElementById('num-vars');
+        if (numVars) {
+            numVars.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'num_vars', value: numVars.value});
+            }, {capture: true});
+        }
+        var numConstraints = document.getElementById('num-constraints');
+        if (numConstraints) {
+            numConstraints.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'num_constraints', value: numConstraints.value});
+            }, {capture: true});
+        }
+        document.querySelectorAll('input[name="solve-type"]').forEach(function (el) {
+            el.addEventListener('change', function () {
+                ExperimentNotes.trackEvent('param_change', {param: 'solve_type', value: el.value});
+            }, {capture: true});
+        });
+    });
+</script>
+<script src="/static/js/courses/linear-programming/lp-core.js"></script>
+<script src="/static/js/courses/linear-programming/simplex.js"></script>
+{% endblock %}
