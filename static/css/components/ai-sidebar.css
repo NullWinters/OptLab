@@ -3,16 +3,16 @@
     --ai-sidebar-width: 380px;
 }
 
-#app-content {
+.app-shell {
     transition: width 0.3s ease, margin-right 0.3s ease;
     width: 100%;
     box-sizing: border-box;
+    overflow-x: hidden;
 }
 
-body.ai-sidebar-open #app-content {
+body.ai-sidebar-open .app-shell {
     width: calc(100vw - var(--ai-sidebar-width) - 24px) !important;
     margin-right: calc(var(--ai-sidebar-width) + 24px) !important;
-    overflow-x: hidden;
 }
 
 body.ai-sidebar-open .ai-toggle-btn {
