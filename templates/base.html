@@ -47,14 +47,17 @@
     {% block head %}{% endblock %}
 </head>
 <body>
-<div id="app-content">
-    {% block content %}{% endblock %}
+<div class="app-shell">
+    <div id="app-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block experiment_notes %}{% endblock %}
 </div>
 
 {% block ai_sidebar %}
 {% include 'components/_ai_sidebar.html' %}
 {% endblock %}
-{% block experiment_notes %}{% endblock %}
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/common/login-modal.js"></script>
