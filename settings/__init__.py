@@ -28,8 +28,10 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("OPTLAB_ACCESS_TOKEN_MINUTES", "30"))
 ACCESS_TOKEN_EXPIRE_DELTA = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-# Admin auth / jwt（独立于主用户系统）
+# Admin auth / jwt（独立于主用户系统，过期时间更长）
 ADMIN_JWT_SECRET = os.getenv("OPTLAB_ADMIN_JWT_SECRET", "")
+ADMIN_TOKEN_EXPIRE_HOURS = int(os.getenv("OPTLAB_ADMIN_TOKEN_EXPIRE_HOURS", "168"))
+ADMIN_TOKEN_EXPIRE_DELTA = timedelta(hours=ADMIN_TOKEN_EXPIRE_HOURS)
 
 # LLM (OpenAI-compatible)
 # 支持任意 OpenAI-compatible 服务（DeepSeek / OpenAI / 本地模型等）
