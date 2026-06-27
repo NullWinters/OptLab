@@ -262,6 +262,46 @@
             });
         }
 
+        // 修改密码
+        var changePwBtn = document.getElementById('admin-change-pw-btn');
+        var changePwModal = document.getElementById('admin-change-pw-modal');
+        if (changePwBtn && changePwModal) {
+            changePwBtn.addEventListener('click', function () {
+                changePwModal.style.display = '';
+                document.getElementById('admin-current-pw').value = '';
+                document.getElementById('admin-new-pw').value = '';
+                document.getElementById('admin-confirm-new-pw').value = '';
+                document.getElementById('admin-change-pw-error').style.display = 'none';
+            });
+            document.getElementById('admin-change-pw-cancel').addEventListener('click', function () {
+                changePwModal.style.display = 'none';
+            });
+            document.getElementById('admin-change-pw-form').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                var currentPw = document.getElementById('admin-current-pw').value;
+                var newPw = document.getElementById('admin-new-pw').value;
+                var confirmPw = document.getElementById('admin-confirm-new-pw').value;
+                var errEl = document.getElementById('admin-change-pw-error');
+                errEl.style.display = 'none';
+                if (newPw !== confirmPw) {
+                    errEl.textContent = '两次输入的新密码不一致。';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                try {
+                    await adminApi('/api/admin/change-password', {
+                        method: 'POST',
+                        body: JSON.stringify({ current_password: currentPw, new_password: newPw, confirm_password: confirmPw }),
+                    });
+                    alert('密码修改成功。');
+                    changePwModal.style.display = 'none';
+                } catch (err) {
+                    errEl.textContent = err.message;
+                    errEl.style.display = 'block';
+                }
+            });
+        }
+
         // 侧边栏折叠/展开
         var toggleBtn = document.getElementById('admin-sidebar-toggle');
         if (toggleBtn) {

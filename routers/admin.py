@@ -354,6 +354,32 @@ async def request_reset_key() -> SetupKeyOut:
     return SetupKeyOut(setup_key="", hint=setup_key[:6] + "..." + setup_key[-4:])
 
 
+class AdminChangePasswordIn(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=50)
+    confirm_password: str
+
+
+@router.post("/change-password")
+async def change_admin_password(
+    payload: AdminChangePasswordIn,
+    auth: dict = Depends(get_admin_auth),
+) -> dict:
+    """已登录管理员修改自己的密码"""
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="两次输入的新密码不一致。")
+    env_vars = read_env_vars()
+    username = auth["username"]
+    admin = _find_admin(env_vars, username)
+    if not admin:
+        raise HTTPException(status_code=404, detail="管理员账户不存在。")
+    if not verify_password(payload.current_password, admin["password_hash"]):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="当前密码不正确。")
+    new_hash = hash_password(payload.new_password)
+    _update_admin_password(env_vars, username, new_hash)
+    return {"message": "密码修改成功。"}
+
+
 @router.post("/setup-key/generate", response_model=SetupKeyOut)
 async def generate_setup_key(auth: dict = Depends(get_admin_auth)) -> SetupKeyOut:
     """已认证管理员生成新的一次性设置密钥，用于添加其他管理员"""
