@@ -1629,6 +1629,21 @@
         console.log('\u2705 \u795E\u7ECF\u7F51\u7EDC\u68AF\u5EA6\u4E0B\u964D\u5B9E\u9A8C\u7CFB\u7EDF\u5DF2\u542F\u52A8');
     }
 
+    window.NeuralNetworkGD = {
+        getState: function () {
+            return {
+                layerSizes: GDS.layerSizes, hiddenActs: GDS.hiddenActs,
+                optimizer: GDS.optimizer, optParams: GDS.optParams,
+                scheduler: GDS.scheduler, schedParams: GDS.schedParams,
+                baseLr: GDS.baseLr, currentLr: GDS.currentLr,
+                lossFn: GDS.lossFn, totalEpochs: GDS.totalEpochs,
+                currentEpoch: GDS.currentEpoch, currentLoss: GDS.currentLoss,
+                minLoss: GDS.minLoss, lossHistory: GDS.lossHistory,
+                lrHistory: GDS.lrHistory, currentPreset: GDS.currentPreset,
+                dataX: GDS.dataX, dataY: GDS.dataY
+            };
+        }
+    };
     // 启动
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);

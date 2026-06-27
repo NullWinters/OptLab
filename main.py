@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+from routers.admin import router as admin_router
 from routers.agent import router as agent_router
 from routers.auth import router as auth_router
 from routers.experiments import router as experiments_router
@@ -84,6 +85,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(admin_router)
 app.include_router(agent_router)
 app.include_router(auth_router)
 app.include_router(experiments_router)
@@ -114,6 +116,10 @@ async def read_favicon():
 async def read_profile(request: Request):
     return templates.TemplateResponse(request, "profile.html")
 
+
+@app.get("/admin/env", response_class=HTMLResponse)
+async def read_admin_env(request: Request):
+    return templates.TemplateResponse(request, "admin/env.html")
 
 @app.get("/settings", response_class=HTMLResponse)
 async def read_settings(request: Request):

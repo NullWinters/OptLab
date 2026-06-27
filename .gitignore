@@ -56,6 +56,9 @@ ENV/
 Thumbs.db
 Desktop.ini
 optlab.db
+optlab*.db-journal
+optlab*.db-wal
+optlab*.db-shm
 
 # =========================
 # Project local / temp
@@ -65,6 +68,7 @@ tmp/
 logs/
 *.log
 .ai/
+.claude/
 
 # =========================
 # Environment / secrets
@@ -73,6 +77,8 @@ logs/
 
 # dataset
 datasets/
+notebook/
+output/
 
 # =========================
 # Docker

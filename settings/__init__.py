@@ -28,12 +28,21 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("OPTLAB_ACCESS_TOKEN_MINUTES", "30"))
 ACCESS_TOKEN_EXPIRE_DELTA = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-# LLM
-# 为了方便本地启动，如果未设置环境变量则给一个占位符字符串，
-# 这样 AI 助手相关代码可以正常初始化；真正调用 DeepSeek 时仍需要替换为真实密钥。
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY", "CHANGE_ME_DEEPSEEK_KEY")
-DEEPSEEK_MODEL = os.getenv("DEEPSEEK_MODEL", "deepseek-chat")
-DEEPSEEK_TEMPERATURE = float(os.getenv("DEEPSEEK_TEMPERATURE", "0.7"))
+# Admin auth / jwt（独立于主用户系统）
+ADMIN_JWT_SECRET = os.getenv("OPTLAB_ADMIN_JWT_SECRET", "")
+
+# LLM (OpenAI-compatible)
+# 支持任意 OpenAI-compatible 服务（DeepSeek / OpenAI / 本地模型等）
+# 优先使用 LLM_* 变量，未设置时回退到旧的 DEEPSEEK_* 变量
+LLM_BASE_URL = os.getenv("LLM_BASE_URL") or ""
+LLM_MODEL_ID = os.getenv("LLM_MODEL_ID") or os.getenv("DEEPSEEK_MODEL") or "deepseek-chat"
+LLM_API_KEY = os.getenv("LLM_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or "CHANGE_ME_LLM_KEY"
+LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE") or os.getenv("DEEPSEEK_TEMPERATURE") or "0.7")
+
+# 向后兼容别名
+DEEPSEEK_API_KEY = LLM_API_KEY
+DEEPSEEK_MODEL = LLM_MODEL_ID
+DEEPSEEK_TEMPERATURE = LLM_TEMPERATURE
 
 # 聊天历史配置
 CHAT_HISTORY_WINDOW_ROUNDS = int(os.getenv("CHAT_HISTORY_WINDOW_ROUNDS", "10"))

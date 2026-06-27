@@ -240,6 +240,13 @@ async def ai_generate_note(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="暂无实验数据，请先运行实验。",
             )
+    elif experiment_key == "neural-network.gd":
+        loss_history = payload.get("loss_history", [])
+        if not isinstance(loss_history, list) or len(loss_history) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="当前尚无训练数据，请先运行一次神经网络训练。",
+            )
     else:
         if experiment_key == "svm-smo.kernel_trick.visualization":
             # Kernel-trick 页面中可能会先 parse_csv，但尚未完成可视化。
@@ -294,7 +301,7 @@ async def ai_generate_note(
         if _is_ai_provider_auth_error(e):
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="AI 服务鉴权失败：请检查服务器 DEEPSEEK_API_KEY 是否有效且未过期。",
+                detail="AI 服务鉴权失败：请检查服务器 LLM_API_KEY 是否有效且未过期。",
             )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

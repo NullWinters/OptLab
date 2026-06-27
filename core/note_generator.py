@@ -77,8 +77,8 @@ async def generate_experiment_note(
     调用 LLM 生成实验笔记，返回 (title, content)。
     content 使用 Markdown 格式，支持 LaTeX 公式。
     """
-    from langchain_deepseek import ChatDeepSeek
     from pydantic import BaseModel, Field
+    from core.agent import get_llm
 
     # 兼容外层包装
     experiment_data = _normalize_experiment_data(experiment_data)
@@ -93,17 +93,12 @@ async def generate_experiment_note(
 
     # 初始化 LLM
     try:
-        api_key = (settings.DEEPSEEK_API_KEY or "").strip()
-        if not api_key or api_key == "CHANGE_ME_DEEPSEEK_KEY":
-            raise ValueError("DEEPSEEK_API_KEY 未配置或仍为占位符，请在 .env 中设置有效密钥。")
+        api_key = (settings.LLM_API_KEY or "").strip()
+        if not api_key or api_key == "CHANGE_ME_LLM_KEY":
+            raise ValueError("LLM_API_KEY 未配置或仍为占位符，请在 .env 中设置有效密钥。")
 
-        llm = ChatDeepSeek(
-            model=settings.DEEPSEEK_MODEL,
-            temperature=0.28,
-            api_key=api_key,
-            max_tokens=4096,
-        )
-        logger.info(f"[NoteGen] LLM initialized: {settings.DEEPSEEK_MODEL}")
+        llm = get_llm(temperature=0.28, max_tokens=4096)
+        logger.info(f"[NoteGen] LLM initialized: {settings.LLM_MODEL_ID}")
     except Exception as e:
         logger.error(f"[NoteGen] Failed to initialize LLM: {e}")
         raise
@@ -139,7 +134,7 @@ async def generate_experiment_note(
     )
 
     try:
-        structured_llm = llm.with_structured_output(NoteSchema)
+        structured_llm = llm.with_structured_output(NoteSchema, method="function_calling")
 
         messages = [
             {"role": "system", "content": system_prompt},
