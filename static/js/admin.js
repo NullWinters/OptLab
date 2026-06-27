@@ -313,28 +313,18 @@
                 if (content) {
                     content.style.marginLeft = collapsed ? '60px' : '240px';
                 }
-                var icon = toggleBtn.querySelector('i');
                 var label = toggleBtn.querySelector('span');
-                if (collapsed) {
-                    if (icon) { icon.classList.remove('fa-chevron-left'); icon.classList.add('fa-chevron-right'); }
-                    if (label) label.textContent = '';
-                } else {
-                    if (icon) { icon.classList.remove('fa-chevron-right'); icon.classList.add('fa-chevron-left'); }
-                    if (label) label.textContent = '折叠';
-                }
+                if (label) label.textContent = collapsed ? '' : '折叠';
                 localStorage.setItem('optlab_admin_sidebar_collapsed', collapsed ? '1' : '0');
             }
             toggleBtn.addEventListener('click', toggleSidebar);
-            // 恢复上次折叠状态
             if (localStorage.getItem('optlab_admin_sidebar_collapsed') === '1') {
                 var sb = document.querySelector('.admin-sidebar');
                 var content = document.querySelector('.admin-content');
                 if (sb) {
                     sb.classList.add('collapsed');
                     if (content) content.style.marginLeft = '60px';
-                    var icon = toggleBtn.querySelector('i');
                     var label = toggleBtn.querySelector('span');
-                    if (icon) { icon.classList.remove('fa-chevron-left'); icon.classList.add('fa-chevron-right'); }
                     if (label) label.textContent = '';
                 }
             }
