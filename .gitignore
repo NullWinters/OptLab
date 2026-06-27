@@ -55,10 +55,13 @@ ENV/
 .DS_Store
 Thumbs.db
 Desktop.ini
-optlab.db
-optlab*.db-journal
-optlab*.db-wal
-optlab*.db-shm
+# SQLite databases（所有数据库文件均不上传）
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 
 # =========================
 # Project local / temp

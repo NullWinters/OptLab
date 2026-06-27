@@ -1,0 +1,136 @@
+{% extends 'admin/layout.html' %}
+{% set admin_title = '系统状态' %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+    <div>
+        <h1>系统状态</h1>
+        <span class="breadcrumb">数据库、LLM API、日志等运行状态</span>
+    </div>
+    <button class="admin-btn admin-btn-secondary" onclick="loadStatus()">
+        <i class="fas fa-sync-alt"></i> 刷新
+    </button>
+</div>
+
+<div id="status-content">
+    <div class="admin-loading"><span class="admin-spinner"></span>加载中...</div>
+</div>
+
+{# 日志查看 #}
+<div class="admin-card" style="margin-top:20px;">
+    <div class="admin-card-header">
+        <h2>应用日志</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+            <select class="admin-select" id="log-lines-select" onchange="loadLogs()">
+                <option value="50">最近 50 行</option>
+                <option value="100" selected>最近 100 行</option>
+                <option value="200">最近 200 行</option>
+                <option value="500">最近 500 行</option>
+            </select>
+            <button class="admin-btn admin-btn-secondary" onclick="loadLogs()">
+                <i class="fas fa-sync-alt"></i> 刷新
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        <pre id="log-content" style="background:#3E2723;color:#FFCC80;padding:16px;border-radius:8px;font-family:'SFMono-Regular',Consolas,monospace;font-size:0.8em;line-height:1.6;overflow-x:auto;max-height:500px;overflow-y:auto;white-space:pre-wrap;margin:0;">加载中...</pre>
+        <div id="log-info" style="font-size:0.82em;color:#9E9E9E;margin-top:8px;"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_scripts %}
+<script src="/static/js/admin.js"></script>
+<script>
+(function() {
+    if (!ensureAdminAuth()) return;
+    loadStatus();
+    loadLogs();
+
+    window.loadLogs = async function() {
+        var lines = document.getElementById('log-lines-select').value;
+        try {
+            var data = await adminApi('/api/admin/system/logs?lines=' + lines);
+            document.getElementById('log-content').textContent = data.logs || data.message || '(空)';
+            document.getElementById('log-info').textContent =
+                '共 ' + (data.total_lines || 0) + ' 行，显示 ' + (data.shown_lines || 0) + ' 行';
+        } catch (e) {
+            document.getElementById('log-content').textContent = '加载失败: ' + e.message;
+        }
+    };
+
+    async function loadStatus() {
+        try {
+            var data = await adminApi('/api/admin/system/status');
+            var db = data.database || {};
+            var llm = data.llm || {};
+            var logs = data.logs || {};
+            var env = data.env_file || {};
+
+            document.getElementById('status-content').innerHTML =
+                '<div class="admin-status-grid">' +
+                buildStatusCard('数据库', [
+                    ['状态', statusDot(db.ok), db.ok ? '正常' : '异常'],
+                    ['连接', '', db.uri || '—'],
+                ]) +
+                buildStatusCard('LLM API', [
+                    ['状态', statusDot(llm.ok), llm.ok ? '连接正常' : llm.message],
+                    ['模型', '', escHtml(llm.model || '—')],
+                    ['Base URL', '', escHtml(llm.base_url || '—')],
+                ]) +
+                buildStatusCard('日志文件', [
+                    ['状态', statusDot(logs.exists), logs.exists ? ('存在 (' + logs.size_kb + ' KB)') : '不存在'],
+                    ['路径', '', escHtml(logs.path || '—')],
+                    ['修改时间', '', logs.modified ? fmtTime(logs.modified) : '—'],
+                ]) +
+                buildStatusCard('环境', [
+                    ['.env 文件', statusDot(env.exists), env.exists ? '存在' : '不存在'],
+                    ['Python', '', escHtml(data.python_version || '—').split('\\n')[0]],
+                    ['路径', '', escHtml(env.path || '—')],
+                ]) +
+                '</div>' +
+                '<div class="admin-card" style="margin-top:16px;">' +
+                '<div class="admin-card-header"><h2>LLM 连通性测试</h2></div>' +
+                '<div class="admin-card-body">' +
+                '<button class="admin-btn admin-btn-primary" id="test-llm-btn" onclick="testLLM()">' +
+                '<i class="fas fa-plug"></i> 测试连接</button>' +
+                '<span id="test-llm-result" style="margin-left:12px;font-size:0.9em;"></span>' +
+                '</div></div>';
+        } catch (e) {
+            document.getElementById('status-content').innerHTML =
+                '<div class="admin-alert error">加载失败: ' + escHtml(e.message) + '</div>';
+        }
+    }
+
+    function buildStatusCard(title, rows) {
+        return '<div class="admin-status-card"><h3>' + escHtml(title) + '</h3>' +
+            rows.map(function(r) {
+                return '<div class="status-row"><span>' + escHtml(r[0]) + '</span><span>' +
+                    r[1] + ' ' + escHtml(String(r[2])) + '</span></div>';
+            }).join('') + '</div>';
+    }
+
+    function statusDot(ok) {
+        return '<span class="admin-status-dot ' + (ok ? 'ok' : 'error') + '"></span>';
+    }
+
+    window.testLLM = async function() {
+        var btn = document.getElementById('test-llm-btn');
+        var result = document.getElementById('test-llm-result');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="admin-spinner" style="width:14px;height:14px;border-width:2px;"></span> 测试中...';
+        result.textContent = '';
+        try {
+            var data = await adminApi('/api/admin/system/test-llm', {method:'POST'});
+            result.innerHTML = data.ok
+                ? '<span style="color:#2E7D32;"><i class="fas fa-check-circle"></i> ' + escHtml(data.message) + '</span>'
+                : '<span style="color:#C62828;"><i class="fas fa-times-circle"></i> ' + escHtml(data.message) + '</span>';
+        } catch (e) {
+            result.innerHTML = '<span style="color:#C62828;">请求失败: ' + escHtml(e.message) + '</span>';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
+    };
+})();
+</script>
+{% endblock %}

@@ -1,12 +1,17 @@
-"""管理员路由：注册 / 登录 / 环境变量管理"""
+"""管理员路由：注册 / 登录 / 仪表盘 / 用户管理 / 实验管理 / 环境变量 / 评测工作台 / 系统状态"""
 
 import logging
+import os
 import secrets
+import subprocess
+import tempfile
 from datetime import datetime, timezone
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File, Form
 from jose import JWTError, jwt
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 
 from core.env_manager import (
     get_env_path,
@@ -15,11 +20,18 @@ from core.env_manager import (
     verify_password,
     write_env_vars,
 )
-from settings import ADMIN_JWT_SECRET, ACCESS_TOKEN_EXPIRE_DELTA, ALGORITHM
+from dependencies import get_session
+from models import AsyncSession
+from repository.admin_repo import AdminRepository
+from settings import ADMIN_JWT_SECRET, ACCESS_TOKEN_EXPIRE_DELTA, ALGORITHM, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_ID
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+# ═══════════════════════════════════════════════════════════════
+# 认证工具
+# ═══════════════════════════════════════════════════════════════
 
 
 def _get_admin_jwt_secret() -> str:
@@ -35,14 +47,51 @@ def _get_admin_jwt_secret() -> str:
     return secret
 
 
+async def get_admin_auth(request: Request) -> dict:
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="未提供管理员认证令牌。",
+        )
+    token = auth_header[7:]
+    try:
+        secret = _get_admin_jwt_secret()
+        payload = jwt.decode(token, secret, algorithms=[ALGORITHM])
+        if payload.get("sub") != "admin":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效的管理员令牌。")
+        return {"username": payload.get("username", "")}
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="管理员令牌无效或已过期。")
+
+
+def _create_admin_token(username: str) -> str:
+    secret = _get_admin_jwt_secret()
+    expire = datetime.now(timezone.utc) + ACCESS_TOKEN_EXPIRE_DELTA
+    payload = {"sub": "admin", "username": username, "exp": expire}
+    return jwt.encode(payload, secret, algorithm=ALGORITHM)
+
+
+def _admin_repo(session: AsyncSession = Depends(get_session)) -> AdminRepository:
+    return AdminRepository(session)
+
+
+# ═══════════════════════════════════════════════════════════════
+# Pydantic 模型
+# ═══════════════════════════════════════════════════════════════
+
+
 class AdminStatusOut(BaseModel):
     configured: bool
+    setup_required: bool = False
+    setup_hint: str = ""
 
 
 class AdminRegisterIn(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8, max_length=50)
     confirm_password: str
+    setup_key: str = Field("", description="一次性设置密钥，首次注册时从服务端控制台获取")
 
 
 class AdminLoginIn(BaseModel):
@@ -59,35 +108,34 @@ class EnvVarsUpdate(BaseModel):
     vars: dict[str, str]
 
 
-async def get_admin_auth(request: Request) -> dict:
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="未提供管理员认证令牌。",
-        )
-    token = auth_header[7:]
-    try:
-        secret = _get_admin_jwt_secret()
-        payload = jwt.decode(token, secret, algorithms=[ALGORITHM])
-        if payload.get("sub") != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="无效的管理员令牌。",
-            )
-        return {"username": payload.get("username", "")}
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="管理员令牌无效或已过期。",
-        )
+# ── 分页 ──
 
 
-def _create_admin_token(username: str) -> str:
-    secret = _get_admin_jwt_secret()
-    expire = datetime.now(timezone.utc) + ACCESS_TOKEN_EXPIRE_DELTA
-    payload = {"sub": "admin", "username": username, "exp": expire}
-    return jwt.encode(payload, secret, algorithm=ALGORITHM)
+class PaginationOut(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class PaginatedUsersOut(BaseModel):
+    users: list[dict]
+    pagination: dict
+
+
+class PaginatedExperimentsOut(BaseModel):
+    experiments: list[dict]
+    pagination: dict
+
+
+class PaginatedNotesOut(BaseModel):
+    notes: list[dict]
+    pagination: dict
+
+
+# ═══════════════════════════════════════════════════════════════
+# 认证端点（保持不变）
+# ═══════════════════════════════════════════════════════════════
 
 
 @router.post("/status", response_model=AdminStatusOut)
@@ -97,28 +145,55 @@ async def check_admin_status() -> AdminStatusOut:
         env_vars.get("OPTLAB_ADMIN_USERNAME")
         and env_vars.get("OPTLAB_ADMIN_PASSWORD_HASH")
     )
-    return AdminStatusOut(configured=configured)
+    if configured:
+        return AdminStatusOut(configured=True)
+
+    setup_key = env_vars.get("OPTLAB_ADMIN_SETUP_KEY", "")
+    if not setup_key:
+        setup_key = secrets.token_urlsafe(24)
+        write_env_vars({"OPTLAB_ADMIN_SETUP_KEY": setup_key})
+        logger.warning(
+            "\n╔══════════════════════════════════════════════════╗\n"
+            "║  🔐 管理员注册一次性设置密钥                        ║\n"
+            "║  Setup Key: %s  ║\n"
+            "║  请在管理员注册页面输入此密钥完成首次配置               ║\n"
+            "╚══════════════════════════════════════════════════╝\n",
+            setup_key.ljust(20),
+        )
+        print(
+            f"\n{'='*60}\n"
+            f"  🔐 管理员首次注册设置密钥:\n"
+            f"  {setup_key}\n"
+            f"  请在浏览器中打开 /admin 并输入此密钥完成注册。\n"
+            f"{'='*60}\n"
+        )
+    return AdminStatusOut(
+        configured=False,
+        setup_required=True,
+        setup_hint=setup_key[:6] + "..." + setup_key[-4:],
+    )
 
 
 @router.post("/register", response_model=AdminAuthOut)
 async def register_admin(payload: AdminRegisterIn) -> AdminAuthOut:
     if payload.password != payload.confirm_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="两次输入的密码不一致。",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="两次输入的密码不一致。")
     env_vars = read_env_vars()
     if env_vars.get("OPTLAB_ADMIN_USERNAME"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="管理员已注册，请直接登录。",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="管理员已注册，请直接登录。")
+    # 验证一次性设置密钥
+    expected_key = env_vars.get("OPTLAB_ADMIN_SETUP_KEY", "")
+    if not expected_key:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="设置密钥未生成，请先访问管理后台首页。")
+    if not payload.setup_key or payload.setup_key.strip() != expected_key:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="设置密钥不正确。请在服务端控制台查看正确的密钥。")
     password_hash = hash_password(payload.password)
     jwt_secret = secrets.token_urlsafe(32)
     write_env_vars({
         "OPTLAB_ADMIN_USERNAME": payload.username,
         "OPTLAB_ADMIN_PASSWORD_HASH": password_hash,
         "OPTLAB_ADMIN_JWT_SECRET": jwt_secret,
+        "OPTLAB_ADMIN_SETUP_KEY": "",  # 注册成功后清除设置密钥
     })
     token = _create_admin_token(payload.username)
     return AdminAuthOut(token=token, username=payload.username)
@@ -130,22 +205,145 @@ async def login_admin(payload: AdminLoginIn) -> AdminAuthOut:
     stored_username = env_vars.get("OPTLAB_ADMIN_USERNAME", "")
     stored_hash = env_vars.get("OPTLAB_ADMIN_PASSWORD_HASH", "")
     if not stored_username or not stored_hash:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="管理员尚未注册，请先完成首次配置。",
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="管理员尚未注册，请先完成首次配置。")
     if payload.username != stored_username:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码不正确。",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户名或密码不正确。")
     if not verify_password(payload.password, stored_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码不正确。",
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="用户名或密码不正确。")
     token = _create_admin_token(payload.username)
     return AdminAuthOut(token=token, username=payload.username)
+
+
+# ═══════════════════════════════════════════════════════════════
+# 仪表盘
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.get("/dashboard/stats")
+async def get_dashboard_stats(
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    return await repo.dashboard_stats()
+
+
+# ═══════════════════════════════════════════════════════════════
+# 用户管理
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.get("/users")
+async def list_users(
+    search: str = "",
+    page: int = 1,
+    page_size: int = 20,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    users, total = await repo.list_users(search=search, page=page, page_size=page_size)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    return {
+        "users": users,
+        "pagination": {"page": page, "page_size": page_size, "total": total, "total_pages": total_pages},
+    }
+
+
+@router.get("/users/{user_id}")
+async def get_user_detail(
+    user_id: int,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    detail = await repo.get_user_detail(user_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="用户不存在。")
+    return detail
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: int,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    ok = await repo.delete_user(user_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="用户不存在。")
+    return {"message": "用户及其关联数据已删除。"}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 实验管理
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.get("/experiments")
+async def list_experiments(
+    source_page: str = "",
+    user_id: str = "",
+    page: int = 1,
+    page_size: int = 20,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    records, total = await repo.list_experiments(
+        source_page=source_page, user_id=user_id, page=page, page_size=page_size
+    )
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    return {
+        "experiments": records,
+        "pagination": {"page": page, "page_size": page_size, "total": total, "total_pages": total_pages},
+    }
+
+
+@router.get("/experiments/stats")
+async def get_experiment_stats(
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    stats = await repo.dashboard_stats()
+    return {"experiments_by_type": stats["experiments_by_type"], "experiments_total": stats["experiments_total"]}
+
+
+@router.delete("/experiments/{record_id}")
+async def delete_experiment(
+    record_id: int,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    ok = await repo.delete_experiment(record_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="实验记录不存在。")
+    return {"message": "实验记录已删除。"}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 笔记管理（只读）
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.get("/notes")
+async def list_notes(
+    experiment_key: str = "",
+    user_id: str = "",
+    page: int = 1,
+    page_size: int = 20,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    notes, total = await repo.list_notes(
+        experiment_key=experiment_key, user_id=user_id, page=page, page_size=page_size
+    )
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    return {
+        "notes": notes,
+        "pagination": {"page": page, "page_size": page_size, "total": total, "total_pages": total_pages},
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# 环境变量（保持不变）
+# ═══════════════════════════════════════════════════════════════
 
 
 @router.get("/env")
@@ -154,10 +352,7 @@ async def get_env_vars(auth: dict = Depends(get_admin_auth)) -> dict[str, str]:
     sensitive_keys = {"OPTLAB_ADMIN_PASSWORD_HASH", "OPTLAB_ADMIN_JWT_SECRET"}
     result = {}
     for key, value in env_vars.items():
-        if key in sensitive_keys:
-            result[key] = "********"
-        else:
-            result[key] = value
+        result[key] = "********" if key in sensitive_keys else value
     return result
 
 
@@ -172,14 +367,273 @@ async def update_env_vars(
     try:
         write_env_vars(updates)
     except PermissionError:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="无法写入 .env 文件，请检查文件权限。",
-        )
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="无法写入 .env 文件，请检查文件权限。")
     except Exception as e:
         logger.exception("Failed to write env vars")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"写入环境变量失败：{e}",
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"写入环境变量失败：{e}")
     return {"message": "环境变量已保存。部分更改可能需要重启服务后生效。"}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 系统状态
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.get("/system/status")
+async def get_system_status(
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    db_status = await repo.system_status()
+    # LLM API 检测
+    llm_ok = False
+    llm_msg = "未配置"
+    if LLM_API_KEY and LLM_API_KEY not in ("CHANGE_ME_LLM_KEY", ""):
+        try:
+            import httpx
+            base = (LLM_BASE_URL or "https://api.openai.com/v1").rstrip("/")
+            url = f"{base}/models"
+            async with httpx.AsyncClient(timeout=8) as client:
+                resp = await client.get(url, headers={"Authorization": f"Bearer {LLM_API_KEY}"})
+                llm_ok = resp.status_code == 200
+                llm_msg = "连接正常" if llm_ok else f"HTTP {resp.status_code}"
+        except Exception as e:
+            llm_msg = str(e)[:120]
+    else:
+        llm_msg = "API Key 未配置"
+
+    # 日志文件信息
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+    log_file = os.path.join(log_dir, "optlab.log")
+    log_info = {"path": log_file, "exists": os.path.exists(log_file)}
+    if log_info["exists"]:
+        log_info["size_kb"] = round(os.path.getsize(log_file) / 1024, 1)
+        log_info["modified"] = datetime.fromtimestamp(os.path.getmtime(log_file)).isoformat()
+
+    # 项目信息
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env_path = os.path.join(project_root, ".env")
+
+    return {
+        "database": db_status["database"],
+        "llm": {
+            "ok": llm_ok,
+            "message": llm_msg,
+            "model": LLM_MODEL_ID,
+            "base_url": LLM_BASE_URL or "(default)",
+        },
+        "logs": log_info,
+        "env_file": {
+            "path": env_path,
+            "exists": os.path.exists(env_path),
+        },
+        "python_version": os.sys.version,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# 系统日志查看
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.get("/system/logs")
+async def get_system_logs(
+    lines: int = 100,
+    auth: dict = Depends(get_admin_auth),
+):
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+    log_file = os.path.join(log_dir, "optlab.log")
+    if not os.path.exists(log_file):
+        return {"logs": "", "message": "日志文件不存在。"}
+    try:
+        with open(log_file, "r", encoding="utf-8") as f:
+            all_lines = f.readlines()
+        recent = all_lines[-lines:] if len(all_lines) > lines else all_lines
+        return {"logs": "".join(recent), "total_lines": len(all_lines), "shown_lines": len(recent)}
+    except Exception as e:
+        return {"logs": "", "message": f"读取日志失败: {e}"}
+
+
+# ═══════════════════════════════════════════════════════════════
+# LLM 连通性测试
+# ═══════════════════════════════════════════════════════════════
+
+
+@router.post("/system/test-llm")
+async def test_llm_connection(auth: dict = Depends(get_admin_auth)):
+    if not LLM_API_KEY or LLM_API_KEY in ("CHANGE_ME_LLM_KEY", ""):
+        return {"ok": False, "message": "LLM API Key 未配置"}
+    try:
+        import httpx
+        base = (LLM_BASE_URL or "https://api.openai.com/v1").rstrip("/")
+        # 尝试 list models
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(
+                f"{base}/models",
+                headers={"Authorization": f"Bearer {LLM_API_KEY}"},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                models_count = len(data.get("data", []))
+                return {"ok": True, "message": f"连接成功，可用模型数: {models_count}"}
+            return {"ok": False, "message": f"HTTP {resp.status_code}: {resp.text[:200]}"}
+    except Exception as e:
+        return {"ok": False, "message": str(e)[:200]}
+
+
+# ═══════════════════════════════════════════════════════════════
+# 评测工作台
+# ═══════════════════════════════════════════════════════════════
+
+
+_EVAL_PROFILES_CACHE: Optional[list[dict]] = None
+
+
+def _load_eval_profiles() -> list[dict]:
+    global _EVAL_PROFILES_CACHE
+    if _EVAL_PROFILES_CACHE is not None:
+        return _EVAL_PROFILES_CACHE
+    scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts")
+    profiles_path = os.path.join(scripts_dir, "evaluation", "experiment_profiles.v1.json")
+    if not os.path.exists(profiles_path):
+        return []
+    import json
+    with open(profiles_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    profiles = []
+    profiles_data = data.get("profiles", data)
+    if isinstance(profiles_data, dict):
+        for key, profile in profiles_data.items():
+            if key == "default":
+                continue
+            profiles.append({"key": key, "name": profile.get("name", key)})
+    elif isinstance(profiles_data, list):
+        for p in profiles_data:
+            if isinstance(p, dict) and p.get("key") != "default":
+                profiles.append({"key": p.get("key", ""), "name": p.get("name", p.get("key", ""))})
+    _EVAL_PROFILES_CACHE = profiles
+    return profiles
+
+
+@router.get("/evaluation/profiles")
+async def get_eval_profiles(auth: dict = Depends(get_admin_auth)):
+    profiles = _load_eval_profiles()
+    return {"profiles": profiles, "count": len(profiles)}
+
+
+@router.post("/evaluation/run")
+async def run_evaluation(
+    case_ids: list[str] = Form(...),
+    strict_profiles: bool = Form(False),
+    record_files: list[UploadFile] = File(...),
+    report_files: list[UploadFile] = File(...),
+    auth: dict = Depends(get_admin_auth),
+):
+    n = len(case_ids)
+    if len(record_files) != n or len(report_files) != n:
+        raise HTTPException(status_code=400, detail="case_ids、record_files、report_files 数量必须一致")
+    if n == 0:
+        raise HTTPException(status_code=400, detail="至少需要一组文件")
+
+    scripts_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts")
+    profiles_path = os.path.join(scripts_dir, "evaluation", "experiment_profiles.v1.json")
+    rubric_path = os.path.join(scripts_dir, "evaluation", "default_rubric.v1.json")
+    eval_script = os.path.join(scripts_dir, "evaluation_dataset.py")
+
+    if not os.path.exists(eval_script):
+        raise HTTPException(status_code=503, detail="评测脚本 evaluation_dataset.py 不存在")
+
+    with tempfile.TemporaryDirectory() as tmp:
+        records_dir = os.path.join(tmp, "records")
+        reports_dir = os.path.join(tmp, "reports")
+        out_dir = os.path.join(tmp, "out")
+        for d in (records_dir, reports_dir, out_dir):
+            os.makedirs(d)
+
+        for i, cid in enumerate(case_ids):
+            safe = _sanitize_case_id(cid, i)
+            rec_bytes = await record_files[i].read()
+            rep_bytes = await report_files[i].read()
+            rec_ext = _guess_ext(record_files[i].filename, ".csv")
+            rep_ext = _guess_ext(report_files[i].filename, ".md")
+            with open(os.path.join(records_dir, f"{safe}{rec_ext}"), "wb") as f:
+                f.write(rec_bytes)
+            with open(os.path.join(reports_dir, f"{safe}{rep_ext}"), "wb") as f:
+                f.write(rep_bytes)
+
+        dataset_jsonl = os.path.join(out_dir, "eval_dataset.jsonl")
+        manifest_json = os.path.join(out_dir, "eval_manifest.json")
+        scores_jsonl = os.path.join(out_dir, "eval_scores.jsonl")
+        summary_json = os.path.join(out_dir, "eval_score_summary.json")
+
+        try:
+            build_cmd = [
+                os.sys.executable, eval_script, "build",
+                "--records-dir", records_dir,
+                "--reports-dir", reports_dir,
+                "--profiles", profiles_path,
+                "--out-jsonl", dataset_jsonl,
+                "--out-manifest", manifest_json,
+            ]
+            if strict_profiles:
+                build_cmd.append("--strict-profiles")
+            build = subprocess.run(build_cmd, capture_output=True, text=True, timeout=120)
+
+            if build.returncode not in (0, 2):
+                raise HTTPException(status_code=500, detail=f"构建评测集失败: {build.stderr[:500]}")
+
+            score_cmd = [
+                os.sys.executable, eval_script, "score",
+                "--dataset-jsonl", dataset_jsonl,
+                "--rubric", rubric_path,
+                "--out-jsonl", scores_jsonl,
+                "--out-summary", summary_json,
+            ]
+            score = subprocess.run(score_cmd, capture_output=True, text=True, timeout=120)
+            if score.returncode != 0:
+                raise HTTPException(status_code=500, detail=f"评分失败: {score.stderr[:500]}")
+
+            manifest = _load_json(manifest_json)
+            summary = _load_json(summary_json)
+            scores = _load_jsonl(scores_jsonl)
+
+            return {
+                "manifest": manifest,
+                "summary": summary,
+                "scores": scores,
+                "logs": {"build_stdout": build.stdout[-2000:], "score_stdout": score.stdout[-2000:]},
+            }
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.exception("Evaluation failed")
+            raise HTTPException(status_code=500, detail=f"评测执行异常: {e}")
+
+
+def _sanitize_case_id(raw: str, idx: int) -> str:
+    import re
+    safe = re.sub(r"[^\w\-.]", "_", raw.strip() or f"case_{idx}")
+    return safe[:80]
+
+
+def _guess_ext(filename: str | None, default: str) -> str:
+    if filename and "." in filename:
+        return os.path.splitext(filename)[1].lower()
+    return default
+
+
+def _load_json(path: str):
+    import json
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_jsonl(path: str) -> list:
+    import json
+    items = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                items.append(json.loads(line))
+    return items

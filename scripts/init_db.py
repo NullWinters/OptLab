@@ -30,10 +30,24 @@ def migrate_chat_message_text_blocks(connection):
         )
 
 
+def migrate_user_created_at(connection):
+    """为已存在的 user 表追加 created_at 列。"""
+    inspector = inspect(connection)
+    if "user" not in inspector.get_table_names():
+        return
+    cols = {c["name"] for c in inspector.get_columns("user")}
+    if "created_at" in cols:
+        return
+    # SQLite ALTER TABLE 不支持非恒定默认值，先加列再更新
+    connection.execute(text("ALTER TABLE user ADD COLUMN created_at DATETIME"))
+    connection.execute(text("UPDATE user SET created_at = datetime('now') WHERE created_at IS NULL"))
+
+
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
         await conn.run_sync(migrate_chat_message_text_blocks)
+        await conn.run_sync(migrate_user_created_at)
 
         # 创建额外的数据库索引
         await conn.run_sync(create_indexes)

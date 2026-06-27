@@ -117,9 +117,29 @@ async def read_profile(request: Request):
     return templates.TemplateResponse(request, "profile.html")
 
 
+@app.get("/admin", response_class=HTMLResponse)
+async def read_admin_dashboard(request: Request):
+    return templates.TemplateResponse(request, "admin/dashboard.html")
+
 @app.get("/admin/env", response_class=HTMLResponse)
 async def read_admin_env(request: Request):
     return templates.TemplateResponse(request, "admin/env.html")
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def read_admin_users(request: Request):
+    return templates.TemplateResponse(request, "admin/users.html")
+
+@app.get("/admin/experiments", response_class=HTMLResponse)
+async def read_admin_experiments(request: Request):
+    return templates.TemplateResponse(request, "admin/experiments.html")
+
+@app.get("/admin/evaluation", response_class=HTMLResponse)
+async def read_admin_evaluation(request: Request):
+    return templates.TemplateResponse(request, "admin/evaluation.html")
+
+@app.get("/admin/system", response_class=HTMLResponse)
+async def read_admin_system(request: Request):
+    return templates.TemplateResponse(request, "admin/system.html")
 
 @app.get("/settings", response_class=HTMLResponse)
 async def read_settings(request: Request):

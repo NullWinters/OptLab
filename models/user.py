@@ -1,5 +1,7 @@
-from sqlalchemy import Integer, String
+from datetime import datetime
+from sqlalchemy import Integer, String, DateTime
 from sqlalchemy.orm import mapped_column, Mapped
+from sqlalchemy.sql import func
 from pwdlib import PasswordHash
 from . import Base
 
@@ -12,6 +14,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True)
     username: Mapped[str] = mapped_column(String(255), unique=True)
     _password: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     @property
     def password(self):

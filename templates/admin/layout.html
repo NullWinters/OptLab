@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ admin_title | default('后台管理') }} - OptLab{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="/static/css/base/admin.css">
+{% block admin_head %}{% endblock %}
+{% endblock %}
+
+{% block ai_sidebar %}{% endblock %}
+{% block experiment_notes %}{% endblock %}
+
+{% block content %}
+<div class="admin-page-shell">
+
+{# ── 顶部导航（仅 Logo，复用原站结构） ── #}
+<header class="admin-topbar">
+    <div class="topnav-shell topnav-max">
+        <nav class="nav-bar">
+            <a href="/" class="nav-logo" title="返回首页">
+                <i class="fas fa-flask"></i> OptLab
+            </a>
+            <span class="admin-topbar-badge">后台管理</span>
+        </nav>
+    </div>
+</header>
+
+{# ── 认证阶段 ── #}
+<div id="admin-auth-wrap" class="admin-auth-page" style="display:none;">
+    <div id="admin-register-card" class="admin-auth-card" style="display:none;">
+        <h1>管理员注册</h1>
+        <p class="sub">首次访问，请设置管理员账号和密码</p>
+        <p id="admin-setup-hint" style="background:#FFF3E0;color:#E65100;padding:10px 12px;border-radius:8px;font-size:0.84em;margin-bottom:16px;display:none;border:1px solid #FFE0B2;"></p>
+        <form id="admin-register-form">
+            <div class="field">
+                <label for="admin-reg-setup-key">设置密钥</label>
+                <input type="text" id="admin-reg-setup-key" required autocomplete="off" placeholder="启动服务时控制台输出的密钥">
+            </div>
+            <div class="field">
+                <label for="admin-reg-username">用户名</label>
+                <input type="text" id="admin-reg-username" required minlength="3" maxlength="50" autocomplete="username">
+            </div>
+            <div class="field">
+                <label for="admin-reg-password">密码</label>
+                <input type="password" id="admin-reg-password" required minlength="8" maxlength="50" autocomplete="new-password">
+            </div>
+            <div class="field">
+                <label for="admin-reg-confirm">确认密码</label>
+                <input type="password" id="admin-reg-confirm" required minlength="8" maxlength="50">
+            </div>
+            <p id="admin-reg-error" class="alert error"></p>
+            <button type="submit" class="admin-auth-btn">注册</button>
+        </form>
+    </div>
+
+    <div id="admin-login-card" class="admin-auth-card" style="display:none;">
+        <h1>管理员登录</h1>
+        <p class="sub">请输入管理员账号和密码</p>
+        <form id="admin-login-form">
+            <div class="field">
+                <label for="admin-login-username">用户名</label>
+                <input type="text" id="admin-login-username" required autocomplete="username">
+            </div>
+            <div class="field">
+                <label for="admin-login-password">密码</label>
+                <input type="password" id="admin-login-password" required autocomplete="current-password">
+            </div>
+            <p id="admin-login-error" class="alert error"></p>
+            <button type="submit" class="admin-auth-btn">登录</button>
+        </form>
+    </div>
+</div>
+
+{# ── 后台主界面 ── #}
+<div id="admin-main" style="display:none;">
+    <div class="admin-shell">
+        <aside class="admin-sidebar">
+            <div class="admin-sidebar-brand">
+                <h2>OptLab 后台</h2>
+                <div class="sub">管理系统</div>
+            </div>
+            <nav class="admin-sidebar-nav">
+                <a href="/admin" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i> <span>仪表盘</span>
+                </a>
+                <a href="/admin/users" data-page="users">
+                    <i class="fas fa-users"></i> <span>用户管理</span>
+                </a>
+                <a href="/admin/experiments" data-page="experiments">
+                    <i class="fas fa-flask"></i> <span>实验管理</span>
+                </a>
+                <a href="/admin/env" data-page="env">
+                    <i class="fas fa-cog"></i> <span>环境变量</span>
+                </a>
+                <a href="/admin/evaluation" data-page="evaluation">
+                    <i class="fas fa-check-double"></i> <span>评测工作台</span>
+                </a>
+                <a href="/admin/system" data-page="system">
+                    <i class="fas fa-server"></i> <span>系统状态</span>
+                </a>
+            </nav>
+            <div class="admin-sidebar-footer">
+                <button class="admin-sidebar-logout" id="admin-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> <span>退出登录</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="admin-content">
+            {% block admin_content %}{% endblock %}
+            <footer style="text-align:center;color:#BCAAA4;font-size:0.82em;padding:24px 0 8px;margin-top:20px;">
+                <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+            </footer>
+        </main>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin.js"></script>
+{% block admin_scripts %}{% endblock %}
+{% endblock %}
