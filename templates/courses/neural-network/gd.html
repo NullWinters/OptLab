@@ -4,7 +4,6 @@
 
 {% block head %}
 <link rel="stylesheet" href="/static/css/courses/neural-network/gd.css">
-<!--<link rel="stylesheet" href="/static/css/courses/neural-network/introduction.css">-->
 <script src="/static/js/vendors/d3/d3.min.js"></script>
 {% endblock %}
 
@@ -102,11 +101,11 @@
             <div class="gd-panel-section">
                 <h3>数据集</h3>
                 <div class="gd-preset-btns" id="preset-btns">
-                    <button class="gd-preset-btn active" data-preset="sin">sin(x) + noise</button>
-                    <button class="gd-preset-btn" data-preset="quad">x&#178; + noise</button>
-                    <button class="gd-preset-btn" data-preset="abs">|x| + noise</button>
-                    <button class="gd-preset-btn" data-preset="xsine">x&#183;sin(x) + noise</button>
-                    <button class="gd-preset-btn" data-preset="sigmoid">sigmoid(x) + noise</button>
+                    <button class="gd-preset-btn active" id="preset-sin" data-preset="sin">sin(x) + noise</button>
+                    <button class="gd-preset-btn" id="preset-quad" data-preset="quad">x&#178; + noise</button>
+                    <button class="gd-preset-btn" id="preset-abs" data-preset="abs">|x| + noise</button>
+                    <button class="gd-preset-btn" id="preset-xsine" data-preset="xsine">x&#183;sin(x) + noise</button>
+                    <button class="gd-preset-btn" id="preset-sigmoid" data-preset="sigmoid">sigmoid(x) + noise</button>
                 </div>
                 <div class="gd-upload-area" id="upload-area">
                     <span id="upload-text">点击上传 CSV 文件</span>
@@ -138,9 +137,9 @@
             <!-- 拟合情况画布 -->
             <div class="gd-fit-panel" id="fit-panel">
                 <div class="gd-fit-tabs" id="fit-tabs">
-                    <button class="gd-fit-tab active" data-view="fit">坐标系视图</button>
-                    <button class="gd-fit-tab" data-view="loss">损失值视图</button>
-                    <button class="gd-fit-tab" data-view="lr">学习率视图</button>
+                    <button class="gd-fit-tab active" id="fit-tab-fit" data-view="fit">坐标系视图</button>
+                    <button class="gd-fit-tab" id="fit-tab-loss" data-view="loss">损失值视图</button>
+                    <button class="gd-fit-tab" id="fit-tab-lr" data-view="lr">学习率视图</button>
                 </div>
                 <div class="gd-fit-canvas" id="fit-canvas"></div>
                 <button class="gd-reset-btn" id="fit-reset-btn">&#x21ba; 复位</button>
@@ -173,46 +172,72 @@
 </div>
 {% endblock %}
 {% block scripts %}
+<script src="/static/js/courses/neural-network/gd.js"></script>
 <script>
-    window.AI_CONFIG = {
-        PAGE_ID: 'neural_network_gd',
-        GUIDEBOOK: '这是神经网络梯度下降优化实验页面。页面左侧为参数设置面板，右侧上部为网络结构可视化画布，右侧中部为三视图画布，右侧下部为算法控制条。使用流程：设置参数后点击应用参数，然后通过播放/单步运行训练。',
-        BUTTON_REGISTRY: [
-            {id: "add-layer-btn", description: "添加隐藏层按钮", type: "normal"},
-            {id: "optimizer-select", description: "优化器选择下拉框", type: "normal"},
-            {id: "scheduler-select", description: "学习率调度器选择下拉框", type: "normal"},
-            {id: "lr-slider", description: "初始学习率滑块", type: "normal"},
-            {id: "total-epochs", description: "总训练轮数输入框", type: "normal"},
-            {id: "apply-btn", description: "应用参数按钮", type: "normal"},
-            {id: "play-btn", description: "播放按钮", type: "normal"},
-            {id: "pause-btn", description: "暂停按钮", type: "normal"},
-            {id: "step-btn", description: "单步按钮", type: "normal"},
-            {id: "reset-btn", description: "重置按钮", type: "normal"},
-            {id: "speed-slider", description: "训练速度调节滑块", type: "normal"},
-            {id: "network-reset-btn", description: "网络结构画布复位按钮", type: "normal"},
-            {id: "fit-reset-btn", description: "拟合画布复位按钮", type: "normal"}
-        ]
-    };
     window.EXPERIMENT_NOTES_CONFIG = {
         experimentKey: 'neural-network.gd',
         mountSelector: '#exp-notes-mount',
         getPageData: function () {
-            var st = window.NeuralNetworkGD && window.NeuralNetworkGD.getState ? window.NeuralNetworkGD.getState() : {};
+            var st = window.NeuralNetworkGD ? window.NeuralNetworkGD.getState() : {};
             return {
-                algorithm: '神经网络梯度下降优化',
-                network_structure: { layer_sizes: st.layerSizes || [], hidden_activations: st.hiddenActs || [] },
-                optimizer: st.optimizer || '', optimizer_params: st.optParams || {},
-                scheduler: st.scheduler || '', scheduler_params: st.schedParams || {},
-                base_learning_rate: st.baseLr, current_learning_rate: st.currentLr,
-                loss_function: st.lossFn || '', total_epochs: st.totalEpochs,
-                current_epoch: st.currentEpoch, current_loss: st.currentLoss, min_loss: st.minLoss,
-                loss_history: st.lossHistory || [], lr_history: st.lrHistory || [],
-                iteration_log: st.lossHistory || [],
-                convergence_result: st.lossHistory && st.lossHistory.length > 0 ? { final_epoch: st.currentEpoch, final_loss: st.currentLoss, min_loss: st.minLoss } : null,
-                dataset: st.currentPreset || 'custom', data_point_count: (st.dataX || []).length
+                layer_sizes: st.layerSizes || [],
+                hidden_acts: st.hiddenActs || [],
+                optimizer: st.optimizer || '',
+                opt_params: st.optParams || {},
+                scheduler: st.scheduler || '',
+                sched_params: st.schedParams || {},
+                base_lr: st.baseLr || 0,
+                current_lr: st.currentLr || 0,
+                loss_fn: st.lossFn || '',
+                total_epochs: st.totalEpochs || 0,
+                current_epoch: st.currentEpoch || 0,
+                current_loss: st.currentLoss,
+                min_loss: st.minLoss,
+                loss_history: st.lossHistory || [],
+                lr_history: st.lrHistory || [],
+                current_preset: st.currentPreset || '',
+                dataset_size: (st.dataX && st.dataX.length) || 0,
+                behavior: window.ExperimentNotes ? window.ExperimentNotes.getBehavior() : {}
             };
         }
     };
+    window.AI_CONFIG = {
+        PAGE_ID: 'neural_network_gd',
+        BUTTON_REGISTRY: [
+            {id: 'add-layer-btn', description: '添加隐藏层按钮', type: 'normal'},
+            {id: 'optimizer-select', description: '优化器选择下拉框（Momentum / RMSprop / Adam）', type: 'normal'},
+            {id: 'lr-slider', description: '初始学习率滑块', type: 'normal'},
+            {id: 'scheduler-select', description: '学习率调度器选择（StepLR / ExponentialLR / CosineAnnealingLR）', type: 'normal'},
+            {id: 'total-epochs', description: '训练总轮数输入框', type: 'normal'},
+            {id: 'preset-sin', description: '使用 sin(x)+noise 预设数据集', type: 'optional'},
+            {id: 'preset-quad', description: '使用 x²+noise 预设数据集', type: 'optional'},
+            {id: 'preset-abs', description: '使用 |x|+noise 预设数据集', type: 'optional'},
+            {id: 'preset-xsine', description: '使用 x·sin(x)+noise 预设数据集', type: 'optional'},
+            {id: 'preset-sigmoid', description: '使用 sigmoid(x)+noise 预设数据集', type: 'optional'},
+            {id: 'file-input', description: '上传自定义 CSV 数据集文件', type: 'optional'},
+            {id: 'x-col-select', description: '选择 CSV 数据中的 X 列（上传文件后可见）', type: 'optional'},
+            {id: 'y-col-select', description: '选择 CSV 数据中的 Y 列（上传文件后可见）', type: 'optional'},
+            {id: 'apply-btn', description: '应用当前网络结构与参数配置', type: 'normal'},
+            {id: 'network-reset-btn', description: '复位网络结构画布视图', type: 'optional'},
+            {id: 'fit-tab-fit', description: '切换到拟合坐标系视图', type: 'optional'},
+            {id: 'fit-tab-loss', description: '切换到损失值曲线视图', type: 'optional'},
+            {id: 'fit-tab-lr', description: '切换到学习率曲线视图', type: 'optional'},
+            {id: 'fit-reset-btn', description: '复位拟合视图画布', type: 'optional'},
+            {id: 'play-btn', description: '开始训练播放按钮', type: 'normal'},
+            {id: 'pause-btn', description: '暂停训练按钮', type: 'normal'},
+            {id: 'step-btn', description: '单步训练按钮', type: 'normal'},
+            {id: 'reset-btn', description: '重置训练状态按钮', type: 'normal'},
+            {id: 'speed-slider', description: '训练播放速度滑块', type: 'normal'}
+        ],
+        GUIDEBOOK: `
+这是一个全连接神经网络优化技巧对比实验页，用户可以使用不同的 Optimizer, LR Scheduler，对比网络拟合的效果。
+页面左侧为参数面板，可添加隐藏层、选择优化器、调节学习率与调度器、设置训练轮数、选择预设数据集或上传 CSV。
+点击“应用参数”后，右侧网络结构图与拟合视图会更新。
+点击“播放”开始训练，可观察不同优化器（Momentum / RMSprop / Adam）在不同学习率调度策略下的收敛过程。
+右侧上方为网络结构可视化，下方为拟合/损失/学习率视图，可通过标签切换。
+上传 CSV 后会出现 X 列、Y 列选择框，选择后可使用该数据集训练。
+全连接网络层与层之间的神经元相互连接，红色连接线表示对应权重为正数，蓝色连接线表示对应权重为负数，连接线粗细与权重绝对值成正比。
+`
+    };
 </script>
-<script src="/static/js/courses/neural-network/gd.js"></script>
 {% endblock %}

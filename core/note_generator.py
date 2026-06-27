@@ -57,6 +57,33 @@ def _truncate_iteration_log(experiment_data: dict, max_items: int = 40) -> dict:
     return data
 
 
+def _truncate_loss_history(experiment_data: dict, max_items: int = 40) -> dict:
+    """对 loss_history / lr_history 等长数组做头-中-尾截断，避免 LLM 上下文溢出。
+
+    同时附加 _loss_history_summary / _lr_history_summary 提供关键统计量。
+    """
+    data = experiment_data.copy()
+    for key in ("loss_history", "lr_history"):
+        arr = data.get(key)
+        if not isinstance(arr, list) or len(arr) <= max_items:
+            continue
+        original_len = len(arr)
+        head = arr[:10]
+        tail = arr[-5:]
+        mid_start = original_len // 2 - 2
+        mid = arr[mid_start : mid_start + 4] if mid_start > 10 else []
+
+        data[key] = head + [f"... 省略 {original_len - 19} 步 ..."] + mid + tail
+        data[f"_{key}_original_len"] = original_len
+        data[f"_{key}_summary"] = {
+            "initial": arr[0],
+            "final": arr[-1],
+            "min": min(arr),
+            "max": max(arr),
+        }
+    return data
+
+
 def _normalize_experiment_data(experiment_data: Any) -> dict[str, Any]:
     """统一前端上送结构：兼容 {experiment_data:{...}} 包装与异常类型。"""
     if isinstance(experiment_data, dict) and isinstance(
@@ -103,8 +130,9 @@ async def generate_experiment_note(
         logger.error(f"[NoteGen] Failed to initialize LLM: {e}")
         raise
 
-    # 截断迭代日志（如果过长）
+    # 截断迭代日志与损失历史（如果过长）
     truncated_data = _truncate_iteration_log(experiment_data)
+    truncated_data = _truncate_loss_history(truncated_data)
 
     # JSON 序列化
     try:
