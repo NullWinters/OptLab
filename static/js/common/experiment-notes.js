@@ -899,6 +899,12 @@
             });
         }
 
+        // 神经网络梯度下降：要求 loss_history 非空（至少完成一个 epoch 训练）
+        if (_cfg && _cfg.experimentKey === 'neural-network.gd') {
+            var lh = pd ? pd.loss_history : null;
+            return Array.isArray(lh) && lh.length > 0;
+        }
+
         return _payloadHasExperimentData(pd);
     }
 
@@ -935,6 +941,10 @@
             var hasProfit = Array.isArray(profitLog) && profitLog.length > 0;
             if (!hasLs && !hasProfit) return '当前尚无迭代数据，请先运行一次完整拟合实验。';
             return '当前阶段尚无可用的迭代数据，无法生成笔记。';
+        }
+
+        if (experimentKey === 'neural-network.gd') {
+            return '当前尚无训练数据，请先运行一次神经网络训练。';
         }
 
         if (experimentKey === 'svm-smo.smo_iteration.observation') {

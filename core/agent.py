@@ -10,6 +10,7 @@ def get_llm(**overrides):
         "temperature": settings.LLM_TEMPERATURE,
         "api_key": settings.LLM_API_KEY,
         "base_url": settings.LLM_BASE_URL or None,
+        "extra_body": {"thinking": {"type": "disabled"}} # 推理模型不支持 function calling
     }
     kwargs.update(overrides)
     return ChatOpenAI(**kwargs)
@@ -29,7 +30,7 @@ async def ask_assistant(message: str, page_id: str, guidebook: str, buttons: lis
     buttons_desc = _to_button_desc(buttons)
 
     system_prompt = (
-        "你是一个流程观察页面的操作助手，帮助用户理解和使用该页面的各项功能。\n\n"
+        "你是一个页面操作助手，帮助用户理解和使用该页面的各项功能。\n\n"
         f"以下是页面指导书：\n{guidebook}\n\n"
         f"以下是页面上所有可用的UI元素（按钮、输入框、弹窗相关控件、SVG图元）及其信息：\n{buttons_desc}\n\n"
         f"以下是页面图形上下文（二维/三维场景摘要，可能为空）：\n{graph_context or {}}\n\n"
