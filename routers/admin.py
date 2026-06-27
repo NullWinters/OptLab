@@ -23,7 +23,7 @@ from core.env_manager import (
 from dependencies import get_session
 from models import AsyncSession
 from repository.admin_repo import AdminRepository
-from settings import ADMIN_JWT_SECRET, ACCESS_TOKEN_EXPIRE_DELTA, ALGORITHM, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_ID
+from settings import ADMIN_JWT_SECRET, ADMIN_TOKEN_EXPIRE_DELTA, ALGORITHM, LLM_API_KEY, LLM_BASE_URL, LLM_MODEL_ID
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ async def get_admin_auth(request: Request) -> dict:
 
 def _create_admin_token(username: str) -> str:
     secret = _get_admin_jwt_secret()
-    expire = datetime.now(timezone.utc) + ACCESS_TOKEN_EXPIRE_DELTA
+    expire = datetime.now(timezone.utc) + ADMIN_TOKEN_EXPIRE_DELTA
     payload = {"sub": "admin", "username": username, "exp": expire}
     return jwt.encode(payload, secret, algorithm=ALGORITHM)
 
