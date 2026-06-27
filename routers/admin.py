@@ -568,6 +568,30 @@ async def list_notes(
     }
 
 
+@router.get("/notes/{note_id}")
+async def get_note_detail(
+    note_id: int,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    note = await repo.get_note_detail(note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="笔记不存在。")
+    return note
+
+
+@router.delete("/notes/{note_id}")
+async def delete_note(
+    note_id: int,
+    repo: AdminRepository = Depends(_admin_repo),
+    auth: dict = Depends(get_admin_auth),
+):
+    ok = await repo.delete_note(note_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="笔记不存在。")
+    return {"message": "笔记已删除。"}
+
+
 # ═══════════════════════════════════════════════════════════════
 # 聊天会话管理（管理员视图）
 # ═══════════════════════════════════════════════════════════════

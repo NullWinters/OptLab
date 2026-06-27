@@ -281,11 +281,40 @@ class AdminRepository:
                     "experiment_key": n.experiment_key,
                     "user_id": n.user_id,
                     "username": username or "—",
-                    "content": (n.content[:200] + "..." if n.content and len(n.content) > 200 else n.content),
+                    "content_preview": (n.content[:200] + "..." if n.content and len(n.content) > 200 else n.content),
                     "created_at": n.created_at.isoformat() if n.created_at else None,
                     "updated_at": n.updated_at.isoformat() if n.updated_at else None,
                 })
             return notes, total
+
+    async def get_note_detail(self, note_id: int) -> dict | None:
+        async with self.session.begin():
+            n = await self.session.get(NoteItem, note_id)
+            if not n:
+                return None
+            username = None
+            if n.user_id:
+                u = await self.session.get(User, n.user_id)
+                username = u.username if u else None
+            return {
+                "id": n.id,
+                "title": n.title,
+                "experiment_key": n.experiment_key,
+                "user_id": n.user_id,
+                "username": username or "—",
+                "content": n.content or "",
+                "sort_order": n.sort_order,
+                "created_at": n.created_at.isoformat() if n.created_at else None,
+                "updated_at": n.updated_at.isoformat() if n.updated_at else None,
+            }
+
+    async def delete_note(self, note_id: int) -> bool:
+        async with self.session.begin():
+            n = await self.session.get(NoteItem, note_id)
+            if not n:
+                return False
+            await self.session.delete(n)
+            return True
 
     # ── 聊天会话管理 ───────────────────────────────────────
 
