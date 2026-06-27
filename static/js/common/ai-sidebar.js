@@ -1,11 +1,37 @@
 (function () {
     // 高亮状态
-    let highlightIds = [];
-    let currentHighlightIndex = -1;
     let uiRegistryMap = new Map();
-    let optionalAdvanceTimer = null;
     const OPTIONAL_ADVANCE_MS = 2600;
     const TYPEWRITER_SPEED_MS = 18;
+
+    // DOM 引用
+    const highlightOverlay = document.getElementById('ai-highlight-overlay');
+    const nextStepBtn = document.getElementById('ai-next-step-btn');
+
+    // 模块化高亮引擎
+    const highlighter = new AIHighlight({
+        overlay: highlightOverlay,
+        optionalAdvanceMs: OPTIONAL_ADVANCE_MS,
+        isOptional: function (id) {
+            const meta = uiRegistryMap.get(id);
+            const el = document.getElementById(id);
+            const isSvg = (typeof SVGElement !== 'undefined' && el instanceof SVGElement) ||
+                (el && el.ownerSVGElement) ||
+                (el && el.tagName.toLowerCase() === 'svg');
+            return (meta && (meta.type === 'optional' || meta.type === 'svg')) || isSvg;
+        },
+        onStep: function (id, stepNo) {
+            addMessage(stepMessageById(id, stepNo), 'bot');
+            if (nextStepBtn) nextStepBtn.style.display = 'inline-flex';
+        },
+        onFinish: function () {
+            addMessage('演示结束', 'system');
+            if (nextStepBtn) nextStepBtn.style.display = 'none';
+        },
+        onClear: function () {
+            if (nextStepBtn) nextStepBtn.style.display = 'none';
+        }
+    });
 
     // 会话状态
     let currentSessionId = null;
@@ -19,12 +45,10 @@
     const chatMessages = document.getElementById('ai-chat-messages');
     const inputField = document.getElementById('ai-input');
     const sendBtn = document.getElementById('ai-send-btn');
-    const highlightOverlay = document.getElementById('ai-highlight-overlay');
     const resetBtn = document.getElementById('ai-reset-btn');
     const resetModal = document.getElementById('ai-reset-modal');
     const resetConfirm = document.getElementById('ai-reset-confirm');
     const resetCancel = document.getElementById('ai-reset-cancel');
-    const nextStepBtn = document.getElementById('ai-next-step-btn');
 
     if (!sidebar || !toggleBtn) return;
 
@@ -87,6 +111,7 @@
         document.querySelectorAll(interactiveSelector).forEach(function (el) {
             const id = el.id;
             if (!id || map.has(id)) return;
+            if (typeof AIHighlight !== 'undefined' && !AIHighlight.isElementVisible(el)) return;
             map.set(id, {
                 id: id,
                 description: inferDescription(el),
@@ -98,6 +123,7 @@
         document.querySelectorAll(graphicSelector).forEach(function (el) {
             const id = el.id;
             if (!id || map.has(id)) return;
+            if (typeof AIHighlight !== 'undefined' && !AIHighlight.isElementVisible(el)) return;
             map.set(id, {
                 id: id,
                 description: inferDescription(el),
@@ -417,9 +443,12 @@
             loadingEl.remove();
 
             if (data.highlight_ids && data.highlight_ids.length > 0) {
-                highlightIds = data.highlight_ids.filter(function (id) {
+                const filteredIds = data.highlight_ids.filter(function (id) {
                     const el = document.getElementById(id);
                     if (!el) return false;
+                    // 跳过当前不可见的控件
+                    if (typeof AIHighlight !== 'undefined' && !AIHighlight.isElementVisible(el)) return false;
+
                     const meta = uiRegistryMap.get(id);
                     // 过滤掉类型为 svg 的按钮，不进行交互引导
                     if (meta && meta.type === 'svg') return false;
@@ -439,11 +468,10 @@
                     return !isSvg;
 
                 });
-                currentHighlightIndex = 0;
-                if (highlightIds.length > 0) {
+                if (filteredIds.length > 0) {
                     await renderReplyBlocks(data);
-                    addMessage(stepMessageById(highlightIds[0], 1), 'bot');
-                    highlightCurrentButton();
+                    highlighter.setSequence(filteredIds);
+                    highlighter.start();
                     return;
                 }
             }
@@ -572,130 +600,13 @@
         retryPendingAuthRequest();
     });
 
-    // ========== 高亮系统 ==========
-    function advanceGuideStep() {
-        if (optionalAdvanceTimer) {
-            clearTimeout(optionalAdvanceTimer);
-            optionalAdvanceTimer = null;
-        }
-        const currentId = highlightIds[currentHighlightIndex];
-        const currentEl = currentId ? document.getElementById(currentId) : null;
-        if (currentEl && currentEl._aiClickHandler) {
-            currentEl.removeEventListener('click', currentEl._aiClickHandler);
-            delete currentEl._aiClickHandler;
-        }
-
-        currentHighlightIndex++;
-        if (currentHighlightIndex < highlightIds.length) {
-            addMessage(stepMessageById(highlightIds[currentHighlightIndex], currentHighlightIndex + 1), 'bot');
-            highlightCurrentButton();
-        } else {
-            clearHighlights();
-            addMessage('演示结束', 'system');
-        }
-    }
-
-    function highlightCurrentButton() {
-        if (currentHighlightIndex < 0 || currentHighlightIndex >= highlightIds.length) {
-            clearHighlights();
-            return;
-        }
-
-        const targetId = highlightIds[currentHighlightIndex];
-        const targetEl = document.getElementById(targetId);
-        const targetMeta = uiRegistryMap.get(targetId) || {type: 'normal'};
-
-        // 清理旧定时器，防止重叠
-        if (optionalAdvanceTimer) {
-            clearTimeout(optionalAdvanceTimer);
-            optionalAdvanceTimer = null;
-        }
-
-        if (!targetEl) {
-            currentHighlightIndex++;
-            highlightCurrentButton();
-            return;
-        }
-
-        // 清理旧点击事件
-        if (targetEl._aiClickHandler) {
-            targetEl.removeEventListener('click', targetEl._aiClickHandler);
-            delete targetEl._aiClickHandler;
-        }
-
-        targetEl.scrollIntoView({behavior: 'smooth', block: 'center'});
-
-        setTimeout(function () {
-            positionOverlay(targetEl);
-            highlightOverlay.style.display = 'block';
-        }, 350);
-
-        if (nextStepBtn) nextStepBtn.style.display = 'inline-flex';
-
-        // 识别是否为 SVG 元素（针对自动生成的 ID 或 动态 Registry 未命中）
-        const isSvgElement = (typeof SVGElement !== 'undefined' && targetEl instanceof SVGElement) ||
-            (targetEl.ownerSVGElement) ||
-            (targetEl.tagName.toLowerCase() === 'svg');
-
-        // 为当前目标绑定点击事件，点击后跳转到下一个
-        const metaType = targetMeta.type;
-        if (metaType === 'optional' || metaType === 'svg' || isSvgElement) {
-            optionalAdvanceTimer = setTimeout(function () {
-                advanceGuideStep();
-            }, OPTIONAL_ADVANCE_MS);
-        } else {
-            targetEl._aiClickHandler = function () {
-                advanceGuideStep();
-            };
-            targetEl.addEventListener('click', targetEl._aiClickHandler, {once: true});
-        }
-    }
-
-    function positionOverlay(el) {
-        const rect = el.getBoundingClientRect();
-        const pad = 4;
-        highlightOverlay.style.left = (rect.left - pad) + 'px';
-        highlightOverlay.style.top = (rect.top - pad) + 'px';
-        highlightOverlay.style.width = (rect.width + pad * 2) + 'px';
-        highlightOverlay.style.height = (rect.height + pad * 2) + 'px';
-    }
-
+    // ========== 高亮系统（基于 AIHighlight 模块） ==========
     function clearHighlights() {
-        if (optionalAdvanceTimer) {
-            clearTimeout(optionalAdvanceTimer);
-            optionalAdvanceTimer = null;
-        }
-        if (highlightOverlay) highlightOverlay.style.display = 'none';
-        if (nextStepBtn) nextStepBtn.style.display = 'none';
-        highlightIds.forEach(function (id) {
-            const btn = document.getElementById(id);
-            if (btn && btn._aiClickHandler) {
-                btn.removeEventListener('click', btn._aiClickHandler);
-                delete btn._aiClickHandler;
-            }
-        });
-        highlightIds = [];
-        currentHighlightIndex = -1;
+        highlighter.clear();
     }
 
-    // 滚动和窗口变化时重新定位高亮遮罩
     function repositionOverlay() {
-        if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {
-            const el = document.getElementById(highlightIds[currentHighlightIndex]);
-            if (el && highlightOverlay && highlightOverlay.style.display !== 'none') {
-                const rect = el.getBoundingClientRect();
-                if (rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.right >= 0) {
-                    positionOverlay(el);
-                } else {
-                    setTimeout(function () {
-                        const nextRect = el.getBoundingClientRect();
-                        if (nextRect.width > 0 && nextRect.height > 0) {
-                            positionOverlay(el);
-                        }
-                    }, 120);
-                }
-            }
-        }
+        highlighter.reposition();
     }
 
     window.addEventListener('scroll', repositionOverlay, true);
@@ -719,8 +630,8 @@
     }, true);
     if (nextStepBtn) {
         nextStepBtn.addEventListener('click', function () {
-            if (currentHighlightIndex >= 0 && currentHighlightIndex < highlightIds.length) {
-                advanceGuideStep();
+            if (highlighter.currentId()) {
+                highlighter.next();
             }
         });
     }
