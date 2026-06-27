@@ -180,12 +180,124 @@
             });
         }
 
+        // 忘记密码链接 → 显示重置密码卡片
+        var forgotLink = document.getElementById('admin-forgot-link');
+        if (forgotLink) {
+            forgotLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('admin-login-card').style.display = 'none';
+                document.getElementById('admin-reset-card').style.display = '';
+            });
+        }
+
+        // 返回登录链接
+        var resetBack = document.getElementById('admin-reset-back');
+        if (resetBack) {
+            resetBack.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('admin-reset-card').style.display = 'none';
+                document.getElementById('admin-login-card').style.display = '';
+            });
+        }
+
+        // 忘记密码页：生成设置密钥按钮
+        var requestKeyBtn = document.getElementById('admin-request-key-btn');
+        if (requestKeyBtn) {
+            requestKeyBtn.addEventListener('click', async function() {
+                var btn = this;
+                var result = document.getElementById('admin-request-key-result');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="admin-spinner" style="width:12px;height:12px;border-width:2px;"></span> 生成中...';
+                result.textContent = '';
+                try {
+                    var data = await adminApi('/api/admin/request-reset-key', { method: 'POST' });
+                    result.innerHTML = '<span style="color:#E65100;"><i class="fas fa-check-circle"></i> 密钥已生成并写入 .env 文件</span><br><span style="color:#9E9E9E;">完整密钥已输出到服务端控制台，请查看终端窗口。提示: ' + escHtml(data.hint) + '</span>';
+                } catch (e) {
+                    result.textContent = '生成失败: ' + e.message;
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-key"></i> 生成设置密钥（写入 .env）';
+            });
+        }
+
+        // 重置密码表单
+        var resetForm = document.getElementById('admin-reset-form');
+        if (resetForm) {
+            resetForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                var username = document.getElementById('admin-reset-username').value.trim();
+                var setupKey = document.getElementById('admin-reset-setup-key').value.trim();
+                var password = document.getElementById('admin-reset-password').value;
+                var confirm = document.getElementById('admin-reset-confirm').value;
+                var errEl = document.getElementById('admin-reset-error');
+                errEl.style.display = 'none';
+                if (password !== confirm) {
+                    errEl.textContent = '两次输入的密码不一致。';
+                    errEl.style.display = 'block';
+                    return;
+                }
+                try {
+                    var data = await adminApi('/api/admin/reset-password', {
+                        method: 'POST',
+                        body: JSON.stringify({ username: username, password: password, confirm_password: confirm, setup_key: setupKey }),
+                    });
+                    setToken(data.token);
+                    localStorage.setItem(ADMIN_USERNAME_KEY, data.username);
+                    document.getElementById('admin-reset-card').style.display = 'none';
+                    showMain();
+                    highlightSidebar();
+                    window.dispatchEvent(new Event('admin-authenticated'));
+                } catch (err) {
+                    errEl.textContent = err.message;
+                    errEl.style.display = 'block';
+                }
+            });
+        }
+
         var logoutBtn = document.getElementById('admin-logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', function () {
                 clearToken();
                 showAuth();
             });
+        }
+
+        // 侧边栏折叠/展开
+        var toggleBtn = document.getElementById('admin-sidebar-toggle');
+        if (toggleBtn) {
+            function toggleSidebar() {
+                var sb = document.querySelector('.admin-sidebar');
+                var content = document.querySelector('.admin-content');
+                if (!sb) return;
+                var collapsed = sb.classList.toggle('collapsed');
+                if (content) {
+                    content.style.marginLeft = collapsed ? '60px' : '240px';
+                }
+                var icon = toggleBtn.querySelector('i');
+                var label = toggleBtn.querySelector('span');
+                if (collapsed) {
+                    if (icon) { icon.classList.remove('fa-chevron-left'); icon.classList.add('fa-chevron-right'); }
+                    if (label) label.textContent = '';
+                } else {
+                    if (icon) { icon.classList.remove('fa-chevron-right'); icon.classList.add('fa-chevron-left'); }
+                    if (label) label.textContent = '折叠';
+                }
+                localStorage.setItem('optlab_admin_sidebar_collapsed', collapsed ? '1' : '0');
+            }
+            toggleBtn.addEventListener('click', toggleSidebar);
+            // 恢复上次折叠状态
+            if (localStorage.getItem('optlab_admin_sidebar_collapsed') === '1') {
+                var sb = document.querySelector('.admin-sidebar');
+                var content = document.querySelector('.admin-content');
+                if (sb) {
+                    sb.classList.add('collapsed');
+                    if (content) content.style.marginLeft = '60px';
+                    var icon = toggleBtn.querySelector('i');
+                    var label = toggleBtn.querySelector('span');
+                    if (icon) { icon.classList.remove('fa-chevron-left'); icon.classList.add('fa-chevron-right'); }
+                    if (label) label.textContent = '';
+                }
+            }
         }
 
         // 非认证页面初始化
@@ -195,6 +307,7 @@
             if (token) {
                 showMain();
                 highlightSidebar();
+                window.dispatchEvent(new Event('admin-authenticated'));
             } else {
                 showAuth();
             }

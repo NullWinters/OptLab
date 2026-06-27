@@ -4,11 +4,12 @@
 =================================================================== */
 
 :root {
+    --admin-topbar-h: 52px;
     --admin-sidebar-w: 240px;
+    --admin-sidebar-collapsed-w: 60px;
     --admin-primary: #D84315;
     --admin-primary-dark: #BF360C;
     --admin-accent: #FF8F00;
-    --admin-bg: #FFF8F0;
     --admin-sidebar-bg: #3E2723;
     --admin-sidebar-text: #D7CCC8;
     --admin-sidebar-hover: #4E342E;
@@ -22,14 +23,24 @@
     --admin-shadow: 0 2px 12px rgba(62, 39, 35, 0.06);
 }
 
+/* ===== 全局背景覆盖（消除上下白色缝隙） ===== */
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #FFFAF0;
+}
+
 /* ===== 页面外壳 ===== */
 .admin-page-shell {
     min-height: 100vh;
     background: #FFFAF0;
 }
 
-/* ===== 顶部导航条（透明融入背景，与原站结构一致） ===== */
+/* ===== 顶部导航条（固定高度，融入背景） ===== */
 .admin-topbar {
+    height: var(--admin-topbar-h);
+    display: flex;
+    align-items: center;
     background: transparent;
 }
 
@@ -39,46 +50,48 @@
 }
 
 .admin-topbar .nav-bar {
-    padding: 0.72rem 0;
+    padding: 0;
 }
 
 .admin-topbar .nav-logo {
     color: #D84315;
 }
 
-.admin-topbar-badge {
-    display: inline-block;
-    padding: 3px 12px;
-    background: linear-gradient(135deg, #D84315, #FF8F00);
-    color: #fff;
-    border-radius: 999px;
-    font-size: 0.75em;
+.admin-topbar-label {
+    font-size: 1.05em;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    margin-left: 10px;
+    color: var(--admin-text-secondary);
+    letter-spacing: 0.05em;
+    margin-left: auto;
 }
 
 /* ===== 布局壳 ===== */
 .admin-shell {
     display: flex;
-    min-height: calc(100vh - 50px);
+    min-height: calc(100vh - var(--admin-topbar-h));
 }
 
-/* ===== 侧边栏（圆角，对齐内容区） ===== */
+/* ===== 侧边栏 ===== */
 .admin-sidebar {
     position: fixed;
-    top: 50px;
+    top: var(--admin-topbar-h);
     left: 0;
     width: var(--admin-sidebar-w);
-    height: calc(100vh - 50px);
+    height: calc(100vh - var(--admin-topbar-h));
     background: var(--admin-sidebar-bg);
     overflow-y: auto;
+    overflow-x: hidden;
     z-index: 100;
     display: flex;
     flex-direction: column;
     border-radius: 0 16px 16px 0;
+    transition: width 0.25s ease;
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+.admin-sidebar.collapsed {
+    width: var(--admin-sidebar-collapsed-w);
 }
 
 .admin-sidebar::-webkit-scrollbar {
@@ -90,8 +103,13 @@
 }
 
 .admin-sidebar-brand {
-    padding: 18px 20px 14px;
+    padding: 18px 18px 14px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-brand {
+    padding: 18px 12px 14px;
 }
 
 .admin-sidebar-brand h2 {
@@ -100,6 +118,11 @@
     color: #fff;
     font-weight: 700;
     letter-spacing: 0.03em;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-brand h2,
+.admin-sidebar.collapsed .admin-sidebar-brand .sub {
+    display: none;
 }
 
 .admin-sidebar-brand .sub {
@@ -120,13 +143,24 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 11px 20px;
+    padding: 11px 18px;
     color: var(--admin-sidebar-text);
     text-decoration: none;
     font-size: 0.92em;
     font-weight: 500;
+    white-space: nowrap;
     transition: all 0.18s ease;
     border-left: 3px solid transparent;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-nav a {
+    justify-content: center;
+    padding: 11px 0;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-nav a span,
+.admin-sidebar.collapsed .admin-sidebar-logout span {
+    display: none;
 }
 
 .admin-sidebar-nav a:hover {
@@ -147,26 +181,70 @@
     text-align: center;
     font-size: 0.9em;
     opacity: 0.8;
+    flex-shrink: 0;
 }
 
+/* ===== 侧边栏底部 ===== */
 .admin-sidebar-footer {
-    padding: 14px 20px;
+    padding: 10px 12px;
     border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
+/* 折叠按钮 */
+.admin-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 7px 0;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    color: #BCAAA4;
+    font-size: 0.8em;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.18s;
+}
+
+.admin-sidebar-toggle:hover {
+    border-color: rgba(255,255,255,0.3);
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+}
+
+.admin-sidebar.collapsed .admin-sidebar-toggle {
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.admin-sidebar-toggle i {
+    transition: transform 0.25s ease;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+/* 退出按钮 */
 .admin-sidebar-logout {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 6px;
     background: none;
     border: 1px solid rgba(255,255,255,0.15);
     border-radius: 8px;
     color: #BCAAA4;
-    padding: 8px 14px;
-    font-size: 0.85em;
+    padding: 7px 0;
+    font-size: 0.82em;
     cursor: pointer;
     width: 100%;
-    transition: all 0.2s;
+    transition: all 0.18s;
     font-family: inherit;
 }
 
@@ -183,6 +261,11 @@
     min-width: 0;
     padding: 18px 32px 40px;
     box-sizing: border-box;
+    transition: margin-left 0.25s ease;
+}
+
+.admin-sidebar.collapsed ~ .admin-content {
+    margin-left: var(--admin-sidebar-collapsed-w);
 }
 
 /* ===== 认证页（登录/注册嵌入式） ===== */
@@ -190,7 +273,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 50px);
+    min-height: calc(100vh - var(--admin-topbar-h));
     background: #FFFAF0;
 }
 
@@ -600,17 +683,6 @@
     color: var(--admin-primary);
 }
 
-.admin-modal-close {
-    position: absolute;
-    top: 16px;
-    right: 20px;
-    background: none;
-    border: none;
-    font-size: 1.4em;
-    cursor: pointer;
-    color: #BCAAA4;
-}
-
 .admin-modal-actions {
     display: flex;
     gap: 10px;
@@ -634,7 +706,7 @@
     word-break: break-all;
 }
 
-/* ===== 评测工作台（集成到后台） ===== */
+/* ===== 评测工作台 ===== */
 .admin-eval-hero {
     background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
     border: 1px solid #ffcc80;
@@ -701,7 +773,6 @@
     font-weight: 700;
 }
 
-/* 评测条形图 */
 .admin-eval-bar-group {
     min-width: 260px;
     display: grid;
@@ -731,7 +802,6 @@
     border-radius: 999px;
 }
 
-/* 问题标签 */
 .admin-eval-issue-chip {
     display: inline-block;
     border-radius: 999px;
@@ -946,14 +1016,28 @@
     border: 1px solid #FFE0B2;
 }
 
+/* ===== 页脚 ===== */
+.admin-page-footer {
+    text-align: center;
+    color: #BCAAA4;
+    font-size: 0.82em;
+    padding: 20px 0 16px;
+    background: transparent;
+}
+
+.admin-page-footer p {
+    margin: 0;
+}
+
 /* ===== 响应式 ===== */
 @media (max-width: 860px) {
     .admin-sidebar {
-        width: 60px;
+        width: var(--admin-sidebar-collapsed-w);
     }
     .admin-sidebar-brand h2,
     .admin-sidebar-brand .sub,
     .admin-sidebar-nav a span,
+    .admin-sidebar-toggle span,
     .admin-sidebar-logout span {
         display: none;
     }
@@ -964,13 +1048,19 @@
     .admin-sidebar-nav a i {
         margin: 0;
     }
-    .admin-content {
-        margin-left: 60px;
-        padding: 20px 16px 32px;
+    .admin-sidebar-footer {
+        padding: 10px 6px;
+    }
+    .admin-sidebar-toggle {
+        justify-content: center;
     }
     .admin-sidebar-logout {
         justify-content: center;
-        padding: 10px;
+        padding: 10px 0;
+    }
+    .admin-content {
+        margin-left: var(--admin-sidebar-collapsed-w);
+        padding: 16px 16px 32px;
     }
     .admin-env-field {
         grid-template-columns: 1fr;

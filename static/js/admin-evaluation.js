@@ -5,10 +5,14 @@
 (function () {
     'use strict';
 
-    if (!ensureAdminAuth()) {
-        window.addEventListener('admin-authenticated', init, { once: true });
-    } else {
-        init();
+    // 等待认证完成后初始化
+    window.addEventListener('admin-authenticated', init, { once: true });
+    if (window.getAdminToken && window.getAdminToken()) {
+        var main = document.getElementById('admin-main');
+        if (main && main.style.display !== 'none') {
+            window.removeEventListener('admin-authenticated', init);
+            init();
+        }
     }
 
     var lastResult = null;
