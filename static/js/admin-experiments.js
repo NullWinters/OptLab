@@ -5,20 +5,25 @@
     'use strict';
 
     var currentTab = 'experiments';
-    var filters = { exp: { page: 1, type: '', user: '' }, note: { page: 1, key: '', user: '' }, chat: { page: 1, user: '' } };
+    var filters = {
+        exp: { page: 1, type: '', user: '' },
+        note: { page: 1, key: '', user: '' },
+        chat: { page: 1, user: '' }
+    };
     var filterTimers = {};
+    var pendingNoteDeleteId = null;
 
     function init() {
         loadTypes();
         loadCurrentTab();
-        // 标签页切换
         document.querySelectorAll('.admin-tab-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.admin-tab-btn').forEach(function(b) { b.classList.remove('active'); });
                 btn.classList.add('active');
                 currentTab = btn.dataset.tab;
                 document.querySelectorAll('.admin-tab-panel').forEach(function(p) { p.style.display = 'none'; });
-                document.getElementById('tab-' + currentTab).style.display = '';
+                var panel = document.getElementById('tab-' + currentTab);
+                if (panel) panel.style.display = '';
                 loadCurrentTab();
             });
         });
@@ -77,7 +82,18 @@
             if (fs.type) params += '&source_page=' + encodeURIComponent(fs.type);
             if (fs.user) params += '&user_id=' + encodeURIComponent(fs.user);
             var data = await adminApi('/api/admin/experiments?' + params);
-            renderExperiments(data.experiments);
+            if (!data.experiments || data.experiments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="admin-empty">暂无实验记录</div></td></tr>';
+            } else {
+                tbody.innerHTML = data.experiments.map(function(e) {
+                    return '<tr><td>' + e.id + '</td><td>' + escHtml(e.alias || '—') + '</td><td>' + escHtml(e.source_page || '—') +
+                        '</td><td>' + escHtml(e.username) + '</td><td>' + fmtTime(e.created_at) + '</td>' +
+                        '<td><button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="showExpDetail(' + e.id + ')">' +
+                        '<i class="fas fa-eye"></i> 详情</button> ' +
+                        '<button class="admin-btn admin-btn-danger admin-btn-sm" onclick="confirmDeleteExp(' + e.id + ')">' +
+                        '<i class="fas fa-trash"></i> 删除</button></td></tr>';
+                }).join('');
+            }
             var pg = data.pagination;
             var pagEl = document.getElementById('exp-pagination');
             if (pagEl) pagEl.innerHTML = renderPagination(pg.page, pg.total_pages, 'loadExperiments');
@@ -85,20 +101,6 @@
             tbody.innerHTML = '<tr><td colspan="6"><div class="admin-alert error">加载失败: ' + escHtml(e.message) + '</div></td></tr>';
         }
     };
-
-    function renderExperiments(items) {
-        var tbody = document.getElementById('exp-tbody');
-        if (!tbody) return;
-        if (!items || items.length === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="admin-empty">暂无</div></td></tr>'; return; }
-        tbody.innerHTML = items.map(function(e) {
-            return '<tr><td>' + e.id + '</td><td>' + escHtml(e.alias || '—') + '</td><td>' + escHtml(e.source_page || '—') +
-                '</td><td>' + escHtml(e.username) + '</td><td>' + fmtTime(e.created_at) + '</td>' +
-                '<td><button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="showExpDetail(' + e.id + ')">' +
-                '<i class="fas fa-eye"></i> 详情</button> ' +
-                '<button class="admin-btn admin-btn-danger admin-btn-sm" onclick="confirmDeleteExp(' + e.id + ')">' +
-                '<i class="fas fa-trash"></i> 删除</button></td></tr>';
-        }).join('');
-    }
 
     // ── 笔记 ──
     window.loadNotes = async function(page) {
@@ -116,12 +118,18 @@
             if (fs.key) params += '&experiment_key=' + encodeURIComponent(fs.key);
             if (fs.user) params += '&user_id=' + encodeURIComponent(fs.user);
             var data = await adminApi('/api/admin/notes?' + params);
-            renderTable(data.notes, 'note-tbody', function(n) {
-                return '<tr><td>' + n.id + '</td><td>' + escHtml(n.title || '—') + '</td><td>' + escHtml(n.experiment_key) +
-                    '</td><td>' + escHtml(n.username) + '</td><td>' + fmtTime(n.updated_at) + '</td>' +
-                    '<td><button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="showNoteDetail(' + n.id + ')">' +
-                    '<i class="fas fa-eye"></i> 查看</button></td></tr>';
-            });
+            if (!data.notes || data.notes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6"><div class="admin-empty">暂无笔记</div></td></tr>';
+            } else {
+                tbody.innerHTML = data.notes.map(function(n) {
+                    return '<tr><td>' + n.id + '</td><td>' + escHtml(n.title || '—') + '</td><td>' + escHtml(n.experiment_key) +
+                        '</td><td>' + escHtml(n.username) + '</td><td>' + fmtTime(n.updated_at) + '</td>' +
+                        '<td><button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="showNoteDetail(' + n.id + ')">' +
+                        '<i class="fas fa-eye"></i> 查看</button> ' +
+                        '<button class="admin-btn admin-btn-danger admin-btn-sm" onclick="confirmDeleteNote(' + n.id + ',\'' + escHtml(n.title || '笔记') + '\')">' +
+                        '<i class="fas fa-trash"></i> 删除</button></td></tr>';
+                }).join('');
+            }
             var pg = data.pagination;
             var pagEl = document.getElementById('note-pagination');
             if (pagEl) pagEl.innerHTML = renderPagination(pg.page, pg.total_pages, 'loadNotes');
@@ -129,6 +137,81 @@
             tbody.innerHTML = '<tr><td colspan="6"><div class="admin-alert error">加载失败: ' + escHtml(e.message) + '</div></td></tr>';
         }
     };
+
+    // ── 笔记详情（Markdown + LaTeX 渲染） ──
+    window.showNoteDetail = async function(id) {
+        var modal = document.getElementById('note-detail-modal');
+        var contentEl = document.getElementById('note-detail-content');
+        if (modal) modal.style.display = '';
+        if (contentEl) contentEl.innerHTML = '<div class="admin-loading"><span class="admin-spinner"></span>加载中...</div>';
+        try {
+            var note = await adminApi('/api/admin/notes/' + id);
+            document.getElementById('note-detail-title').textContent = note.title || '笔记 #' + note.id;
+            document.getElementById('note-detail-key').textContent = note.experiment_key || '—';
+            document.getElementById('note-detail-user').textContent = note.username || '—';
+            document.getElementById('note-detail-time').textContent = fmtTime(note.updated_at);
+
+            var rawContent = note.content || '(空)';
+            var htmlContent = renderMarkdown(rawContent);
+            if (contentEl) {
+                contentEl.className = 'admin-note-render';
+                contentEl.innerHTML = htmlContent;
+            }
+
+            // 触发 MathJax 重新渲染
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                MathJax.typesetPromise([contentEl]).catch(function(err) {
+                    console.warn('MathJax render error:', err);
+                });
+            }
+        } catch(e) {
+            if (contentEl) contentEl.innerHTML = '<div class="admin-alert error">加载失败: ' + escHtml(e.message) + '</div>';
+        }
+    };
+
+    window.closeNoteDetail = function() {
+        var el = document.getElementById('note-detail-modal');
+        if (el) el.style.display = 'none';
+    };
+
+    // ── 笔记删除 ──
+    window.confirmDeleteNote = function(id, title) {
+        pendingNoteDeleteId = id;
+        var el = document.getElementById('note-delete-msg');
+        if (el) el.innerHTML = '确定删除笔记 <strong>' + escHtml(title) + '</strong> (#' + id + ') 吗？此操作不可撤销。';
+        document.getElementById('note-delete-modal').style.display = '';
+        document.getElementById('note-delete-btn').onclick = executeDeleteNote;
+    };
+
+    window.closeNoteDelete = function() {
+        document.getElementById('note-delete-modal').style.display = 'none';
+        pendingNoteDeleteId = null;
+    };
+
+    async function executeDeleteNote() {
+        if (!pendingNoteDeleteId) return;
+        var btn = document.getElementById('note-delete-btn');
+        btn.disabled = true; btn.textContent = '删除中...';
+        try {
+            await adminApi('/api/admin/notes/' + pendingNoteDeleteId, { method: 'DELETE' });
+            closeNoteDelete();
+            loadNotes();
+        } catch(e) { alert('删除失败: ' + e.message); }
+        btn.disabled = false; btn.textContent = '确认删除';
+    }
+
+    // ── Markdown 渲染 ──
+    function renderMarkdown(text) {
+        if (typeof marked !== 'undefined' && marked.parse) {
+            try {
+                return marked.parse(text);
+            } catch(e) {
+                console.warn('Markdown parse error:', e);
+            }
+        }
+        // 回退：转义 HTML 并保留换行
+        return '<pre style="white-space:pre-wrap;font-family:inherit;">' + escHtml(text) + '</pre>';
+    }
 
     // ── 聊天会话 ──
     window.loadChats = async function(page) {
@@ -143,13 +226,17 @@
             var params = 'page=' + fs.page + '&page_size=20';
             if (fs.user) params += '&user_id=' + encodeURIComponent(fs.user);
             var data = await adminApi('/api/admin/chats?' + params);
-            renderTable(data.chats, 'chat-tbody', function(c) {
-                return '<tr><td class="mono">' + escHtml(c.id).substring(0, 8) + '...</td>' +
-                    '<td>' + escHtml(c.username) + '</td><td>' + escHtml(c.page_id) + '</td>' +
-                    '<td>' + c.message_count + '</td>' +
-                    '<td>' + (c.is_active ? '<span style="color:#2E7D32;">活跃</span>' : '<span style="color:#9E9E9E;">已关闭</span>') + '</td>' +
-                    '<td>' + fmtTime(c.created_at) + '</td><td>' + fmtTime(c.updated_at) + '</td></tr>';
-            });
+            if (!data.chats || data.chats.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7"><div class="admin-empty">暂无会话</div></td></tr>';
+            } else {
+                tbody.innerHTML = data.chats.map(function(c) {
+                    return '<tr><td class="mono">' + escHtml(String(c.id).substring(0, 8)) + '...</td>' +
+                        '<td>' + escHtml(c.username) + '</td><td>' + escHtml(c.page_id) + '</td>' +
+                        '<td>' + c.message_count + '</td>' +
+                        '<td>' + (c.is_active ? '<span style="color:#2E7D32;">活跃</span>' : '<span style="color:#9E9E9E;">已关闭</span>') + '</td>' +
+                        '<td>' + fmtTime(c.created_at) + '</td><td>' + fmtTime(c.updated_at) + '</td></tr>';
+                }).join('');
+            }
             var pg = data.pagination;
             var pagEl = document.getElementById('chat-pagination');
             if (pagEl) pagEl.innerHTML = renderPagination(pg.page, pg.total_pages, 'loadChats');
@@ -158,32 +245,7 @@
         }
     };
 
-    function renderTable(items, tbodyId, rowFn) {
-        var tbody = document.getElementById(tbodyId);
-        if (!tbody) return;
-        if (!items || items.length === 0) { tbody.innerHTML = '<tr><td colspan="99"><div class="admin-empty">暂无</div></td></tr>'; return; }
-        tbody.innerHTML = items.map(rowFn).join('');
-    }
-
-    // ── 笔记内容弹窗 ──
-    window.showNoteDetail = async function(id) {
-        try {
-            var data = await adminApi('/api/admin/notes?page=1&page_size=500');
-            var note = (data.notes || []).find(function(n) { return n.id === id; });
-            if (!note) { alert('未找到'); return; }
-            document.getElementById('exp-detail-content').innerHTML =
-                '<table class="admin-table"><tr><th style="width:100px;">ID</th><td>' + note.id + '</td></tr>' +
-                '<tr><th>标题</th><td><strong>' + escHtml(note.title || '—') + '</strong></td></tr>' +
-                '<tr><th>实验键</th><td>' + escHtml(note.experiment_key) + '</td></tr>' +
-                '<tr><th>用户</th><td>' + escHtml(note.username) + '</td></tr>' +
-                '<tr><th>更新时间</th><td>' + fmtTime(note.updated_at) + '</td></tr></table>' +
-                '<h4 style="margin-top:14px;">内容</h4>' +
-                renderJsonPreview(note.content || '(空)');
-            document.getElementById('exp-detail-modal').style.display = '';
-        } catch(e) { alert('加载失败: ' + e.message); }
-    };
-
-    // ── 实验详情 ──
+    // ── 实验详情弹窗 ──
     window.showExpDetail = async function(id) {
         try {
             var listData = await adminApi('/api/admin/experiments?page=1&page_size=500');
@@ -206,7 +268,7 @@
         if (el) el.style.display = 'none';
     };
 
-    // ── 删除 ──
+    // ── 实验删除 ──
     var pendingDeleteId = null;
 
     window.confirmDeleteExp = function(id) {
