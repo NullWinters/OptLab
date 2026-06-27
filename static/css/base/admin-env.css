@@ -1,0 +1,8 @@
+.admin-env-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.admin-env-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.admin-env-field { display: flex; flex-direction: column; gap: 4px; }
+.admin-env-field label { font-size: 13px; font-weight: 600; color: #4b5563; }
+.admin-env-field input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; font-family: monospace; }
+.admin-env-field input:focus { outline: none; border-color: #d84315; box-shadow: 0 0 0 3px rgba(216,67,21,0.1); }
+.admin-env-field input[readonly] { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+@media (max-width: 640px) { .admin-env-grid { grid-template-columns: 1fr; } }
