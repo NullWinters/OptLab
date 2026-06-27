@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OptLab Evaluation Dataset Item",
+  "type": "object",
+  "required": [
+    "id",
+    "experiment_key",
+    "source",
+    "experiment_profile",
+    "raw_input",
+    "raw_output",
+    "expected_answer",
+    "scoring_rubric_id"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "experiment_key": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "record_export_file",
+        "ai_report_file"
+      ],
+      "properties": {
+        "record_export_file": {
+          "type": "string"
+        },
+        "ai_report_file": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "experiment_profile": {
+      "type": "object",
+      "required": [
+        "config_id",
+        "profile_name",
+        "profile_known",
+        "inferred_key_raw"
+      ],
+      "properties": {
+        "config_id": {
+          "type": "string"
+        },
+        "profile_name": {
+          "type": "string"
+        },
+        "profile_known": {
+          "type": "boolean"
+        },
+        "inferred_key_raw": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "raw_input": {
+      "type": "object",
+      "required": [
+        "record_summary",
+        "record_payload_flat",
+        "record_iteration_tables",
+        "record_export_raw",
+        "record_export_format"
+      ],
+      "properties": {
+        "record_summary": {
+          "type": "object"
+        },
+        "record_payload_flat": {
+          "type": "object"
+        },
+        "record_iteration_tables": {
+          "type": "object"
+        },
+        "record_export_raw": {
+          "type": "string"
+        },
+        "record_export_format": {
+          "type": "string",
+          "enum": ["csv", "json"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "raw_output": {
+      "type": "object",
+      "required": [
+        "ai_report_markdown",
+        "ai_report_sections"
+      ],
+      "properties": {
+        "ai_report_markdown": {
+          "type": "string"
+        },
+        "ai_report_sections": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "expected_answer": {
+      "type": "object",
+      "required": [
+        "must_include_sections",
+        "required_facts",
+        "numeric_expectations",
+        "data_table_expectation",
+        "constraints"
+      ],
+      "properties": {
+        "must_include_sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "required_facts": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "numeric_expectations": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "data_table_expectation": {
+          "type": "object"
+        },
+        "data_evidence_expectations": {
+          "type": "object"
+        },
+        "section_quality_expectations": {
+          "type": "object"
+        },
+        "constraints": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "scoring_rubric_id": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

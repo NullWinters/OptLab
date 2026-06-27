@@ -1,0 +1,236 @@
+{
+  "id": "optlab-experiment-profiles-v1",
+  "default": {
+    "name": "通用实验配置",
+    "must_include_sections": ["数学原理", "实验数据", "实验总结"],
+    "required_fact_paths": [
+      "payload.algorithm_name",
+      "payload.algorithm",
+      "payload.test_function",
+      "payload.function"
+    ],
+    "numeric_patterns": [
+      "x_star",
+      "objective_value",
+      "accuracy",
+      "result",
+      "final",
+      "iteration",
+      "sample_count",
+      "length",
+      "epsilon",
+      "alpha",
+      "beta",
+      "c"
+    ],
+    "max_numeric_expectations": 12,
+    "require_data_table": true,
+    "min_table_rows": 1,
+    "constraints": {
+      "math_principle_disallow_terms": ["待补充"],
+      "expected_summary_placeholder": "（由用户填写）"
+    }
+  },
+  "profiles": [
+    {
+      "key": "line-search.range_search.observation",
+      "name": "一维搜索-区间观察",
+      "aliases": [],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function"
+      ],
+      "report_fact_paths": [
+        "payload.convergence_result.x_star",
+        "payload.convergence_result.final_length"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.initial_a",
+        "payload.initial_state.initial_b",
+        "payload.initial_state.initial_epsilon",
+        "payload.initial_state.initial_n",
+        "payload.convergence_result.x_star",
+        "payload.convergence_result.final_length"
+      ]
+    },
+    {
+      "key": "line-search.range_search.comparison",
+      "name": "一维搜索-区间性质对比",
+      "aliases": [],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function"
+      ],
+      "report_fact_paths": [
+        "payload.convergence_result.golden.x_star",
+        "payload.convergence_result.fibonacci.x_star",
+        "payload.convergence_result.bisection.x_star"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.initial_a",
+        "payload.initial_state.initial_b",
+        "payload.initial_state.golden_epsilon",
+        "payload.initial_state.fibonacci_n",
+        "payload.initial_state.fibonacci_epsilon",
+        "payload.initial_state.bisection_epsilon",
+        "payload.convergence_result.golden.x_star",
+        "payload.convergence_result.fibonacci.x_star",
+        "payload.convergence_result.bisection.x_star"
+      ]
+    },
+    {
+      "key": "line-search.point_search.observation",
+      "name": "一维搜索-点观察",
+      "aliases": [],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function"
+      ],
+      "report_fact_paths": [
+        "payload.convergence_result.x_star",
+        "payload.convergence_result.f_x_star",
+        "payload.convergence_result.df_x_star"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.x_0",
+        "payload.initial_state.x_prev",
+        "payload.initial_state.N",
+        "payload.initial_state.alpha",
+        "payload.convergence_result.x_star",
+        "payload.convergence_result.f_x_star",
+        "payload.convergence_result.df_x_star"
+      ]
+    },
+    {
+      "key": "line-search.point_search.comparison",
+      "name": "一维搜索-点性质对比",
+      "aliases": [],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function"
+      ],
+      "report_fact_paths": [
+        "payload.initial_state.x_0",
+        "payload.initial_state.alpha"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.x_0",
+        "payload.initial_state.x_prev",
+        "payload.initial_state.N",
+        "payload.initial_state.alpha"
+      ]
+    },
+    {
+      "key": "line-search.application.main",
+      "name": "一维搜索-应用实验",
+      "aliases": [],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function"
+      ],
+      "report_fact_paths": [
+        "payload.final_result.optimal_price",
+        "payload.final_result.optimal_profit"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.initial_price",
+        "payload.initial_state.initial_beta",
+        "payload.initial_state.initial_alpha",
+        "payload.final_result.optimal_price",
+        "payload.final_result.optimal_profit"
+      ]
+    },
+    {
+      "key": "linear-programming.simplex",
+      "name": "线性规划-单纯形法",
+      "aliases": [],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function",
+        "payload.initial_state.solve_type",
+        "payload.result.status_label"
+      ],
+      "report_fact_paths": [
+        "payload.result.status_label"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.n",
+        "payload.initial_state.m",
+        "payload.result.objective_value"
+      ]
+    },
+    {
+      "key": "linear-programming.two_phase",
+      "name": "线性规划-两阶段法",
+      "aliases": [],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function",
+        "payload.initial_state.solve_type",
+        "payload.phase1_result.status_label",
+        "payload.phase2_result.status_label"
+      ],
+      "report_fact_paths": [
+        "payload.phase1_result.status_label",
+        "payload.phase2_result.status_label"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.n",
+        "payload.initial_state.m",
+        "payload.phase1_result.final_w",
+        "payload.phase2_result.final_objective_value"
+      ]
+    },
+    {
+      "key": "svm-smo.smo_iteration.observation",
+      "name": "SVM-SMO 迭代观察",
+      "aliases": [
+        "svm-smo.smo_iteration"
+      ],
+      "required_fact_paths": [
+        "payload.algorithm_name",
+        "payload.test_function",
+        "payload.dataset_meta.source"
+      ],
+      "report_fact_paths": [
+        "payload.dataset_meta.source",
+        "payload.final_result.accuracy",
+        "payload.final_result.iter"
+      ],
+      "numeric_priority_paths": [
+        "payload.initial_state.C",
+        "payload.initial_state.tol",
+        "payload.initial_state.max_iter",
+        "payload.dataset_meta.sample_count",
+        "payload.final_result.iter",
+        "payload.final_result.accuracy",
+        "payload.final_result.b"
+      ]
+    },
+    {
+      "key": "svm-smo.kernel_trick.visualization",
+      "name": "SVM-核技巧可视化",
+      "aliases": [
+        "svm-smo.kernel_trick"
+      ],
+      "required_fact_paths": [
+        "payload.experiment_module",
+        "payload.dataset_source"
+      ],
+      "report_fact_paths": [
+        "payload.dataset_source",
+        "payload.current_accuracy_percent",
+        "payload.map_expression"
+      ],
+      "numeric_priority_paths": [
+        "payload.sample_count",
+        "payload.current_accuracy_percent",
+        "payload.plane_params.w1",
+        "payload.plane_params.w2",
+        "payload.plane_params.w3",
+        "payload.plane_params.b"
+      ],
+      "require_data_table": false
+    }
+  ]
+}

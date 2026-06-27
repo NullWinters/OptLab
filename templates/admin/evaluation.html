@@ -1,0 +1,94 @@
+{% extends 'admin/layout.html' %}
+{% set admin_title = '评测工作台' %}
+
+{% block admin_content %}
+<div class="admin-page-header">
+    <div>
+        <h1>评测工作台</h1>
+        <span class="breadcrumb">上传实验导出+AI报告文件，自动构建评测集并评分</span>
+    </div>
+</div>
+
+{# 说明 #}
+<div class="admin-eval-hero">
+    <h2><i class="fas fa-info-circle"></i> 使用说明</h2>
+    <p>每一组需同时提供「实验导出文件（CSV/JSON）」和「AI 报告文件（Markdown）」。系统自动完成评测集构建、逐条评分，并输出得分明细与问题定位。</p>
+</div>
+
+{# 上传区域 #}
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h2>成对文件上传</h2>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;color:#6d4c41;font-size:0.9em;cursor:pointer;">
+                <input type="checkbox" id="strict-profiles">
+                严格匹配实验配置
+            </label>
+            <button class="admin-btn admin-btn-secondary" id="add-pair-btn" type="button">
+                + 添加一组
+            </button>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        <div style="overflow-x:auto;">
+            <table class="admin-eval-pairs-table">
+                <thead>
+                <tr>
+                    <th style="width:15%;">Case ID</th>
+                    <th style="width:35%;">实验导出文件（CSV/JSON）</th>
+                    <th style="width:35%;">AI 报告文件（Markdown）</th>
+                    <th style="width:10%;">操作</th>
+                </tr>
+                </thead>
+                <tbody id="pair-rows"></tbody>
+            </table>
+        </div>
+        <div style="margin-top:14px;display:flex;align-items:center;gap:12px;">
+            <button id="run-eval-btn" class="admin-btn admin-btn-primary" type="button">
+                <i class="fas fa-play"></i> 一键构建并评分
+            </button>
+            <span id="eval-run-status" style="font-size:0.9em;color:#8d6e63;"></span>
+        </div>
+    </div>
+</div>
+
+{# 实验适配覆盖 #}
+<div class="admin-card">
+    <div class="admin-card-header"><h2>实验适配覆盖</h2></div>
+    <div class="admin-card-body">
+        <div id="supported-profiles" class="admin-eval-profile-grid">
+            <span style="color:#9E9E9E;">加载中...</span>
+        </div>
+    </div>
+</div>
+
+{# 结果区域 #}
+<div id="result-section" class="admin-card admin-eval-hidden">
+    <div class="admin-card-header">
+        <h2>评测结果</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="download-summary-btn" class="admin-btn admin-btn-secondary admin-btn-sm">下载汇总 JSON</button>
+            <button id="download-scores-btn" class="admin-btn admin-btn-secondary admin-btn-sm">下载逐条评分 JSON</button>
+        </div>
+    </div>
+    <div class="admin-card-body">
+        <div id="summary-cards" class="admin-eval-summary-grid"></div>
+        <div id="profile-coverage" style="margin-bottom:12px;color:#5d4037;font-size:0.9em;"></div>
+        <div style="overflow-x:auto;">
+            <table class="admin-eval-score-table">
+                <thead>
+                <tr>
+                    <th>Case</th><th>实验键</th><th>总分</th><th>通过</th>
+                    <th>维度评分</th><th>问题定位 / 修复建议</th>
+                </tr>
+                </thead>
+                <tbody id="score-rows"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block admin_scripts %}
+<script src="/static/js/admin-evaluation.js"></script>
+{% endblock %}

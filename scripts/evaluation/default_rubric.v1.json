@@ -1,0 +1,44 @@
+{
+  "id": "default-v2",
+  "name": "OptLab 实验报告评分规则 v2",
+  "pass_threshold": 78,
+  "weights": {
+    "structure_compliance": 0.2,
+    "fact_consistency": 0.2,
+    "numeric_consistency": 0.18,
+    "data_evidence": 0.15,
+    "data_alignment": 0.12,
+    "section_quality": 0.1,
+    "constraint_compliance": 0.05
+  },
+  "hard_rules": {
+    "require_all_sections": true,
+    "require_data_table_when_expected": true,
+    "min_fact_consistency_score": 0,
+    "min_numeric_consistency_score": 0,
+    "fail_on_constraint_violation": false
+  },
+  "dimensions": {
+    "structure_compliance": {
+      "description": "是否包含规定章节：数学原理、实验数据、实验总结。"
+    },
+    "fact_consistency": {
+      "description": "报告是否覆盖实验关键事实（算法、目标函数、来源页等）。"
+    },
+    "numeric_consistency": {
+      "description": "报告中的关键数值是否与实验输入/输出一致（允许相对误差）。"
+    },
+    "data_evidence": {
+      "description": "实验数据章节是否包含可验证的数据表。"
+    },
+    "data_alignment": {
+      "description": "实验数据章节中的表头与关键数值是否与导出数据对齐。"
+    },
+    "section_quality": {
+      "description": "数学原理与实验数据章节的内容完整度与表达质量。"
+    },
+    "constraint_compliance": {
+      "description": "是否满足约束（如数学原理禁用词、总结占位符等）。"
+    }
+  }
+}
