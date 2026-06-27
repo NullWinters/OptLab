@@ -17,6 +17,31 @@
     <div class="admin-loading"><span class="admin-spinner"></span>加载中...</div>
 </div>
 
+{# 管理员与密钥管理 #}
+<div class="admin-card">
+    <div class="admin-card-header"><h2>管理员与设置密钥</h2></div>
+    <div class="admin-card-body">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+            <button class="admin-btn admin-btn-primary" id="gen-setup-key-btn" onclick="generateSetupKey()">
+                <i class="fas fa-key"></i> 生成新设置密钥
+            </button>
+            <span id="gen-key-result" style="font-size:0.9em;"></span>
+        </div>
+        <div style="margin-top:14px;font-size:0.87em;color:#8D6E63;">
+            <i class="fas fa-info-circle"></i> 生成密钥后，将其发送给需要注册的管理员。对方在注册页面输入此密钥即可添加为管理员。密钥一次性有效。
+        </div>
+        <div style="margin-top:14px;">
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th>用户名</th><th>类型</th><th>创建时间</th><th>操作</th></tr></thead>
+                    <tbody id="admin-list-tbody"><tr><td colspan="3">加载中...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <p style="font-size:0.82em;color:#9E9E9E;margin-top:8px;">提示：需要重置密码时，先生成密钥，然后在登录页点击"忘记密码？"。</p>
+    </div>
+</div>
+
 {# 实验类型分布 #}
 <div class="admin-card" id="type-dist-card" style="display:none;">
     <div class="admin-card-header"><h2>实验类型分布</h2></div>
@@ -49,11 +74,14 @@
 {% endblock %}
 
 {% block admin_scripts %}
-<script src="/static/js/admin.js"></script>
 <script>
 (function() {
-    if (!ensureAdminAuth()) return;
-    loadDashboard();
+    function initDash() { loadDashboard(); loadAdminList(); }
+    if (getAdminToken()) {
+        var m = document.getElementById('admin-main');
+        if (m && m.style.display !== 'none') { initDash(); return; }
+    }
+    window.addEventListener('admin-authenticated', initDash, { once: true });
 
     async function loadDashboard() {
         try {
@@ -112,6 +140,87 @@
             `<tr><td>${escHtml(e.alias || '—')}</td><td>${escHtml(e.source_page || '—')}</td><td>${escHtml(e.username)}</td><td>${fmtTime(e.created_at)}</td></tr>`
         ).join('');
     }
+
+    window.generateSetupKey = async function() {
+        var btn = document.getElementById('gen-setup-key-btn');
+        var result = document.getElementById('gen-key-result');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="admin-spinner" style="width:14px;height:14px;border-width:2px;"></span> 生成中...';
+        result.textContent = '';
+        try {
+            var data = await adminApi('/api/admin/setup-key/generate', { method: 'POST' });
+            result.innerHTML = '<strong style="color:#D84315;">新密钥: <code style="background:#FFF3E0;padding:3px 8px;border-radius:4px;">' + escHtml(data.setup_key) + '</code></strong> (提示: ' + escHtml(data.hint) + ')';
+            result.innerHTML += '<br><span style="color:#9E9E9E;font-size:0.85em;">密钥已输出到服务端控制台。复制上方密钥发送给需要注册的管理员。</span>';
+        } catch (e) {
+            result.innerHTML = '<span style="color:#C62828;">生成失败: ' + escHtml(e.message) + '</span>';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-key"></i> 生成新设置密钥';
+    };
+
+    async function loadAdminList() {
+        try {
+            var admins = await adminApi('/api/admin/admins');
+            var tbody = document.getElementById('admin-list-tbody');
+            if (!admins || admins.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">暂无</td></tr>';
+                return;
+            }
+            var currentUser = localStorage.getItem('optlab_admin_username') || '';
+            tbody.innerHTML = admins.map(function(a) {
+                var actions = '';
+                if (!a.is_primary && a.username !== currentUser) {
+                    actions += '<button class="admin-btn admin-btn-secondary admin-btn-sm" onclick="transferPrimary(\'' + escHtml(a.username) + '\')" title="转让主管理员">' +
+                        '<i class="fas fa-crown"></i> 设为主</button> ';
+                    actions += '<button class="admin-btn admin-btn-danger admin-btn-sm" onclick="deleteAdmin(\'' + escHtml(a.username) + '\')">' +
+                        '<i class="fas fa-trash"></i> 删除</button>';
+                } else if (a.is_primary) {
+                    actions = '<span style="color:#BCAAA4;font-size:0.82em;">主管理员</span>';
+                } else {
+                    actions = '<span style="color:#BCAAA4;font-size:0.82em;">当前用户</span>';
+                }
+                return '<tr>' +
+                    '<td><strong>' + escHtml(a.username) + '</strong></td>' +
+                    '<td>' + (a.is_primary ? '<span style="color:#D84315;">主管理员</span>' : '额外管理员') + '</td>' +
+                    '<td>' + (a.created_at ? fmtTime(a.created_at) : '—') + '</td>' +
+                    '<td>' + actions + '</td>' +
+                    '</tr>';
+            }).join('');
+        } catch (e) {
+            document.getElementById('admin-list-tbody').innerHTML =
+                '<tr><td colspan="4">加载失败: ' + escHtml(e.message) + '</td></tr>';
+        }
+    }
+
+    window.transferPrimary = async function(newPrimary) {
+        if (!confirm('确定将主管理员身份转让给 ' + newPrimary + ' 吗？\\n\\n转让后 ' + newPrimary + ' 将成为主管理员，您将降为额外管理员。')) return;
+        try {
+            var data = await adminApi('/api/admin/admins/transfer-primary', {
+                method: 'POST',
+                body: JSON.stringify({new_primary: newPrimary})
+            });
+            alert(data.message);
+            loadAdminList();
+            // 如果自己被降级，需要刷新
+            var currentUser = localStorage.getItem('optlab_admin_username');
+            if (currentUser !== newPrimary) {
+                alert('主管理员已转让。您现在是额外管理员，部分权限可能受限。');
+            }
+        } catch(e) {
+            alert('转让失败: ' + e.message);
+        }
+    };
+
+    window.deleteAdmin = async function(username) {
+        if (!confirm('确定删除管理员 ' + username + ' 吗？此操作不可撤销。')) return;
+        try {
+            var data = await adminApi('/api/admin/admins/' + encodeURIComponent(username), { method: 'DELETE' });
+            alert(data.message);
+            loadAdminList();
+        } catch(e) {
+            alert('删除失败: ' + e.message);
+        }
+    };
 })();
 </script>
 {% endblock %}

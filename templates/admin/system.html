@@ -40,12 +40,11 @@
 {% endblock %}
 
 {% block admin_scripts %}
-<script src="/static/js/admin.js"></script>
 <script>
 (function() {
-    if (!ensureAdminAuth()) return;
-    loadStatus();
-    loadLogs();
+    'use strict';
+
+    // ── 函数定义 ──
 
     window.loadLogs = async function() {
         var lines = document.getElementById('log-lines-select').value;
@@ -59,7 +58,7 @@
         }
     };
 
-    async function loadStatus() {
+    window.loadStatus = async function() {
         try {
             var data = await adminApi('/api/admin/system/status');
             var db = data.database || {};
@@ -100,7 +99,7 @@
             document.getElementById('status-content').innerHTML =
                 '<div class="admin-alert error">加载失败: ' + escHtml(e.message) + '</div>';
         }
-    }
+    };
 
     function buildStatusCard(title, rows) {
         return '<div class="admin-status-card"><h3>' + escHtml(title) + '</h3>' +
@@ -131,6 +130,14 @@
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
     };
+
+    // ── 初始化（所有函数已定义） ──
+    function start() { loadStatus(); loadLogs(); }
+    window.addEventListener('admin-authenticated', start, { once: true });
+    if (getAdminToken()) {
+        var m = document.getElementById('admin-main');
+        if (m && m.style.display !== 'none') start();
+    }
 })();
 </script>
 {% endblock %}

@@ -287,6 +287,45 @@ class AdminRepository:
                 })
             return notes, total
 
+    # ── 聊天会话管理 ───────────────────────────────────────
+
+    async def list_chats(
+        self, user_id: str = "", page: int = 1, page_size: int = 20,
+    ) -> tuple[list[dict], int]:
+        offset = (page - 1) * page_size
+        async with self.session.begin():
+            base = select(ChatSession)
+            count_base = select(func.count(ChatSession.id))
+            if user_id:
+                try:
+                    uid = int(user_id)
+                    base = base.where(ChatSession.user_id == uid)
+                    count_base = count_base.where(ChatSession.user_id == uid)
+                except ValueError:
+                    pass
+            total = await self.session.scalar(count_base)
+            rows = await self.session.execute(
+                base.order_by(desc(ChatSession.updated_at))
+                .offset(offset).limit(page_size)
+            )
+            chats = []
+            for c in rows.scalars().all():
+                username = None
+                if c.user_id:
+                    u = await self.session.get(User, c.user_id)
+                    username = u.username if u else None
+                chats.append({
+                    "id": str(c.id),
+                    "user_id": c.user_id,
+                    "username": username or "—",
+                    "page_id": c.page_id,
+                    "is_active": c.is_active,
+                    "message_count": c.message_count,
+                    "created_at": c.created_at.isoformat() if c.created_at else None,
+                    "updated_at": c.updated_at.isoformat() if c.updated_at else None,
+                })
+            return chats, total
+
     # ── 系统状态 ────────────────────────────────────────────
 
     async def system_status(self) -> dict:

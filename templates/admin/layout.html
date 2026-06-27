@@ -13,14 +13,14 @@
 {% block content %}
 <div class="admin-page-shell">
 
-{# ── 顶部导航（仅 Logo，复用原站结构） ── #}
+{# ── 顶部导航 ── #}
 <header class="admin-topbar">
     <div class="topnav-shell topnav-max">
         <nav class="nav-bar">
             <a href="/" class="nav-logo" title="返回首页">
                 <i class="fas fa-flask"></i> OptLab
             </a>
-            <span class="admin-topbar-badge">后台管理</span>
+            <span class="admin-topbar-label">后台管理</span>
         </nav>
     </div>
 </header>
@@ -68,6 +68,44 @@
             <p id="admin-login-error" class="alert error"></p>
             <button type="submit" class="admin-auth-btn">登录</button>
         </form>
+        <p style="text-align:center;margin-top:16px;font-size:0.85em;">
+            <a href="#" id="admin-forgot-link" style="color:#8D6E63;text-decoration:underline;">忘记密码？使用设置密钥重置</a>
+        </p>
+    </div>
+
+    {# 忘记密码/重置密码 #}
+    <div id="admin-reset-card" class="admin-auth-card" style="display:none;">
+        <h1>重置管理员密码</h1>
+        <p class="sub">需要设置密钥才能重置。密钥写入 .env 并输出到服务端控制台。</p>
+        <div style="background:#FFF8F0;border:1px solid #FFE0B2;border-radius:8px;padding:12px;margin-bottom:16px;text-align:center;">
+            <button type="button" class="admin-btn admin-btn-secondary" id="admin-request-key-btn" style="font-size:0.85em;">
+                <i class="fas fa-key"></i> 生成设置密钥（写入 .env）
+            </button>
+            <span id="admin-request-key-result" style="display:block;margin-top:8px;font-size:0.84em;color:#D84315;"></span>
+        </div>
+        <form id="admin-reset-form">
+            <div class="field">
+                <label for="admin-reset-username">管理员用户名</label>
+                <input type="text" id="admin-reset-username" required minlength="3" maxlength="50" autocomplete="username">
+            </div>
+            <div class="field">
+                <label for="admin-reset-setup-key">设置密钥</label>
+                <input type="text" id="admin-reset-setup-key" required autocomplete="off" placeholder="从服务端控制台或 .env 文件中获取">
+            </div>
+            <div class="field">
+                <label for="admin-reset-password">新密码</label>
+                <input type="password" id="admin-reset-password" required minlength="8" maxlength="50" autocomplete="new-password">
+            </div>
+            <div class="field">
+                <label for="admin-reset-confirm">确认新密码</label>
+                <input type="password" id="admin-reset-confirm" required minlength="8" maxlength="50">
+            </div>
+            <p id="admin-reset-error" class="alert error"></p>
+            <button type="submit" class="admin-auth-btn">重置密码并登录</button>
+        </form>
+        <p style="text-align:center;margin-top:14px;font-size:0.85em;">
+            <a href="#" id="admin-reset-back" style="color:#8D6E63;text-decoration:underline;">返回登录</a>
+        </p>
     </div>
 </div>
 
@@ -100,6 +138,9 @@
                 </a>
             </nav>
             <div class="admin-sidebar-footer">
+                <button class="admin-sidebar-toggle" id="admin-sidebar-toggle" title="折叠/展开侧边栏">
+                    <i class="fas fa-chevron-left"></i> <span>折叠</span>
+                </button>
                 <button class="admin-sidebar-logout" id="admin-logout-btn">
                     <i class="fas fa-sign-out-alt"></i> <span>退出登录</span>
                 </button>
@@ -108,12 +149,14 @@
 
         <main class="admin-content">
             {% block admin_content %}{% endblock %}
-            <footer style="text-align:center;color:#BCAAA4;font-size:0.82em;padding:24px 0 8px;margin-top:20px;">
-                <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
-            </footer>
         </main>
     </div>
 </div>
+
+{# ── 页脚 ── #}
+<footer class="admin-page-footer">
+    <p>&copy; 2026 OptLab 最优化实验室. 基于教育目的开发.</p>
+</footer>
 
 </div>
 {% endblock %}

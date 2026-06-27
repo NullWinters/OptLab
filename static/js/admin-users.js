@@ -1,15 +1,8 @@
 /**
  * 用户管理页面 JS
- * 搜索 / 分页 / 详情弹窗 / 删除确认
  */
 (function () {
     'use strict';
-
-    if (!ensureAdminAuth()) {
-        window.addEventListener('admin-authenticated', init, { once: true });
-    } else {
-        init();
-    }
 
     var currentPage = 1;
     var currentSearch = '';
@@ -19,10 +12,22 @@
         loadUsers();
     }
 
+    // 等待认证完成后初始化
+    window.addEventListener('admin-authenticated', init, { once: true });
+    // 兜底：如果认证已完成（DOMContentLoaded 先触发），直接初始化
+    if (window.getAdminToken && window.getAdminToken()) {
+        var main = document.getElementById('admin-main');
+        if (main && main.style.display !== 'none') {
+            window.removeEventListener('admin-authenticated', init);
+            init();
+        }
+    }
+
     window.loadUsers = async function (page) {
         if (page) currentPage = page;
         var tbody = document.getElementById('user-tbody');
-        tbody.innerHTML = '<tr><td colspan="7" class="admin-loading"><span class="admin-spinner"></span>加载中...</td></tr>';
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="7"><div class="admin-loading"><span class="admin-spinner"></span>加载中...</div></td></tr>';
         try {
             var data = await adminApi(
                 '/api/admin/users?search=' + encodeURIComponent(currentSearch) +
@@ -30,14 +35,16 @@
             );
             renderUsers(data.users);
             var pg = data.pagination;
-            document.getElementById('user-pagination').innerHTML = renderPagination(pg.page, pg.total_pages, 'loadUsers');
+            var pagEl = document.getElementById('user-pagination');
+            if (pagEl) pagEl.innerHTML = renderPagination(pg.page, pg.total_pages, 'loadUsers');
         } catch (e) {
-            tbody.innerHTML = '<tr><td colspan="7" class="admin-alert error" style="display:block;">加载失败: ' + escHtml(e.message) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7"><div class="admin-alert error">加载失败: ' + escHtml(e.message) + '</div></td></tr>';
         }
     };
 
     function renderUsers(users) {
         var tbody = document.getElementById('user-tbody');
+        if (!tbody) return;
         if (!users || users.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7"><div class="admin-empty">暂无用户数据</div></td></tr>';
             return;
@@ -69,11 +76,12 @@
         }, 400);
     };
 
-    // ── 详情弹窗 ──
     window.showUserDetail = async function (userId) {
         try {
             var data = await adminApi('/api/admin/users/' + userId);
-            document.getElementById('user-detail-content').innerHTML =
+            var el = document.getElementById('user-detail-content');
+            if (!el) return;
+            el.innerHTML =
                 '<table class="admin-table">' +
                 '<tr><th style="width:120px;">ID</th><td>' + data.id + '</td></tr>' +
                 '<tr><th>用户名</th><td><strong>' + escHtml(data.username) + '</strong></td></tr>' +
@@ -97,16 +105,16 @@
     };
 
     window.closeUserDetail = function () {
-        document.getElementById('user-detail-modal').style.display = 'none';
+        var el = document.getElementById('user-detail-modal');
+        if (el) el.style.display = 'none';
     };
 
-    // ── 删除确认 ──
     var pendingDeleteId = null;
 
     window.confirmDeleteUser = function (userId, username) {
         pendingDeleteId = userId;
-        document.getElementById('delete-confirm-msg').innerHTML =
-            '确定删除用户 <strong>' + escHtml(username) + '</strong> 吗？其所有实验记录、笔记和 AI 会话也将一并删除。此操作不可撤销。';
+        var el = document.getElementById('delete-confirm-msg');
+        if (el) el.innerHTML = '确定删除用户 <strong>' + escHtml(username) + '</strong> 吗？其所有实验记录、笔记和 AI 会话也将一并删除。此操作不可撤销。';
         document.getElementById('delete-confirm-modal').style.display = '';
         document.getElementById('delete-confirm-btn').onclick = executeDeleteUser;
     };
