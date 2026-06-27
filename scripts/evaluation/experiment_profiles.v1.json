@@ -1,5 +1,5 @@
 {
-  "id": "optlab-experiment-profiles-v1",
+  "id": "optlab-experiment-profiles-v2",
   "default": {
     "name": "通用实验配置",
     "must_include_sections": ["数学原理", "实验数据", "实验总结"],
@@ -21,9 +21,16 @@
       "epsilon",
       "alpha",
       "beta",
-      "c"
+      "loss",
+      "learning_rate",
+      "epoch",
+      "c",
+      "b",
+      "w1",
+      "w2",
+      "w3"
     ],
-    "max_numeric_expectations": 12,
+    "max_numeric_expectations": 14,
     "require_data_table": true,
     "min_table_rows": 1,
     "constraints": {
@@ -35,7 +42,7 @@
     {
       "key": "line-search.range_search.observation",
       "name": "一维搜索-区间观察",
-      "aliases": [],
+      "aliases": ["line_search.range_search.observation"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function"
@@ -56,7 +63,7 @@
     {
       "key": "line-search.range_search.comparison",
       "name": "一维搜索-区间性质对比",
-      "aliases": [],
+      "aliases": ["line_search.range_search.comparison"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function"
@@ -81,7 +88,7 @@
     {
       "key": "line-search.point_search.observation",
       "name": "一维搜索-点观察",
-      "aliases": [],
+      "aliases": ["line_search.point_search.observation"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function"
@@ -104,7 +111,7 @@
     {
       "key": "line-search.point_search.comparison",
       "name": "一维搜索-点性质对比",
-      "aliases": [],
+      "aliases": ["line_search.point_search.comparison"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function"
@@ -123,7 +130,7 @@
     {
       "key": "line-search.application.main",
       "name": "一维搜索-应用实验",
-      "aliases": [],
+      "aliases": ["line_search.application.main", "line-search.application"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function"
@@ -143,7 +150,7 @@
     {
       "key": "linear-programming.simplex",
       "name": "线性规划-单纯形法",
-      "aliases": [],
+      "aliases": ["linear_programming.simplex"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function",
@@ -162,7 +169,7 @@
     {
       "key": "linear-programming.two_phase",
       "name": "线性规划-两阶段法",
-      "aliases": [],
+      "aliases": ["linear_programming.two_phase"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function",
@@ -184,9 +191,7 @@
     {
       "key": "svm-smo.smo_iteration.observation",
       "name": "SVM-SMO 迭代观察",
-      "aliases": [
-        "svm-smo.smo_iteration"
-      ],
+      "aliases": ["svm-smo.smo_iteration"],
       "required_fact_paths": [
         "payload.algorithm_name",
         "payload.test_function",
@@ -210,9 +215,7 @@
     {
       "key": "svm-smo.kernel_trick.visualization",
       "name": "SVM-核技巧可视化",
-      "aliases": [
-        "svm-smo.kernel_trick"
-      ],
+      "aliases": ["svm-smo.kernel_trick"],
       "required_fact_paths": [
         "payload.experiment_module",
         "payload.dataset_source"
@@ -231,6 +234,37 @@
         "payload.plane_params.b"
       ],
       "require_data_table": false
+    },
+    {
+      "key": "neural-network.gd",
+      "name": "神经网络-梯度下降优化",
+      "aliases": ["neural_network.gd", "neural-network.gd.optimization"],
+      "required_fact_paths": [
+        "payload.algorithm",
+        "payload.optimizer",
+        "payload.loss_function",
+        "payload.dataset"
+      ],
+      "report_fact_paths": [
+        "payload.optimizer",
+        "payload.scheduler",
+        "payload.loss_function",
+        "payload.dataset",
+        "payload.algorithm"
+      ],
+      "numeric_priority_paths": [
+        "payload.base_learning_rate",
+        "payload.total_epochs",
+        "payload.current_epoch",
+        "payload.current_loss",
+        "payload.min_loss",
+        "payload.data_point_count",
+        "payload.convergence_result.final_epoch",
+        "payload.convergence_result.final_loss",
+        "payload.convergence_result.min_loss"
+      ],
+      "require_data_table": true,
+      "min_table_rows": 3
     }
   ]
 }

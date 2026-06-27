@@ -1,44 +1,58 @@
 {
-  "id": "default-v2",
-  "name": "OptLab 实验报告评分规则 v2",
-  "pass_threshold": 78,
+  "id": "default-v3",
+  "name": "OptLab 实验报告评分规则 v3",
+  "pass_threshold": 75,
   "weights": {
-    "structure_compliance": 0.2,
-    "fact_consistency": 0.2,
+    "structure_compliance": 0.18,
+    "fact_consistency": 0.20,
     "numeric_consistency": 0.18,
     "data_evidence": 0.15,
-    "data_alignment": 0.12,
-    "section_quality": 0.1,
-    "constraint_compliance": 0.05
+    "data_alignment": 0.10,
+    "section_quality": 0.12,
+    "constraint_compliance": 0.07
   },
   "hard_rules": {
     "require_all_sections": true,
     "require_data_table_when_expected": true,
-    "min_fact_consistency_score": 0,
-    "min_numeric_consistency_score": 0,
-    "fail_on_constraint_violation": false
+    "min_fact_consistency_score": 0.35,
+    "min_numeric_consistency_score": 0.30,
+    "fail_on_constraint_violation": true
   },
   "dimensions": {
     "structure_compliance": {
-      "description": "是否包含规定章节：数学原理、实验数据、实验总结。"
+      "description": "报告是否包含规定章节：数学原理、实验数据、实验总结。缺失任一章节为硬伤。"
     },
     "fact_consistency": {
-      "description": "报告是否覆盖实验关键事实（算法、目标函数、来源页等）。"
+      "description": "报告是否覆盖实验关键事实（算法名、优化器、目标函数、数据集来源等）。重要性分高/中/低三档加权。",
+      "sub_dimensions": {
+        "high_importance": "核心算法与实验标识信息，缺失严重扣分",
+        "normal_importance": "关键参数与配置信息",
+        "low_importance": "辅助说明与补充数据"
+      }
     },
     "numeric_consistency": {
-      "description": "报告中的关键数值是否与实验输入/输出一致（允许相对误差）。"
+      "description": "报告中的关键数值（学习率、损失值、精度等）是否与实验输入/输出一致。允许 2% 相对误差或 1e-6 绝对误差。",
+      "sub_dimensions": {
+        "exact_match": "数值出现在报告中且误差在接受范围内",
+        "partial_match": "数值出现但存在轻微偏差"
+      }
     },
     "data_evidence": {
-      "description": "实验数据章节是否包含可验证的数据表。"
+      "description": "实验数据章节是否包含可验证的数据表（含表头与至少 min_table_rows 行数据）。"
     },
     "data_alignment": {
-      "description": "实验数据章节中的表头与关键数值是否与导出数据对齐。"
+      "description": "数据表中的表头标签与数值是否与实验导出数据对齐。检查表头规范化匹配、数值命中率、行数比例。"
     },
     "section_quality": {
-      "description": "数学原理与实验数据章节的内容完整度与表达质量。"
+      "description": "数学原理与实验数据章节的内容完整度。检查：数学公式标记（$ / $$）、章节字符量、数据表前导说明、总结段存在性。",
+      "sub_dimensions": {
+        "math_formula_markers": "数学原理章节是否包含 LaTeX 公式标记",
+        "section_length": "各章节内容是否足够充实",
+        "summary_existence": "实验总结是否包含实质性内容"
+      }
     },
     "constraint_compliance": {
-      "description": "是否满足约束（如数学原理禁用词、总结占位符等）。"
+      "description": "是否满足约束条件：数学原理禁用词检查、总结占位符检查。触发任一违规即为硬伤。"
     }
   }
 }

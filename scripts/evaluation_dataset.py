@@ -761,6 +761,7 @@ def _infer_key_by_keyword_score(
         "linear-programming.two_phase": ["两阶段法", "phase1", "phase2", "人工变量"],
         "svm-smo.smo_iteration.observation": ["smo", "支持向量机", "svm", "accuracy", "对偶"],
         "svm-smo.kernel_trick.visualization": ["核技巧", "kernel", "升维", "平面", "映射"],
+        "neural-network.gd": ["神经网络", "梯度下降优化", "optimizer", "adam", "momentum", "rmsprop", "epoch", "学习率", "loss", "全连接", "激活函数"],
     }
 
     text_cf = (combined_text or "").casefold()
@@ -881,6 +882,14 @@ def infer_experiment_key(
         and has_prefix("payload.final_result.accuracy")
     ) or ("smo" in algo_text):
         return "svm-smo.smo_iteration.observation"
+
+    # neural-network.gd
+    if (
+        has_prefix("payload.optimizer")
+        and has_prefix("payload.loss_function")
+        and (has_prefix("payload.loss_history") or has_prefix("payload.network_structure"))
+    ) or ("神经网络" in algo_text or "梯度下降优化" in algo_text):
+        return "neural-network.gd"
 
     # line-search.range_search.observation
     if (
