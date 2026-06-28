@@ -275,17 +275,20 @@ def main():
         sys.exit(1)
 
     # 5. 安装/更新项目依赖
-    print(f"\n安装项目依赖 (pip install -e .)...")
-    # 先静默清理旧的损坏安装（防止 RECORD 缺失导致 pip install 失败）
-    subprocess.run(
-        [str(venv_python), "-m", "pip", "uninstall", "-y", "optlab"],
+    print(f"\n检查项目依赖...")
+    # 仅检查 optlab 是否已安装，未安装或损坏时才重装
+    result = subprocess.run(
+        [str(venv_python), "-c", "import optlab"],
         capture_output=True, text=True,
     )
-    # force-reinstall 跳过旧版本卸载步骤，避免 RECORD 文件缺失报错
-    run_command(
-        [str(venv_python), "-m", "pip", "install", "--force-reinstall", "-e", "."],
-        "安装依赖", check=True,
-    )
+    if result.returncode == 0:
+        print("依赖已安装，跳过。如需更新请手动执行: pip install -e .")
+    else:
+        print("依赖未安装或损坏，正在安装 (pip install -e .)...")
+        run_command(
+            [str(venv_python), "-m", "pip", "install", "-e", "."],
+            "安装依赖", check=True,
+        )
 
     # 6. 初始化数据库
     print(f"\n🗄️  初始化数据库...")
