@@ -276,8 +276,15 @@ def main():
 
     # 5. 安装/更新项目依赖
     print(f"\n安装项目依赖 (pip install -e .)...")
+    # 先静默清理旧的损坏安装（防止 RECORD 缺失导致 pip install 失败）
+    subprocess.run(
+        [str(venv_python), "-m", "pip", "uninstall", "-y", "optlab"],
+        capture_output=True, text=True,
+    )
+    # force-reinstall 跳过旧版本卸载步骤，避免 RECORD 文件缺失报错
     run_command(
-        [str(venv_python), "-m", "pip", "install", "-e", "."], "安装依赖", check=True
+        [str(venv_python), "-m", "pip", "install", "--force-reinstall", "-e", "."],
+        "安装依赖", check=True,
     )
 
     # 6. 初始化数据库
