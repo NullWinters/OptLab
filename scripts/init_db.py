@@ -38,9 +38,21 @@ def migrate_user_created_at(connection):
     cols = {c["name"] for c in inspector.get_columns("user")}
     if "created_at" in cols:
         return
-    # SQLite ALTER TABLE 不支持非恒定默认值，先加列再更新
-    connection.execute(text("ALTER TABLE user ADD COLUMN created_at DATETIME"))
-    connection.execute(text("UPDATE user SET created_at = datetime('now') WHERE created_at IS NULL"))
+    dialect = connection.dialect.name
+    if dialect == "postgresql":
+        connection.execute(
+            text('ALTER TABLE "user" ADD COLUMN created_at TIMESTAMP')
+        )
+        connection.execute(
+            text('UPDATE "user" SET created_at = NOW() WHERE created_at IS NULL')
+        )
+    else:
+        connection.execute(
+            text("ALTER TABLE user ADD COLUMN created_at TIMESTAMP")
+        )
+        connection.execute(
+            text("UPDATE user SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL")
+        )
 
 
 async def init_db() -> None:
