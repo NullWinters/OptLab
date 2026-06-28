@@ -1,6 +1,6 @@
 """管理员专用数据查询仓库 —— 聚合统计 / 列表 / 详情"""
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from models import AsyncSession
 from models.user import User
 from models.experiment_record import ExperimentRecord
@@ -22,7 +22,7 @@ class AdminRepository:
                 select(func.count(User.id))
             )
             # 今日新增用户
-            today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+            today_start = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             users_new = await self.session.scalar(
                 select(func.count(User.id)).where(User.created_at >= today_start)
             )
