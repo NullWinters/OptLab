@@ -24,6 +24,7 @@ pip-wheel-metadata/
 .coverage
 .coverage.*
 htmlcov/
+test/
 tests/
 
 # Jupyter
@@ -43,6 +44,7 @@ ENV/
 .vscode/
 .idea/
 .vs/
+.opencode/
 .junie/
 *.suo
 *.user

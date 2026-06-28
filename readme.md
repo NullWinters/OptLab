@@ -23,7 +23,7 @@ AI 助教辅助功能。
 - **线性规划（单纯形法）**：提供表格输入界面，支持单纯形法、两阶段法流程演示、二维变量问题几何解释及结果文字说明 (已完成)
 - **有约束非线性优化（支持向量机与SMO）**
   ：支持上传自定义数据集，提供核技巧三维可视化、分离超平面与间隔边界可视化及SMO迭代流程动画 (已完成)
-- **神经网络优化**：探索全连接神经网络结构、前向/反向传播原理，交互式对比 SGD / Momentum / RMSprop / Adam 等优化器的训练过程 (已完成)
+- **神经网络优化**：探索全连接神经网络结构、前向/反向传播原理，交互式对比 Momentum / RMSprop / Adam 等优化器的训练过程 (已完成)
 
 ### 2. 用户系统与实验记录
 
@@ -54,7 +54,6 @@ AI 助教辅助功能。
 | SQLAlchemy         | ORM（异步模式）   |
 | PostgreSQL         | 关系型数据库      |
 | LangChain          | AI Agent 开发     |
-| langchain-deepseek | DeepSeek LLM 集成 |
 | python-jose        | JWT 用户认证      |
 
 ### 前端
@@ -78,6 +77,7 @@ OptLab/
 │   ├── agent.py                # AI Agent 实现
 │   ├── auth.py                 # 认证逻辑
 │   ├── chat_service.py         # 聊天服务
+│   ├── env_manager.py          # 环境变量读写工具
 │   ├── note_generator.py       # 实验笔记生成器
 │   └── scheduler.py            # 任务调度器
 ├── models/                     # 数据库 ORM 模型
@@ -90,12 +90,14 @@ OptLab/
 ├── repository/                 # 数据库 CRUD 操作层
 │   ├── user_repo.py            # 用户数据访问
 │   ├── experiment_repo.py      # 实验数据访问
-│   └── note_item_repo.py       # 笔记数据访问
+│   ├── note_item_repo.py       # 笔记数据访问
+│   └── admin_repo.py           # 管理员数据访问
 ├── routers/                    # API 路由
 │   ├── auth.py                 # 认证路由
 │   ├── experiments.py          # 实验路由
 │   ├── notes.py                # 笔记路由
-│   └── agent.py                # AI Agent 路由
+│   ├── agent.py                # AI Agent 路由
+│   └── admin.py                # 管理员路由（27 个端点）
 ├── schemas/                    # Pydantic 数据验证模型
 │   ├── user.py
 │   ├── experiment.py
@@ -108,13 +110,14 @@ OptLab/
 ├── static/                     # 静态资源中心
 │   ├── css/
 │   │   ├── base/               # 全局基础样式
+│   │   │   └── admin.css        # 后台管理样式
 │   │   ├── components/         # 公共组件样式
 │   │   ├── courses/            # 各业务模块专用样式
 │   │   │   ├── line-search/    # 一维搜索
 │   │   │   ├── linear-programming/ # 线性规划
 │   │   │   ├── svm-smo/        # SVM
 │   │   │   └── neural-network/  # 神经网络优化
-│   │   └── vendors/            # 第三方样式库
+│   │   └── vendors/            # 第三方样式库 (Font Awesome 等)
 │   ├── js/
 │   │   ├── common/             # 公共逻辑组件
 │   │   │   ├── ai-sidebar.js   # AI 侧边栏
@@ -126,6 +129,11 @@ OptLab/
 │   │   │   ├── svm-smo/
 │   │   │   └── neural-network/  # 神经网络优化
 │   │   ├── vendors/            # 第三方库 (D3.js, Three.js, MathJax 等)
+│   │   ├── admin.js              # 后台认证与导航
+│   │   ├── admin-users.js         # 用户管理
+│   │   ├── admin-experiments.js   # 数据管理
+│   │   ├── admin-evaluation.js    # 评测工作台
+│   │   ├── admin-env.js           # 环境变量页
 │   │   ├── api.js              # API 封装
 │   │   ├── auth.js             # 认证逻辑
 │   │   ├── main.js             # 主入口
@@ -139,6 +147,14 @@ OptLab/
 │   ├── settings.html           # 设置页面
 │   ├── auth/                   # 认证页面
 │   ├── components/             # 可复用组件
+│   ├── admin/                   # 后台管理页面（6 页面）
+│   │   ├── layout.html          # 后台基础布局
+│   │   ├── dashboard.html       # 仪表盘
+│   │   ├── users.html           # 用户管理
+│   │   ├── experiments.html     # 数据管理（实验/笔记/会话）
+│   │   ├── env.html             # 环境变量管理
+│   │   ├── evaluation.html      # 评测工作台
+│   │   └── system.html          # 系统状态
 │   └── courses/                # 业务页面
 │       ├── line-search/        # 一维搜索 (含 range-search/, point-search/)
 │       ├── linear-programming/
@@ -148,6 +164,9 @@ OptLab/
 ├── logs/                       # 日志文件
 ├── tests/                      # 测试文件
 ├── scripts/                    # 工具脚本
+│   ├── evaluation/             # 评测配置（评分规则/实验配置）
+│   ├── evaluation_dataset.py   # 评测集构建
+│   └── launch_evaluation_workbench.py  # 评测工作台启动
 ├── dependencies.py             # 依赖注入
 ├── main.py                     # FastAPI 入口
 ├── pyproject.toml              # 依赖管理
@@ -174,11 +193,11 @@ cd OptLab
 
 #### 2. 配置环境变量
 
-前往 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 注册并创建 API Key。
-将项目根目录下的 `.env.template` 改名为 `.env`，并填写 DeepSeek API Key 和 数据库 URI
+前往 [DeepSeek 开放平台](https://platform.deepseek.com/api_keys) 注册并创建 API Key。（其他 OPENAI API 兼容的亦可）
+将项目根目录下的 `.env.template` 改名为 `.env`，并填写 API Key 和 数据库 URI
 
 ```env
-DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
+LLM_API_KEY=sk-xxxxxxxxxxxxxxxx
 ```
 
 #### 3. 运行启动脚本
@@ -198,4 +217,3 @@ MIT License
 - [D3.js](https://d3js.org/) — 数据可视化
 - [Math.js](https://mathjs.org/) — 数学表达式解析
 - [FastAPI](https://fastapi.tiangolo.com/) — 高性能 Web 框架
-- [Tailwind CSS](https://tailwindcss.com/) — CSS 框架
