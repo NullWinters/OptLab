@@ -934,10 +934,20 @@ html, body {
 .admin-status-card .status-row {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 12px;
     padding: 7px 0;
     border-bottom: 1px solid #FFF3E0;
     font-size: 0.87em;
+    word-break: break-all;
+}
+.admin-status-card .status-row > span:first-child {
+    flex-shrink: 0;
+    max-width: 40%;
+}
+.admin-status-card .status-row > span:last-child {
+    text-align: right;
+    min-width: 0;
 }
 .admin-status-card .status-row:last-child {
     border-bottom: none;
